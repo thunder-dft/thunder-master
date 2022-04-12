@@ -1,0 +1,15 @@
+Installing FIREBALL
+===================
+
+1. Enter into directory src
+
+2. Edit Makefile and select the appropiated MACHINE variable
+   There is a GENERIC version that fit many common environments both
+   with intel and gcc compilers
+
+3. Compile the executables:
+
+   make begin.x
+   make create.x
+   make fireball.x
+

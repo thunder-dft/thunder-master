@@ -1,0 +1,34 @@
+
+[2016-04-15] ToDo List
+======================
+
+Fireball is undergoing an active transtion into a more robust
+efficient and developer friendly design. 
+
+This a list of tasks that are currently on development.
+
+   1. Fdata will be changed from a set of text-based files into a
+      single HDF5 file. Efficiency will be gained from faster access to
+      the data, directly stored in binary format. Storage is also reduced
+      and tools will be added to access the contents stored in the new format.
+
+      During the transition time, the current scheme will coexists with the new
+      binary format. The old format will be deprecated and will eventually disapear
+      in a future release.
+
+      Fireball will start being dependent of HDF5 libraries. Widely available on
+      many HPC infraestructures.
+
+
+   2. The parallelization on Fireball will receive a complete new design:
+      We are considering implement a Hybrid model of parallelization
+      including MPI, OpenMP and Accelerators (GPU and Xeon Phi).
+      
+      Most of the current pragmas will disapear and users are advised of using the
+      pure serial compilation util paralelization developemnts beign complete
+      and tuning performed.
+
+   3. A new Test Suite is under development including test to ensure functionality
+      in the long term and allowing a consistent Code Coverage for the sources.
+
+   4. Explain Fork and Pull requests to members

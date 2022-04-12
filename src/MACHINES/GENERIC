@@ -1,0 +1,81 @@
+# GENERIC SETTINGS
+# ================
+#
+# Use this settings on modern Linux/Unix distros with compilers
+# GCC4.8+ or Intel 15+
+#
+# It uses the MKL from intel for BLAS, LAPACK and FFT dependencies
+# The variable $MKLROOT must be set and pointing to the MKL base directory
+#
+# Static compilation from MKL
+
+
+ifneq (,$(findstring GENERIC, ${MACHINE}))
+      MKLPATH = $(MKLROOT)/lib/intel64
+      FFTPATH = $(MKLROOT)/include/fftw
+	ifneq (,$(findstring ifort,${COMPILER}))
+		F77 = ifort
+		F90 = ifort
+		FFLAGS = -O3 -r8 -fpp -ipo -fpe0 -ftz -align #-p -inline-level=0
+		ifneq (,$(findstring DEBUG,${MODE}))
+			FFLAGS = -g -p -traceback -C -check arg_temp_created -r8 \
+				-debug all -check all \
+				-warn all -fpe0
+				#-p -inline-level=0
+		endif
+		ifneq (,$(findstring YES,${OPENMP}))
+			OMP = -openmp
+		endif
+
+		LFLAGS = -Wl,--start-group \
+		       $(MKLPATH)/libmkl_intel_lp64.a \
+		       $(MKLPATH)/libmkl_core.a \
+	       	       $(MKLPATH)/libmkl_sequential.a -Wl,--end-group -lpthread -lm
+		LFLAGS_FFT = -I$(FFTPATH) -L$(MKLPATH) $(MKLPATH)/libfftw3xf_intel.a \
+			$(MKLPATH)/libmkl_em64t.a -Bdynamic $(MKLPATH)/libguide.a
+		LFLAGS_FFT =
+
+	endif
+
+	ifneq (,$(findstring gfortran, ${COMPILER}))
+		F77 = ${COMPILER}
+		F90 = ${COMPILER}
+
+		ifneq (,$(findstring MKL, ${LINALG}))
+		      FFLAGS = -O2 -fdefault-real-8 -m64 -I$(MKLROOT)/include
+		      ifneq (,$(findstring DEBUG, ${MODE}))
+		      FFLAGS = -fdefault-real-8 -g -fbounds-check -Wcharacter-truncation -m64 -I$(MKLROOT)/include
+		      endif
+
+		      ifneq (,$(findstring YES,${OPENMP}))
+		      OMP = -fopenmp
+		      endif
+
+		      LFLAGS = -L/usr/lib64 -Wl,--start-group \
+		      $(MKLPATH)/libmkl_gf_lp64.a \
+		      $(MKLPATH)/libmkl_core.a \
+	       	      $(MKLPATH)/libmkl_sequential.a -Wl,--end-group -lpthread -lm
+		      LFLAGS =  -Wl,--no-as-needed -L${MKLROOT}/lib/intel64 -lmkl_gf_lp64 -lmkl_core -lmkl_sequential -lpthread -lm
+		      LFLAGS_FFT = -I$(FFTPATH) -L$(MKLPATH) $(MKLPATH)/libfftw3xf_intel.a \
+		      $(MKLPATH)/libmkl_em64t.a -Bdynamic $(MKLPATH)/libguide.a
+		      LFLAGS_FFT = 
+		endif
+
+		ifneq (,$(findstring LAPACK, ${LINALG}))
+		      FFLAGS = -O2 -fdefault-real-8 -m64 
+		      ifneq (,$(findstring DEBUG, ${MODE}))
+		      FFLAGS = -fdefault-real-8 -g -fbounds-check -Wcharacter-truncation -m64 
+		      endif
+
+		      ifneq (,$(findstring YES,${OPENMP}))
+		      OMP = -fopenmp
+		      endif
+
+		      LFLAGS = -L/usr/lib64 -llapack -lblas -lpthread -lm
+		      LFLAGS_FFT = -lfftw3
+		endif
+
+
+
+	endif
+endif

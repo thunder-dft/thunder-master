@@ -1,0 +1,43 @@
+2016-04-15 News
+===============
+
+The code is undergoing important reestructuring that will be sumarized here:
+
+1. The code is now structurate in directories whose dependency level is 
+   defined by a lowercase letter on the beggining of each folder:
+
+   The structure of the sources looks now like this:
+
+    a.GLOBAL
+	b.FUNCTIONS
+	c.SYSTEM
+	d.FUNCTIONS_EXTRA
+	e.FDATA
+	f.MPI
+	g.XC_FUNCTIONALS
+	h.SOLVESH
+	i.GRID
+	j.ASSEMBLERS
+	k.DASSEMBLERS
+	l.SCF
+	m.MD
+	n.NAC
+	o.OUTPUT
+	p.HARRIS
+	q.DOGS
+	t.TRANSITIONS
+	u.UTIL
+	v.BEGIN
+	x.EXECUTABLES
+
+   Each level could only relies on modules from lower levels so compilation
+   could follow a very clean incremental direction.
+
+
+2. For a transition period there are two ways of compiling the executables:
+   The traditional way by executing:
+
+   make fireball.x
+
+   Or the new way, by compiling libraries on each
+   

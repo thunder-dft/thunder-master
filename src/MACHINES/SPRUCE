@@ -1,0 +1,27 @@
+#SPRUCE SPRUCE SPRUCE SPRUCE SPRUCE SPRUCE SPRUCE SPRUCE SPRUCE SPRUCE SPRUCE
+ifneq (,$(findstring SPRUCE,${MACHINE}))
+	ifneq (,$(findstring ifort,${COMPILER}))
+		F77 = ifort
+		F90 = ifort
+		FFLAGS = -O3 -r8 -fpp -ipo -fpe0 -ftz -align  #-p -inline-level=0#uncomment last two for profiling
+		ifneq (,$(findstring DEBUG, ${MODE}))
+			FFLAGS = -g -traceback -C -check arg_temp_created -r8 -debug all -check all -warn all -fpe0  #-p -inline-level=0#uncomment last two for profiling
+		endif
+	endif
+
+	ifneq (,$(findstring gfortran,${COMPILER}))
+		F77 = gfortran
+		F90 = gfortran
+		FFLAGS = -static -O3 -fdefault-real-8
+		ifneq (,$(findstring DEBUG, ${MODE}))
+			FFLAGS = -static -fdefault-real-8 -g -fbounds-check -Wall
+		endif
+	endif
+
+	MKLPATH = /shared/software/intel/mkl/lib/intel64
+	#link parallel static
+	#LFLAGS = -static -lmkl_lapack -lmkl_em64t -lguide -lpthread -L$(MKLPATH)
+	#link sequential static  NOTE: sequential is faster than parallel for a single processor; for static linking need to repeat libraries three times!
+	LFLAGS = -L$(MKLPATH) -Wl,--start-group $(MKLPATH)/libmkl_intel_lp64.a $(MKLPATH)/libmkl_sequential.a $(MKLPATH)/libmkl_core.a $(MKLPATH)/libmkl_intel_lp64.a $(MKLPATH)/libmkl_sequential.a $(MKLPATH)/libmkl_core.a $(MKLPATH)/libmkl_intel_lp64.a $(MKLPATH)/libmkl_sequential.a $(MKLPATH)/libmkl_core.a -Wl,--end-group -lpthread
+
+endif

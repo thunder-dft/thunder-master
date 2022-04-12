@@ -1,0 +1,11 @@
+#!/bin/bash
+
+#sed 's/\.\.\/interactions_3c.h/\.\.\/include\/interactions_3c.h/g' $1 > $1.new
+#mv $1.new $1
+
+make cleanall
+for i in lbegin.x lbegin-looprc.x lcreate.x lfireball.x lfireball-MDET.x llightning.x llightning-grid.x
+do
+    make clean
+    make $i
+done

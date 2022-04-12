@@ -1,0 +1,58 @@
+/* config.h.in.  Generated from configure.ac by autoheader.  */
+
+/* XC=BLYP enabled */
+#undef BLYP
+
+/* DEBUG enabled */
+#undef DEBUG
+
+/* THEORY=DOGS enabled */
+#undef DOGS
+
+/* METHOD=GAMMA enabled */
+#undef GAMMA
+
+/* Define to 1 if you have the `sqrt' function. */
+#undef HAVE_SQRT
+
+/* XCTHEORY=HORSFIELD enabled */
+#undef HORSFIELD
+
+/* METHOD=KPOINTS enabled */
+#undef KPOINTS
+
+/* METHOD=KS enabled */
+#undef KS
+
+/* XC=LIBXC enabled */
+#undef LIBXC
+
+/* METHOD=MDET enabled */
+#undef MDET
+
+/* MPI enabled */
+#undef MPI
+
+/* OPENMP enabled */
+#undef OPENMP
+
+/* OPT enabled */
+#undef OPT
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
