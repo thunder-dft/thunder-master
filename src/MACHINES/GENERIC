@@ -1,14 +1,12 @@
 # GENERIC SETTINGS
 # ================
-#
-# Use this settings on modern Linux/Unix distros with compilers
+# Use this settings on modern Linux/Unix distribitions with compilers
 # GCC4.8+ or Intel 15+
 #
 # It uses the MKL from intel for BLAS, LAPACK and FFT dependencies
 # The variable $MKLROOT must be set and pointing to the MKL base directory
 #
 # Static compilation from MKL
-
 
 ifneq (,$(findstring GENERIC, ${MACHINE}))
       MKLPATH = $(MKLROOT)/lib/intel64
@@ -74,8 +72,5 @@ ifneq (,$(findstring GENERIC, ${MACHINE}))
 		      LFLAGS = -L/usr/lib64 -llapack -lblas -lpthread -lm
 		      LFLAGS_FFT = -lfftw3
 		endif
-
-
-
 	endif
 endif
