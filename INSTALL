@@ -2,7 +2,8 @@ Installing FIREBALL
 ===================
 1. Enter into directory src
 
-2. Edit Makefile and select the appropiated MACHINE variable
+2. Edit Makefile.in and select the appropiated MACHINE variable.
+   Also select the other parameters such as type of theory, etc. 
    There is a GENERIC version that fit many common environments both
    with intel and gcc compilers
 
