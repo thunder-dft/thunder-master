@@ -1,6 +1,5 @@
 2016-04-15 News
 ===============
-
 The code is undergoing important reestructuring that will be sumarized here:
 
 1. The code is now structurate in directories whose dependency level is 
