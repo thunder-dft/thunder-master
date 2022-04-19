@@ -37,3 +37,6 @@
 results
 *.DS_Store
 autom4te.cache
+config.h
+config.status
+Makefile
