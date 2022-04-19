@@ -1,7 +1,5 @@
-
 [2016-04-15] ToDo List
 ======================
-
 Fireball is undergoing an active transtion into a more robust
 efficient and developer friendly design. 
 
@@ -12,23 +10,24 @@ This a list of tasks that are currently on development.
       the data, directly stored in binary format. Storage is also reduced
       and tools will be added to access the contents stored in the new format.
 
-      During the transition time, the current scheme will coexists with the new
-      binary format. The old format will be deprecated and will eventually disapear
-      in a future release.
+      During the transition time, the current scheme will coexists with the 
+      new binary format. The old format will be deprecated and will eventually 
+      disapear in a future release.
 
-      Fireball will start being dependent of HDF5 libraries. Widely available on
-      many HPC infraestructures.
+      Fireball will start being dependent of HDF5 libraries. Widely available 
+      on many HPC infrastructures.
 
 
    2. The parallelization on Fireball will receive a complete new design:
       We are considering implement a Hybrid model of parallelization
       including MPI, OpenMP and Accelerators (GPU and Xeon Phi).
       
-      Most of the current pragmas will disapear and users are advised of using the
-      pure serial compilation util paralelization developemnts beign complete
-      and tuning performed.
+      Most of the current pragmas will disapear and users are advised of using
+      the pure serial compilation util parallelization developements begin 
+      complete and tuning performed.
 
-   3. A new Test Suite is under development including test to ensure functionality
-      in the long term and allowing a consistent Code Coverage for the sources.
+   3. A new Testing Suite is under development including test to ensure 
+      functionality in the long term and allowing a consistent code coverage 
+      for the sources.
 
-   4. Explain Fork and Pull requests to members
+   4. Explain Fork and Pull requests to members.
