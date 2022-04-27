@@ -14,7 +14,6 @@
 !! University Press, Second Edition (1996), p. 937 and 1361
 !!
 !! SOURCE
-
         module M_precision
         implicit none
 

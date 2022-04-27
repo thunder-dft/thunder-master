@@ -6,7 +6,7 @@ ifneq (,$(findstring HKQAI,${MACHINE}))
 		FFLAGS = -O3 -r8 -fpp -ipo -fpe0 -ftz -align #-p -inline-level=0
 		ifneq (,$(findstring DEBUG,${MODE}))
 			FFLAGS = -g -traceback -C -check arg_temp_created -r8 \
-				-debug all -check all -warn all -fpe0
+				-debug all -check all -warn all,noexternal -fpe0
 				#-p -inline-level=0
 		endif
 		ifneq (,$(findstring TRUE,${OPENMP}))
@@ -24,11 +24,12 @@ ifneq (,$(findstring HKQAI,${MACHINE}))
 	endif
 
 	MKLROOT = /opt/intel/oneapi/mkl/latest
-	MKLPATH = $(MKLROOT)/lib/em64t
+	MKLPATH = $(MKLROOT)/lib/intel64
 	FFTPATH = $(MKLROOT)/include/fftw
 	# GAF: Using the proper static link sequence
 	LFLAGS = -Wl,--start-group $(MKLPATH)/libmkl_intel_lp64.a \
-		$(MKLPATH)/libmkl_core.a $(MKLPATH)/libmkl_sequential.a \			-Wl,--end-group -lpthread -lm
+		$(MKLPATH)/libmkl_core.a $(MKLPATH)/libmkl_sequential.a \
+		-Wl,--end-group -lpthread -lm
 	LFLAGS_FFT = -I$(FFTPATH) -L$(MKLPATH) $(MKLPATH)/libfftw3xf_intel.a \
 		$(MKLPATH)/libmkl_em64t.a -Bdynamic $(MKLPATH)/libguide.a
 endif

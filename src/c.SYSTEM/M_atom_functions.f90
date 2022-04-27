@@ -1,19 +1,22 @@
 ! copyright info:
 !
-!                             @Copyright 2013
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
@@ -196,7 +199,6 @@
 ! Procedure
 ! ============================================================================
 ! Loop over all the species.
-
         write (ilogfile,*)
         write (ilogfile,'(A)') 'Reading atomic wavefunctions '
         write (ilogfile,'(A)') '---------------------------- '
@@ -208,9 +210,9 @@
           wf(ispecies)%dr_min = 99.0d0
 
           write (ilogfile,*)
-          write (ilogfile,'(A35,I3,A4,I3,A1)') '### Atomic wavefunctions for specie: ', &
-     &           ispecies, ' (Z=', species(ispecies)%nZ, ')'
-          write (ilogfile,*)
+          write (ilogfile,'(a36,i3,a4,i3,a1)')                               &
+     &           '### Atomic wavefunctions for species: ', ispecies,         &
+     &           ' (Z=', species(ispecies)%nZ, ')'
 
 ! Loop over the shells.
           do issh = 1, species(ispecies)%nssh
@@ -294,9 +296,9 @@
           rcutoffA_max = dfloat(mesh_max - 1)*wf(ispecies)%dr_min
           write (ilogfile,*)
           write (ilogfile,'(4x, A)') ' Compare max cutoffs:  '
-          write (ilogfile,'(4x, A31, F9.5, A2)') ' rcutoffA_max (from mesh*dr) = ', &
+          write (ilogfile,'(4x, a31, F9.5, A2)') ' rcutoffA_max (from mesh*dr) = ', &
      &                                              rcutoffA_max, '  '
-          write (ilogfile,'(4x, A31, F9.5, A2)') ' rcutoffA_max (from files)   = ', &
+          write (ilogfile,'(4x, a31, F9.5, A2)') ' rcutoffA_max (from files)   = ', &
      &                                              wf(ispecies)%rcutoffA_max, '  '
 
 ! Loop over the shells and read in the data.
@@ -339,7 +341,6 @@
             deallocate (psitemp)
           end do ! end loop over shells
         end do ! end loop over nspecies
-
         write (ilogfile,*)
 
 ! Format Statements
