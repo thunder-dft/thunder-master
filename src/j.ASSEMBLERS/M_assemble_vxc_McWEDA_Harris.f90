@@ -720,7 +720,8 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, ineigh, matom    !< counter over atoms and neighbors
+        integer iatom                            !< counter over atoms
+        integer ineigh                           !< counter over neighbors
 
 ! Procedure
 ! ===========================================================================
