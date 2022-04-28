@@ -404,7 +404,7 @@
             norb_nu = species(in2)%norb_max
             do imu = 1, norb_mu
               write (logfile,104)                                            &
-     &         (pK_neighbors%block(imu,inu), inu = 1, norb_nu)
+     &         (pK_neighbors%blocko(imu,inu), inu = 1, norb_nu)
             end do
 
 ! Neutral atom matrix elements
@@ -496,7 +496,7 @@
             norb_nu = species(in2)%norb_max
             do imu = 1, norb_mu
               write (logfile,104)                                            &
-     &         (pSR_neighbors%block(imu,inu), inu = 1, norb_nu)
+     &         (pSR_neighbors%blocko(imu,inu), inu = 1, norb_nu)
             end do
 
 ! Long-range ewald matrix elements
@@ -509,7 +509,7 @@
             norb_nu = species(in2)%norb_max
             do imu = 1, norb_mu
               write (logfile,104)                                            &
-     &         (pLR_neighbors%block(imu,inu), inu = 1, norb_nu)
+     &         (pLR_neighbors%blocko(imu,inu), inu = 1, norb_nu)
             end do
 
 ! Complete Hamiltonian (without vnl) matrix elements
@@ -573,6 +573,8 @@
 ! Subroutine Description
 ! ===========================================================================
 !> This subroutine calculates overlap matix S in k space:
+
+
 !! s(k) = sum(l) exp(iatom*k - dot - (l + bj - bi)) s((0,iatom), (l,jatom))
 !! and diagonalizes. The eigenvalues are stores in 1D array structure:
 !! k_slam%values(:)

@@ -1,10 +1,6 @@
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
-
 ! copyright info:
 !
-!                             @Copyright 2012
+!                             @Copyright 2010
 !                           Fireball Committee
 ! West Virginia University - James P. Lewis, Chair
 ! Arizona State University - Otto F. Sankey
@@ -43,7 +39,6 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author Ning Ma
 !> @author James P. Lewis\n
 !! Box 6315, 209 Hodges Hall\n
 !! Department of Physics\n
@@ -122,13 +117,12 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer ispecies                          !< counter for number of species
-        integer nssh                              !< counters for number of shells
-        integer issh, jssh
-#ifdef DOGS
-        integer kssh
-#endif
-        character (len=32) filename
+        integer ispecies		          !< counter for number of species
+
+        integer nssh                      !< counters for number of shells
+        integer issh, jssh, kssh
+
+        character (len=30) filename
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -161,7 +155,7 @@
         end do
         close (11)
 
-#ifdef DOGS
+
 ! ***************************************************************************
 !                       R E A D    P O T E N T I A L S
 ! ***************************************************************************
@@ -207,7 +201,6 @@
           end do
         end do
         close (11)
-#endif
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -265,11 +258,9 @@
 ! ===========================================================================
         do ispecies = 1, nspecies
           deallocate (vxc_1c(ispecies)%E)
-          deallocate (vxc_1c(ispecies)%V)
-#ifdef DOGS
           deallocate (vxc_1c(ispecies)%dE)
+          deallocate (vxc_1c(ispecies)%V)
           deallocate (vxc_1c(ispecies)%dV)
-#endif
         end do
 
 ! Deallocate Arrays

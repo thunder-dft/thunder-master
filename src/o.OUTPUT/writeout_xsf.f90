@@ -73,7 +73,6 @@
         integer index0                      !< index point
         integer inpfile                     !< reading from which unit
         integer logfile                     !< writing to which unit
-        !real, dimension (:,:), allocatable :: ratom2g
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -89,8 +88,6 @@
 ! (format of xcrysden visual code - for details see www.xcrysden.org)
         write (logfile, *) '  Write out xsf file ', xsfname
         open (unit = inpfile, file = xsfname, status = 'unknown' )
-        !allocate (ratom2g (3, t%natoms))
-
 
 ! print the list of atoms
         if (t%icluster .eq. 1) then
