@@ -1,0 +1,304 @@
+# copyright info:
+#
+# @Copyright 2016
+# Fireball Committee
+# West Virginia University - James P. Lewis, Chair
+# Arizona State University - Otto F. Sankey
+# Universidad Autonoma de Madrid - Jose Ortega
+# Academy of Sciences of the Czech Republic - Pavel Jelinek
+
+# Previous and/or current contributors:
+# Auburn University - Jian Jun Dong
+# Caltech - Brandon Keith
+# Dublin Institute of Technology - Barry Haycock
+# Pacific Northwest National Laboratory - Kurt Glaesemann
+# University of Texas at Austin - Alex Demkov
+# Ohio University - Dave Drabold
+# Washington University - Pete Fedders
+# West Virginia University - Ning Ma and Hao Wang
+# also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
+#      and Spencer Shellman
+
+#
+# RESTRICTED RIGHTS LEGEND
+# Use, duplication, or disclosure of this software and its documentation
+# by the Government is subject to restrictions as set forth in subdivision
+# { (b) (3) (ii) } of the Rights in Technical Data and Computer Software
+# clause at 52.227-7013.
+SHELL = /bin/bash
+
+# @configure_input@
+
+# Package-related substitution variables
+package        = @PACKAGE_NAME@
+version        = @PACKAGE_VERSION@
+tarname        = @PACKAGE_TARNAME@
+distdir        = $(tarname)-$(version)
+
+# Prefix-related substitution variables
+prefix         = @prefix@
+exec_prefix    = @exec_prefix@
+bindir         = @bindir@
+
+# Tool-related substitution variables
+FC             = @FC@
+DEFS           = @DEFS@
+LIBS           = @LIBS@
+FCFLAGS        = @FCFLAGS@
+INSTALL        = @INSTALL@
+INSTALL_DATA   = @INSTALL_DATA@
+INSTALL_PROGRAM= @INSTALL_PROGRAM@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+
+# VPATH-related substitution variables
+top_builddir   = @top_builddir@
+builddir       = @builddir@
+srcdir         = @srcdir@
+VPATH          = @srcdir@
+
+# Fireball substitution variables
+THEORY         = @THEORY@
+METHOD         = @METHOD@
+XC             = @XC@
+OPENMP         = @OPENMP@
+MPI            = @MPI@
+DEBUG          = @DEBUG@
+MODE           = @MODE@
+MACHINE        = @MACHINE@
+COMPILER       = @COMPILER@
+LINALG         = @LINALG@
+
+#----------------------------------------------------------------------------
+# ATTENTION:
+#
+# These variables should no be modified by editing the Makefile
+# Use the ./configure to set these variables according to your 
+# desire
+
+#Choose the COMPILER
+#COMPILER = gfortran
+#COMPILER = gfortran-mp-5
+#COMPILER = gfortran-4.8
+#COMPILER = ifort
+
+#LINALG = LAPACK
+#LINALG = MKL
+
+#Do you use DEBUG or Optimization Mode? (DEBUG/OPT)
+#MODE = OPT
+#MODE = DEBUG
+
+#Turn on omp or mpi (enter TRUE .or. FALSE)?
+#OPENMP = FALSE
+#MPI = FALSE
+
+#Choose the MACHINE file
+#MACHINE = GENERIC
+#MACHINE = HKQAI
+
+#Choose HARRIS or DOGS or Kohn-Sham
+#THEORY = HARRIS
+#THEORY = DOGS
+#THEORY = KS
+
+#Choose the METHOD - GAMMA, KPOINTS, or MDET (which is also GAMMA)
+#METHOD = GAMMA
+#METHOD = KPOINTS
+#METHOD = MDET
+#METHOD = KS
+
+#Choose the XC functional
+#XC = LDA
+#XC = BLYP
+
+#----------------------------------------------------------------------------
+# Note: These are the machines files used by the Lewis Research Group. You need
+# to create a MACHINES file specific to your architecture.  You can use one of
+# the machines file below as a starting point.
+include MACHINES/GENERIC
+include MACHINES/HKQAI
+
+######################################################################
+###
+### LISTING LIBRARIES AND LINKING FLAGS
+### This is the new way for compiling the thunder suite.
+### We list the libraries needed by each executable and the linking
+### flags needed for each library. 
+###
+######################################################################
+LIBS_COMMON = libthd_GLOBAL.a libthd_FUNCTIONS.a libthd_SYSTEM.a
+LIBS_BEGIN =  $(LIBS_COMMON) libthd_XC_FUNCTIONALS.a libthd_VXC_MCWEDA.a libthd_BEGIN.a
+LIBS_LOOPRC = $(LIBS_COMMON) libthd_XC_FUNCTIONALS.a libthd_VXC_MCWEDA.a libthd_BEGIN_LOOPRC.a
+LIBS_CREATE = $(LIBS_COMMON) libthd_XC_FUNCTIONALS.a libthd_CREATE.a libthd_THEORY.a libthd_VXC_MCWEDA.a libthd_VXC_DOGS.a
+LIBS_LIGHTNING = $(LIBS_COMMON) libthd_FUNCTIONS_EXTRA.a libthd_XC_FUNCTIONALS.a libthd_SOLVESH.a libthd_FDATA.a libthd_SCF.a libthd_OUTPUT.a libthd_UTIL.a libthd_ASSEMBLERS_PP.a libthd_THEORY.a libthd_FDATA_DOGS.a libthd_ASSEMBLERS_DOGS.a
+LIBS_LIGHTNING_GRID = $(LIBS_LIGHTNING) libthd_GRID.a
+LIBS_FIREBALL = $(LIBS_COMMON) libthd_FUNCTIONS_EXTRA.a libthd_XC_FUNCTIONALS.a libthd_SOLVESH.a libthd_ASSEMBLERS_PP.a libthd_SCF.a libthd_MD.a libthd_UTIL.a $(LIBS_THEORY) libthd_OUTPUT.a
+
+LFLAGS_COMMON = -lthd_SYSTEM -lthd_FUNCTIONS -lthd_GLOBAL
+LFLAGS_LOOPRC = -lthd_BEGIN_LOOPRC -lthd_VXC_MCWEDA -lthd_XC_FUNCTIONALS $(LFLAGS_COMMON)
+LFLAGS_BEGIN = -lthd_BEGIN -lthd_VXC_MCWEDA -lthd_XC_FUNCTIONALS $(LFLAGS_COMMON)
+LFLAGS_CREATE = -lthd_VXC_MCWEDA -lthd_VXC_DOGS -lthd_THEORY -lthd_CREATE -lthd_XC_FUNCTIONALS $(LFLAGS_COMMON)
+LFLAGS_LIGHTNING = -lthd_SCF -lthd_SOLVESH -lthd_UTIL -lthd_OUTPUT -lthd_FDATA -lthd_FDATA -lthd_ASSEMBLERS_DOGS -lthd_ASSEMBLERS_PP -lthd_XC_FUNCTIONALS -lthd_FUNCTIONS_EXTRA -lthd_FUNCTIONS_EXTRA  $(LFLAGS_COMMON)
+LFLAGS_LIGHTNING_GRID = -lthd_GRID $(LFLAGS_LIGHTNING)
+LFLAGS_FIREBALL = -lthd_UTIL -lthd_OUTPUT -lthd_SCF -lthd_MD $(LFLAGS_THEORY) -lthd_ASSEMBLERS_PP -lthd_FDATA -lthd_SOLVESH -lthd_XC_FUNCTIONALS -lthd_FUNCTIONS_EXTRA $(LFLAGS_COMMON)
+
+# This line export variables to the Makefiles called inside each directory
+export
+######################################################################
+###
+### END LISTING LIBRARIES AND LINKING FLAGS
+###
+######################################################################
+all: all_old
+
+check:
+	@echo 'No check by now!'
+
+install:
+	@echo 'No install by now!'
+
+uninstall:
+	@echo 'No uninstall by now!'
+
+.PHONY: clean veryclean cleanall check install uninstall
+
+clean:
+	rm -f -r core *.a *.o .nfs* rii_files begin-looprc.x.ip* begin.x.ip* \
+			create.x.ip* fireball.x.ip* \
+			fireball-MDET.x.ip* lightning.x.ip* *genmod.f90 .#* \
+			ldtmp* *.mod *.mod.* *.vo *~ *.il libs/*.a include/*.mod *.x.dSYM
+	for dir in $(DIRS) ; \
+	do \
+		if [ -e $$dir ]; then echo $$dir && cd $$dir && $(MAKE) clean && cd .. ; fi ; \
+	done
+
+cleanall: clean
+	rm -f begin-looprc.x begin.x create.x lightning.x lightning-grid.x fireball.x fireball-MDET.x l*.x
+
+veryclean: cleanall
+
+# NEW METHOD:
+# We have transitioned into a library-based compilation where the object files
+# are created inside the respective directories and static libraries are stored
+# in libs and module files ('*.mod') are stored in include
+#
+# In the meantime, new executables are created with a l prefix in front of
+# the usual name
+
+# *****************************************************************************
+# MAIN
+# *****************************************************************************
+lbegin-looprc.x : x.DRIVERS/begin-looprc.f90 $(LIBS_LOOPRC)
+	$(F90) $(DEFS) -I.. -I../.. -o $@ $(FFLAGS) $< -I./include -Llibs/ $(LFLAGS_LOOPRC) ${LFLAGS}
+
+lbegin.x : x.DRIVERS/begin.f90 $(LIBS_BEGIN)
+	$(F90) $(DEFS) -I.. -I../.. -o $@ $(FFLAGS) $< -I./include -Llibs/ $(LFLAGS_BEGIN) ${LFLAGS}
+
+lcreate.x : x.DRIVERS/create.f90 $(LIBS_CREATE)
+	$(F90) $(DEFS) -I.. -I../.. -o $@ $(FFLAGS) $< -I./include -L./libs $(LFLAGS_CREATE) ${LFLAGS}
+
+llightning.x: x.DRIVERS/lightning.f90 $(LIBS_LIGHTNING)
+	$(F90) $(DEFS) -I.. -I../.. -o $@ $(FFLAGS) $(OMP) $< -I./include -L./libs $(LFLAGS_LIGHTNING) ${LFLAGS}
+
+llightning-grid.x: x.DRIVERS/lightning-grid.f90 $(LIBS_LIGHTNING_GRID)
+	$(F90) $(DEFS) -I.. -I../.. -o $@ $(FFLAGS) $(OMP) $< -I./include -L./libs $(LFLAGS_LIGHTNING_GRID) ${LFLAGS} $(LFLAGS_FFT)
+
+lfireball.x: x.DRIVERS/fireball.F90 $(LIBS_FIREBALL)
+	$(F90) $(DEFS) -I.. -I../.. -o $@ $(FFLAGS) $< -I./include -L./libs $(LFLAGS_FIREBALL) ${LFLAGS}
+
+lfireball-MDET.x: x.DRIVERS/fireball-MDET.f90 $(LIBS_FIREBALL_MDET)
+	$(F90) $(DEFS) -I.. -I../.. -o $@ $(FFLAGS) $< -I./include -L./libs $(LFLAGS_FIREBALL_MDET) ${LFLAGS}
+
+# *****************************************************************************
+# LIBRARIES
+# *****************************************************************************
+libs: libthd_GLOBAL.a libthd_FUNCTIONS.a libthd_SYSTEM.a libthd_FUNCTIONS_EXTRA.a libthd_FDATA.a libthd_noMPI.a libthd_XC_FUNCTIONALS.a libthd_SOLVESH.a libthd_ASSEMBLERS_HARRIS.a libthd_ASSEMBLERS_DOGS.a libthd_ASSEMBLERS_KS.a libthd_DASSEMBLERS_HARRIS.a libthd_DASSEMBLERS_DOGS.a libthd_SCF.a libthd_MD.a libthd_NAMD.a libthd_OUTPUT.a libthd_VXC_MCWEDA.a  libthd_THEORY.a libthd_UTIL.a
+	@echo Notice: This library is excluded from compilation: libthd_VXC_HORSFIELD.a
+
+libthd_GLOBAL.a:
+	cd a.GLOBAL && $(MAKE) $@
+
+libthd_FUNCTIONS.a:
+	cd b.FUNCTIONS && $(MAKE) $@
+
+libthd_FUNCTIONS_LIGHTNING.a: libthd_SYSTEM.a libthd_SYSTEM.a
+	cd b.FUNCTIONS && $(MAKE) $@
+
+libthd_SYSTEM.a:
+	cd c.SYSTEM && $(MAKE) $@
+
+libthd_FUNCTIONS_EXTRA.a:
+	cd d.FUNCTIONS_EXTRA && $(MAKE) $@
+
+libthd_FDATA.a: libthd_SYSTEM.a
+	cd e.FDATA && $(MAKE) $@
+
+libthd_noMPI.a:
+	cd f.MPI && $(MAKE) $@
+
+libthd_MPI.a:
+	cd f.MPI && $(MAKE) $@
+
+libthd_XC_FUNCTIONALS.a:
+	cd g.XC_FUNCTIONALS && $(MAKE) $@
+
+#One selection from M_diagonalization
+libthd_SOLVESH.a: libthd_SYSTEM.a libthd_FDATA.a
+	cd h.SOLVESH && $(MAKE) $@
+
+libthd_GRID.a: libthd_SYSTEM.a libthd_SYSTEM.a
+	cd i.GRID && $(MAKE) $@
+
+libthd_ASSEMBLERS_HARRIS.a: libthd_SYSTEM.a libthd_SYSTEM.a libthd_FDATA.a libthd_FDATA.a
+	cd j.ASSEMBLERS && $(MAKE) $@
+
+libthd_ASSEMBLERS_DOGS.a: libthd_SYSTEM.a libthd_FDATA.a libthd_SYSTEM.a libthd_ASSEMBLERS_PP.a
+	cd j.ASSEMBLERS && $(MAKE) $@
+
+libthd_ASSEMBLERS_KS.a: libthd_SYSTEM.a
+	cd j.ASSEMBLERS && $(MAKE) $@
+
+libthd_ASSEMBLERS_PP.a: libthd_SYSTEM.a libthd_FDATA.a libthd_SYSTEM.a
+	cd j.ASSEMBLERS && $(MAKE) $@
+
+libthd_DASSEMBLERS_HARRIS.a: libthd_ASSEMBLERS_PP.a
+	cd k.DASSEMBLERS && $(MAKE) $@
+
+libthd_DASSEMBLERS_DOGS.a: libthd_SYSTEM.a libthd_SYSTEM.a libthd_FDATA.a libthd_FDATA.a
+	cd k.DASSEMBLERS && $(MAKE) $@
+
+libthd_SCF.a: libthd_SYSTEM.a libthd_SOLVESH.a
+	cd l.SCF && $(MAKE) $@
+
+libthd_NAMD.a: libthd_SYSTEM.a libthd_SYSTEM.a
+	cd n.NAMD && $(MAKE) $@
+
+libthd_MD.a: libthd_SYSTEM.a libthd_SYSTEM.a
+	cd m.MD && $(MAKE) $@
+
+libthd_OUTPUT.a:
+	cd o.OUTPUT && $(MAKE) $@
+
+libthd_THEORY.a: libthd_SYSTEM.a libthd_XC_FUNCTIONALS.a
+	cd p.THEORY && $(MAKE) $@
+
+libthd_CREATE.a: libthd_SYSTEM.a libthd_XC_FUNCTIONALS.a
+	cd k.CREATE && $(MAKE) $@
+
+libthd_VXC_MCWEDA.a: libthd_SYSTEM.a
+	cd p.THEORY && $(MAKE) $@
+
+libthd_VXC_DOGS.a: libthd_SYSTEM.a
+	cd p.THEORY && $(MAKE) $@
+
+libthd_VXC_HORSFIELD.a: libthd_SYSTEM.a
+	cd p.THEORY && $(MAKE) $@
+
+libthd_UTIL.a: libthd_SYSTEM.a libthd_FDATA.a
+	cd u.UTIL && $(MAKE) $@
+
+libthd_BEGIN.a: libthd_SYSTEM.a
+	cd v.BEGIN && $(MAKE) $@
+
+libthd_BEGIN_LOOPRC.a: libthd_SYSTEM.a
+	cd v.BEGIN && $(MAKE) $@

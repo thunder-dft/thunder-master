@@ -1,19 +1,22 @@
 ! copyright info:
 !
-!                             @Copyright 2013
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
 ! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
@@ -213,11 +216,9 @@
 ! Procedure
 ! ===========================================================================
 ! Read in the species file.
-
         write (ilogfile,*) ' Reading: Fdata.inp  '
-
-        INQUIRE(FILE="Fdata.inp", EXIST=file_exists)   ! file_exists will be TRUE if the file
-                                                       ! exists and FALSE otherwise
+        inquire(file = "Fdata.inp", exist = file_exists)   ! file_exists will be TRUE if the file
+                                                           ! exists and FALSE otherwise
         if ( file_exists ) then
            open (unit = 11, file = 'Fdata.inp', status = 'old')
         else
@@ -318,11 +319,11 @@
 ! and the types of atoms.
         write (ilogfile,*) ' We now read begin.inp '
         open (unit = 11, file = 'begin.inp', status = 'old')
-        read (11, 101) signature
+        read (11,101) signature
 
         nzx_max = 0
         do ispecies = 1, nspecies
-          read (11,102) inputfile
+          read (11, 102) inputfile
           inquire (file = inputfile, exist = read_input)
           if (read_input) then
             open (unit = 12, file = inputfile, status = 'old')
@@ -444,7 +445,6 @@
 
 ! Read in nexcite flag
           read (12,*) species(ispecies)%nexcite
-
           if (species(ispecies)%nexcite .ne. 0) then
             read (12,*) species(ispecies)%Zval_ion
             do issh = 1, species(ispecies)%nssh
@@ -771,7 +771,7 @@
         real add
 
         real, dimension (P_nspecies) :: dqorb
-!        real, dimension (P_nssh, P_nspecies) :: dqint
+!       real, dimension (P_nssh, P_nspecies) :: dqint
 
         logical read_input
 
@@ -1137,7 +1137,7 @@
             read (11,*)
 
 ! Write out what we are actually using from the info.dat file.
-!            write (ilogfile,100)
+!           write (ilogfile,100)
             write (ilogfile,302) species(ispecies)%symbol
             write (ilogfile,303) species(ispecies)%nZ
             write (ilogfile,304) species(ispecies)%nssh

@@ -1,0 +1,17 @@
+FDATA= M_Fdata_1c_McWEDA.o M_Fdata_2c.o M_Fdata_3c.o 
+
+all: libthd_FDATA.a
+
+.PHONY: clean
+
+clean:
+	rm -rf *.a *.o *.mod *genmod.f90 *~
+
+libthd_FDATA.a: $(FDATA)
+	ar rcs $@ $^ && mv $@ ../libs && cp *.mod ../include
+
+%.o: %.f90
+	${F90} ${DEFS} ${FFLAGS} -c $< -I../include
+
+%.o: %.F90
+	${F90} ${DEFS} -I.. -I../.. ${FFLAGS} -c $< -I../include
