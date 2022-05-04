@@ -225,8 +225,8 @@
 
             pH_neighbors%block = pK_neighbors%blocko + pvna_neighbors%block  &
         &                       + pvna_neighbors%blocko                      &
-        &                       + pvxc_neighbors%block - pSR_neighbors%blocko&
-        &                       + pLR_neighbors%blocko
+        &                       + pvxc_neighbors%block - pSR_neighbors%block &
+        &                       + pLR_neighbors%block
           end do
         end do
 
@@ -496,7 +496,7 @@
             norb_nu = species(in2)%norb_max
             do imu = 1, norb_mu
               write (logfile,104)                                            &
-     &         (pSR_neighbors%blocko(imu,inu), inu = 1, norb_nu)
+     &         (pSR_neighbors%block(imu,inu), inu = 1, norb_nu)
             end do
 
 ! Long-range ewald matrix elements
@@ -509,7 +509,7 @@
             norb_nu = species(in2)%norb_max
             do imu = 1, norb_mu
               write (logfile,104)                                            &
-     &         (pLR_neighbors%blocko(imu,inu), inu = 1, norb_nu)
+     &         (pLR_neighbors%block(imu,inu), inu = 1, norb_nu)
             end do
 
 ! Complete Hamiltonian (without vnl) matrix elements

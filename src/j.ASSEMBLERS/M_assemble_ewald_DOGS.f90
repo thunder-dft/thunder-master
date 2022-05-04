@@ -441,7 +441,7 @@
 ! First a preliminary quantity. ewald(i,j) = sum(L) 1/(| bi-bj +/- L|
 ! We need to calculate SUMS of ewald sums in which the charge is included.
 ! In the nutshell we are calculating:
-!              Sum_(i,L) q(i)/|b(i)-b(alpha)+L|
+!       Sum_(i,L) q(i)/|b(i)-b(alpha)+L|
         sum_ewald = 0.0d0
         do iatom = 1, s%natoms
           do jatom = 1, s%natoms

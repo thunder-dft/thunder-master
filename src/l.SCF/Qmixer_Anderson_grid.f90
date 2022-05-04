@@ -1,10 +1,6 @@
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
-
 ! copyright info:
 !
-!                             @Copyright 2013
+!                             @Copyright 2014
 !                           Fireball Committee
 ! West Virginia University - James P. Lewis, Chair
 ! Arizona State University - Otto F. Sankey
@@ -33,7 +29,6 @@
 ! Qmixer.f90
 ! Function Description
 ! ===========================================================================
-#ifdef DOGS
 !>      The input charges are passed into this routine. New charges are
 !> calculated and mixed in with the old input charges.  The resulting charges
 !> become output charges.
@@ -47,9 +42,6 @@
 ! simplicity. Our routine computes input vector for the next iteration
 ! and the order is equal to m + 1 in Eyert. This is the same as the best
 ! Broyden method (see Eyert).
-#else
-!>      This is a dummy routine. There is no charge mixing for Harris.
-#endif
 ! ===========================================================================
 ! Code written by:
 !> @author James P. Lewis
@@ -63,15 +55,12 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine Qmixer (t, iscf_iteration, sigma)
-#ifdef DOGS
+		subroutine Qmixer (t, iscf_iteration, sigma)
         use M_charges
-#ifdef GRID
         use M_density_matrix
         use M_grid
-#endif
-#endif
         use M_configuraciones
+
         implicit none
 
 ! Argument Declaration and Description
@@ -85,32 +74,26 @@
 ! Output
         real, intent (inout) :: sigma
 
-#ifdef DOGS
 ! Local Parameters and Data Declaration
 ! ===========================================================================
         integer, parameter :: max_order = 6 ! order of iterated polynomial
 
 ! Local Variable Declaration and Description
 ! ===========================================================================
-        integer iatom                     !< counter over the atoms
-        integer iloop, jloop              !< counter for amatrix
+        integer iatom, jatom, ineigh        ! counter over the atoms
+        integer iloop, jloop                ! counter for amatrix
         integer imix
-        integer in1                       !< species number for iatom
-        integer issh                      !< counter over shells
-        integer istep                     !< short-cut notation
-        integer logfile                   !< writing to which unit
-        integer mix_order                 !< in case iscf .lt. max_order
-#ifdef GRID
-        integer jatom, ineigh
-        integer in2
+        integer in1, in2                    ! species number for iatom
+        integer inpfile                     !< reading from which unit
+        integer issh                        ! counter over shells
+        integer istep                       ! short-cut notation
+        integer logfile                     ! writing to which unit
+        integer mix_order                   ! in case iscf .lt. max_order
+
         integer norb_mu, norb_nu         !< size of the block for the pair
         integer num_neigh                !< number of neighbors
         integer inu,imu
-#else
-        real dqrms, dqmax                 !< rms and max of charge differences
-        real Qin, Qout, Qneutral          !< input and output charges
-        real renorm
-#endif
+
         real zcheck, ztotal_out
 
 ! mixing charges arrays
@@ -142,7 +125,6 @@
 
         double precision, allocatable :: work (:)   ! working vector
 
-#ifdef GRID
         character (len = 25) :: slogfile
 
         type(T_assemble_block), pointer :: pRho_neighbors
@@ -151,8 +133,6 @@
         type(T_assemble_neighbors), pointer :: pdenmat_old
         type(T_assemble_block), pointer :: pS_neighbors
         type(T_assemble_neighbors), pointer :: poverlap
-#endif
-#endif
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -160,12 +140,10 @@
 
 ! Procedure
 ! ===========================================================================
-
-#ifdef DOGS
 ! Check to see if the structure has changed
-          if (.not. associated (current)) then
-             current => t
-	  else if (.not. associated(current, target=t) .and. allocated (Fv)) then
+        if (.not. associated (current)) then
+          current => t
+        else if (.not. associated(current, target=t) .and. allocated (Fv)) then
           deallocate (Fv)
           deallocate (Xv)
           deallocate (delF)
@@ -176,8 +154,6 @@
 
 ! Initialize logfile
         logfile = t%logfile
-
-#ifdef GRID
         inpfile = t%inpfile
 
 ! Get the size of imix.
@@ -197,31 +173,6 @@
             end do ! imu
           end do ! End loop over neighbors
         end do ! End loop over atoms
-#else
-
-! Check to see if input charges and output charges are within tolerance.
-! If they are within tolerance, then perform a motional time step. If
-! they are not within tolerence, then perform another iteration to make
-! charges self-consistent.  This also gets the size of imix.
-        dqrms = 0.0d0
-        dqmax = -99.0d0
-        imix = 0
-        do iatom = 1, t%natoms
-          in1 = t%atom(iatom)%imass
-          do issh = 1, species(in1)%nssh
-            imix = imix +1
-            Qin = t%atom(iatom)%shell(issh)%Qin
-            Qout = t%atom(iatom)%shell(issh)%Qout
-            dqmax = max(abs(Qin - Qout), dqmax)
-            dqrms = dqrms + (Qin - Qout)**2
-          end do
-        end do
-        dqrms = sqrt(dqrms)/(2*t%natoms)
-        write (logfile,*)
-        write (logfile,100) dqrms
-        write (logfile,101) dqmax
-
-#endif
 
 ! ===========================================================================
 !                              Anderson mixing
@@ -242,7 +193,6 @@
 ! Store all the charges into one dimensional arrays for easier manipulation.
         imix = 0
         do iatom = 1, t%natoms
-#ifdef GRID
           ! cut some lengthy notation
           pdenmat=>t%denmat(iatom)
           pdenmat_old=>t%denmat_old(iatom)
@@ -264,14 +214,6 @@
               end do
             end do ! end loop over matrix elements
           end do ! end loop over neighbors
-#else
-          in1 = t%atom(iatom)%imass
-          do issh = 1, species(in1)%nssh
-            imix = imix + 1
-            Qinmixer(imix) = t%atom(iatom)%shell(issh)%Qin
-            Qoutmixer(imix) = t%atom(iatom)%shell(issh)%Qout
-          end do
-#endif
         end do ! end loop over atoms
 
 ! Mix Qinmixer and Qoutmixer to get a NEW Qinmixer, which is the NEW input for
@@ -281,15 +223,11 @@
 
 ! Calculate the new sigma
         sigma = dot_product(Fv(:,iscf_iteration),Fv(:,iscf_iteration))
-#ifdef GRID
         sigma = sqrt(sigma)
-#else
-        sigma = sigma/imix
-#endif
 
 ! Initially - only perform simple extrapolation
         if (mix_order .eq. 1 .or. sigma .lt. scf_tolerance_set) then
-          Qinmixer(:) = Qinmixer(:) + beta_set*Fv(:,iscf_iteration)
+          Qinmixer(:) = Qinmixer(:) +  beta_set*Fv(:,iscf_iteration)
           sigma_saved(iscf_iteration) = sigma
         else
 
@@ -352,10 +290,10 @@
           istep = iscf_iteration - mix_order
 
 ! Generate new guess at charges Eq. 7.7  (F_dot_delF is now gamma)
-          Qinmixer(:) = Qinmixer(:) + beta_set*Fv(:,iscf_iteration)  ! First-order term
+          Qinmixer(:) = Qinmixer(:) +  beta_set*Fv(:,iscf_iteration)  ! First-order term
           do iloop = istep + 1, iscf_iteration - 1
             Qinmixer(:) =                                                        &
-     &        Qinmixer(:) - F_dot_delF(iloop)*(delX(:,iloop) + beta_set*delF(:,iloop))
+     &        Qinmixer(:) - F_dot_delF(iloop)*(delX(:,iloop) +  beta_set*delF(:,iloop))
           end do
           deallocate (F_dot_delF)
         end if
@@ -363,9 +301,6 @@
 ! ===========================================================================
 !                                 end mixing
 ! ===========================================================================
-
-#ifdef GRID
-
 ! Check the total charge - before setting the density
         ztotal_out = 0.0d0
         do iatom = 1, t%natoms
@@ -502,57 +437,15 @@
           end do ! End loop over neighbors
         end do ! End loop over atoms
 
-#else
-
-! Check the total charge
-        ztotal_out = 0
-        imix = 0
-        do iatom = 1, t%natoms
-          in1 = t%atom(iatom)%imass
-          do issh = 1, species(in1)%nssh
-            imix = imix + 1
-            t%atom(iatom)%shell(issh)%Qin = Qinmixer(imix)
-            ztotal_out = ztotal_out + t%atom(iatom)%shell(issh)%Qin
-          end do
-        end do
-        renorm = (ztotal_out - t%ztot)/imix
-        write (logfile,*)
-        write (logfile,201) renorm
-
-! Reset new charges, Qin
-        zcheck = 0.0d0
-        do iatom = 1, t%natoms
-          in1 = t%atom(iatom)%imass
-          do issh = 1, species(in1)%nssh
-            Qneutral = species(in1)%shell(issh)%Qneutral
-
-            t%atom(iatom)%shell(issh)%Qin =                                  &
-     &        t%atom(iatom)%shell(issh)%Qin - renorm
-            Qin = t%atom(iatom)%shell(issh)%Qin
-            t%atom(iatom)%shell(issh)%dQ = Qin - Qneutral
-
-            zcheck = zcheck + t%atom(iatom)%shell(issh)%Qin
-          end do
-        end do
-
-#endif
-
 ! Write out results
         write (logfile,*) ' (Before renormalization) zouttot = ', ztotal_out
         write (logfile,*) ' (After  renormalization)  zcheck = ', zcheck
         write (logfile,*) ' (What it must be)           ztot = ', t%ztot
         write (logfile,*)
         write (logfile,202) sigma, scf_tolerance_set, iscf_iteration
-#else
-! Set sigma to something crazy in order to kick out of the scf loop.
-        sigma = -999.0d0
-        if(.FALSE.) t%volume=0
-        if(.FALSE.) sigma=iscf_iteration
-#endif
 
 ! Deallocate Arrays
 ! ===========================================================================
-#ifdef DOGS
         deallocate (Qinmixer, Qoutmixer)
 
 ! Format Statements
@@ -562,11 +455,8 @@
 201     format (2x, ' Renormalization of Qin:   renorm = ', 4x, f14.8)
 202     format (' =====> sigma = ', e14.7,                                   &
      &          ' Must be less than', e14.7, ' SCF step = ', i3)
-#endif
 
 ! End Subroutine
 ! ===========================================================================
         return
         end subroutine Qmixer
-
-

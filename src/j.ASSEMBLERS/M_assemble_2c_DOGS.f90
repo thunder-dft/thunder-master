@@ -865,7 +865,7 @@
         do iatom = 1, s%natoms
           do ineigh = 1, s%neighbors(iatom)%neighn
             deallocate (s%overlap(iatom)%neighbors(ineigh)%block)
-            deallocate (s%kinetic(iatom)%neighbors(ineigh)%block)
+            deallocate (s%kinetic(iatom)%neighbors(ineigh)%blocko)
             deallocate (s%dipole_z(iatom)%neighbors(ineigh)%block)
             deallocate (s%vna(iatom)%neighbors(ineigh)%block)
           end do

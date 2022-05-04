@@ -43,8 +43,8 @@ MPI = FALSE
 MACHINE = HKQAI
 
 # Choose HARRIS or DOGS
-THEORY = HARRIS
-#THEORY = DOGS
+#THEORY = HARRIS
+THEORY = DOGS
 #THEORY = KS
 
 # Choose the METHOD - GAMMA, KPOINTS, or MDET (which is also GAMMA)
@@ -95,7 +95,6 @@ NAMD = M_non_adiabatic_gamma.o M_non_adiabatic_coupling.o M_density_MDET.o
 OUTPUT = writeout_energies.o writeout_xyz.o writeout_xsf.o
 UTIL = absorption_gamma.o dos_gamma.o M_isosurfaces.o
 SOLVESH = M_diagonalization_Lowdin.o M_kspace_Lowdin.o M_density_matrix.o
-SCF = M_charges_Lowdin.o Qmixer_Anderson.o
 
 # LDA is default - we change later if we want something other than LDA
 XC_FUNCTIONALS = M_xc_option3_1c.o M_xc_option3_2c.o
@@ -106,26 +105,22 @@ ifneq (,$(findstring HARRIS, ${THEORY}))
 ASSEMBLERS = M_assemble_2c_Harris.o M_assemble_3c_Harris.o M_assemble_ewald_Harris.o M_assemble_rho_McWEDA_Harris.o M_assemble_usr_McWEDA_Harris.o M_assemble_vxc_McWEDA_Harris.o M_assemble_PP_2c.o M_assemble_PP_3c.o
 DASSEMBLERS = M_Dassemble_rho_McWEDA_Harris.o M_Dassemble_2c_Harris.o M_Dassemble_PP_2c.o M_Dassemble_ewald_Harris.o M_Dassemble_usr_McWEDA_Harris.o M_Dassemble_3c_Harris.o M_Dassemble_vxc_McWEDA_Harris.o M_Dassemble_vxc_3c_McWEDA_Harris.o
 FDATA = M_Fdata_1c_McWEDA_Harris.o M_Fdata_2c.o M_Fdata_3c.o
-
-# For compiling by libraries
-LIBS_THEORY = libthd_FDATA.a libthd_ASSEMBLERS_HARRIS.a libthd_DASSEMBLERS_HARRIS.a libthd_THEORY.a
-LFLAGS_THEORY = -lthd_FDATA -lthd_ASSEMBLERS_HARRIS -lthd_DASSEMBLERS_HARRIS -lthd_THEORY
+SCF = M_charges_Lowdin.o Qmixer_Anderson_Harris.o
 endif
 
 # ****************************** DOGS ********************************
 ifneq (,$(findstring DOGS, ${THEORY}))
-ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_ewald_Harris.o M_assemble_rho_McWEDA_DOGS.o M_assemble_usr_McWEDA_DOGS.o M_assemble_vxc_McWEDA_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o
-DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_rho_McWEDA_DOGS.o M_Dassemble_ewald_Harris.o M_Dassemble_vxc_McWEDA_Harris.o M_Dassemble_usr_McWEDA_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_vxc_3c_McWEDA_Harris.o
+ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_ewald_DOGS.o M_assemble_rho_McWEDA_DOGS.o M_assemble_usr_McWEDA_DOGS.o M_assemble_vxc_McWEDA_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o
+DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_rho_McWEDA_DOGS.o M_Dassemble_ewald_DOGS.o M_Dassemble_vxc_McWEDA_Harris.o M_Dassemble_usr_McWEDA_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_vxc_3c_McWEDA_Harris.o
 FDATA = M_Fdata_1c_McWEDA_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
-
-# For compiling by libraries
-LIBS_THEORY = libthd_FDATA.a libthd_ASSEMBLERS_DOGS.a libthd_DASSEMBLERS_DOGS.a libthd_THEORY.a
-LFLAGS_THEORY = -lthd_FDATA -lthd_ASSEMBLERS_DOGS -lthd_DASSEMBLERS_DOGS -lthd_THEORY
+SCF = M_charges_Lowdin.o Qmixer_Anderson_DOGS.o
 endif
 
 # ****************************** KS ********************************
 ifneq (,$(findstring KS, ${THEORY}))
 ASSEMBLERS = lda_ceperley_alder.o M_assemble_2c_grid.o M_assemble_3c_Harris.o M_assemble_ewald_DOGS.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_grid.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_usr_grid.o
+FDATA = M_Fdata_1c_McWEDA_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
+SCF = M_charges_Lowdin.o Qmixer_Anderson_grid.o
 endif
 
 # *********************** GAMMA, KPOINTS, MDET, or KS ********************
@@ -464,7 +459,11 @@ M_Dassemble_ewald_Harris.o : k.DASSEMBLERS/M_Dassemble_ewald_Harris.f90
 # *****************************************************************************
 M_charges_Lowdin.o : l.SCF/M_charges_Lowdin.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-Qmixer_Anderson.o : l.SCF/Qmixer_Anderson.F90
+Qmixer_Anderson_Harris.o : l.SCF/Qmixer_Anderson_Harris.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+Qmixer_Anderson_DOGS.o : l.SCF/Qmixer_Anderson_DOGS.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+Qmixer_Anderson_grid.o : l.SCF/Qmixer_Anderson_grid.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 
 # *****************************************************************************
