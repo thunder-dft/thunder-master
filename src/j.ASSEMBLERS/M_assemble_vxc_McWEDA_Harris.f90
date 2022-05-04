@@ -1,19 +1,22 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
@@ -111,7 +114,6 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-!       integer iatom, ineigh, matom       !< counter over atoms and neighbors
         integer iatom, ineigh              !< counter over atoms and neighbors
         integer in1, in2                   !< species numbers
         integer jatom                      !< neighbor of iatom
@@ -155,7 +157,7 @@
 ! matrix elements
         call assemble_vxc_bond (s)
 
-! (3) Sum all three contributions in Eq. (16):
+! (3) Sum all three-center contributions in Eq. (16):
 !  vxc = vxc_bond + vxc_SN - vxc_SN_bond
         do iatom = 1, s%natoms
 
@@ -165,7 +167,7 @@
           norb_mu = species(in1)%norb_max
           num_neigh = s%neighbors(iatom)%neighn
           allocate (pvxc%neighbors(num_neigh))
-            
+
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
             ! cut some more lengthy notation
@@ -179,17 +181,9 @@
 ! equation (16) PRB 71, 235101 (2005)
 ! vxc = vxc_bond + vxc_SN - vxc_SN_bond
             pvxc_neighbors%block = vxc_SN(iatom)%neighbors(ineigh)%block       &
-     &                             + vxc_bond(iatom)%neighbors(ineigh)%block   &
-     &                             - vxc_SN_bond(iatom)%neighbors(ineigh)%block
+     &                            + vxc_bond(iatom)%neighbors(ineigh)%block    &
+     &                            - vxc_SN_bond(iatom)%neighbors(ineigh)%block
           end do
-!         matom = s%neigh_self(iatom)
-                    
-          ! cut some lengthy notation
-!         pvxc_neighbors=>pvxc%neighbors(matom)
-!         allocate (pvxc_neighbors%block(norb_mu, norb_mu))
-!         pvxc_neighbors%block = 0.0d0
-!         pvxc_neighbors%block = vxc_SN(iatom)%neighbors(matom)%block     &
-!    &                          - vxc_SN_bond(iatom)%neighbors(matom)%block
         end do
 
 ! Deallocate Arrays
@@ -253,7 +247,7 @@
         integer jatom                    !< neighbor of iatom
         integer num_neigh                !< number of neighbors
         integer mbeta                    !< the cell containing neighbor of iatom
-        integer matom                      !< matom is the self-interaction atom
+        integer matom                    !< matom is the self-interaction atom
         integer imu, inu                 !< counter over orbitals
         integer issh, jssh               !< counter over shells
         integer n1, n2, l1, l2, m1, m2   !< quantum numbers n, l, and m
@@ -299,10 +293,11 @@
           pvxc_SN=>vxc_SN(iatom)
           pvxc_SN_bond=>vxc_SN_bond(iatom)
 
-! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
           allocate (pvxc_SN%neighbors(num_neigh))
           allocate (pvxc_SN_bond%neighbors(num_neigh))
+
+! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
@@ -373,7 +368,7 @@
 ! calculate GSN for rho_in
                       pvxc_SN_neighbors%block(imu,inu) = muxc_in*poverlap      &
      &                  + dmuxc_in*(prho_in - prho_in_shell*poverlap)
-                      
+
 ! calculate GSN for rho_bond ("atomic" correction)
                       pvxc_SN_bond_neighbors%block(imu,inu) =                  &
      &                  muxc_bond*poverlap                                     &
@@ -391,7 +386,6 @@
 ! end of SPECIAL LOOP
           end do ! end loop over neighbors
         end do ! end loop over atoms
-
 
 ! ***************************************************************************
 !
@@ -434,7 +428,7 @@
      &        s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,issh)
               call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,       &
      &                                 dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
-                  
+
             prho_bond_shell =                                                &
      &        s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,issh)
               call lda_ceperley_alder (prho_bond_shell, exc_bond,            &
@@ -451,7 +445,7 @@
 ! calculate GSN for rho_in
               pvxc_SN_neighbors%block(imu,imu) = muxc_in                     &
      &          + dmuxc_in*(prho_in - prho_in_shell)
-              
+
               pvxc_SN_bond_neighbors%block(imu,imu) = muxc_bond              &
      &          + dmuxc_bond*(prho_bond - prho_bond_shell)
             end do
@@ -469,7 +463,7 @@
      &          s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,jssh)
               call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,       &
      &                                 dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
-     
+
               prho_bond_shell =                                              &
      &              s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,jssh)
               call lda_ceperley_alder (prho_bond_shell, exc_bond,            &
@@ -555,7 +549,7 @@
         integer iatom, ineigh            !< counter over atoms and neighbors
         integer in1, in2, in3            !< species numbers
         integer jatom                    !< neighbor of iatom
-        integer interaction, isubtype    !< which interaction and subtype
+        integer interaction, isorp       !< which interaction and subtype
         integer num_neigh                !< number of neighbors
         integer mbeta                    !< the cell containing iatom's neighbor
 
@@ -660,10 +654,14 @@
 ! coordinates.
               interaction = P_vxc_ontop
               in3 = in2
+
+! Allocate array blocks
               allocate (bcxcm (norb_mu, norb_nu))
               allocate (bcxcx (norb_mu, norb_nu))
-              isubtype = 0
-              call getMEs_Fdata_2c (in1, in3, interaction, isubtype, z,      &
+
+! Neutral atom case              
+              isorp = 0
+              call getMEs_Fdata_2c (in1, in3, interaction, isorp, z,           &
      &                              norb_mu, norb_nu, bcxcm)
               call rotate (in1, in3, eps, norb_mu, norb_nu, bcxcm, bcxcx)
               pvxc_bond_neighbors%block = bcxcx
@@ -733,10 +731,6 @@
             deallocate (vxc_SN(iatom)%neighbors(ineigh)%block)
             deallocate (vxc_SN_bond(iatom)%neighbors(ineigh)%block)
           end do
-!         matom = s%neigh_self(iatom)
-!         deallocate (s%vxc(iatom)%neighbors(matom)%block)
-!         deallocate (vxc_SN(iatom)%neighbors(matom)%block)
-!         deallocate (vxc_SN_bond(iatom)%neighbors(matom)%block)
           deallocate (s%vxc(iatom)%neighbors)
           deallocate (vxc_SN(iatom)%neighbors)
           deallocate (vxc_SN_bond(iatom)%neighbors)

@@ -1,19 +1,22 @@
 ! copyright info:
 !
-!                             @Copyright 2008
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
@@ -111,13 +114,13 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, ineigh            !< counter over atoms and neighbors
-        integer in1, in2                 !< species numbers
-        integer jatom                    !< neighbor of iatom
+        integer iatom, ineigh              !< counter over atoms and neighbors
+        integer in1, in2                   !< species numbers
+        integer jatom                      !< neighbor of iatom
         integer logfile                    !< writing to which unit
-        integer num_neigh                !< number of neighbors
+        integer num_neigh                  !< number of neighbors
 
-        integer norb_mu, norb_nu         !< size of the block for the pair
+        integer norb_mu, norb_nu           !< size of the block for the pair
 
         type(T_assemble_block), pointer :: pvxc_neighbors
         type(T_assemble_neighbors), pointer :: pvxc
@@ -154,9 +157,10 @@
 ! matrix elements
         call assemble_vxc_bond (s)
 
-! (3) Sum the 3-contributions in Eq. (16):
+! (3) Sum all three-center contributions in Eq. (16):
 !  vxc = vxc_bond + vxc_SN - vxc_SN_bond
         do iatom = 1, s%natoms
+
           ! cut some lengthy notation
           pvxc=>s%vxc(iatom)
           in1 = s%atom(iatom)%imass
@@ -172,11 +176,12 @@
             in2 = s%atom(jatom)%imass
             norb_nu = species(in2)%norb_max
             allocate (pvxc_neighbors%block(norb_mu, norb_nu))
+            pvxc_neighbors%block = 0.0d0
 
-! ecuacion (16) PRB 71, 235101 (2005)
-!  vxc = vxc_bond + vxc_SN - vxc_SN_bond
-            pvxc_neighbors%block = vxc_SN(iatom)%neighbors(ineigh)%block     &
-     &                            + vxc_bond(iatom)%neighbors(ineigh)%block  &
+! equation (16) PRB 71, 235101 (2005)
+! vxc = vxc_bond + vxc_SN - vxc_SN_bond
+            pvxc_neighbors%block = vxc_SN(iatom)%neighbors(ineigh)%block       &
+     &                            + vxc_bond(iatom)%neighbors(ineigh)%block    &
      &                            - vxc_SN_bond(iatom)%neighbors(ineigh)%block
           end do
         end do
@@ -241,7 +246,8 @@
         integer in1, in2                 !< species numbers
         integer jatom                    !< neighbor of iatom
         integer num_neigh                !< number of neighbors
-
+        integer mbeta                    !< the cell containing neighbor of iatom
+        integer matom                    !< matom is the self-interaction atom
         integer imu, inu                 !< counter over orbitals
         integer issh, jssh               !< counter over shells
         integer n1, n2, l1, l2, m1, m2   !< quantum numbers n, l, and m
@@ -273,96 +279,220 @@
 
 ! Procedure
 ! ===========================================================================
+! ***************************************************************************
+!
+!                       O F F  -  S I T E    P I E C E
+!
+! ***************************************************************************
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          norb_mu = species(in1)%norb_max
+
           ! cut some lengthy notation
           pvxc_SN=>vxc_SN(iatom)
           pvxc_SN_bond=>vxc_SN_bond(iatom)
-          in1 = s%atom(iatom)%imass
-          norb_mu = species(in1)%norb_max
+
           num_neigh = s%neighbors(iatom)%neighn
           allocate (pvxc_SN%neighbors(num_neigh))
           allocate (pvxc_SN_bond%neighbors(num_neigh))
 
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
+            mbeta = s%neighbors(iatom)%neigh_b(ineigh)
+            jatom = s%neighbors(iatom)%neigh_j(ineigh)
+            in2 = s%atom(jatom)%imass
+
             ! cut some more lengthy notation
             pvxc_SN_neighbors=>pvxc_SN%neighbors(ineigh)
             pvxc_SN_bond_neighbors=>pvxc_SN_bond%neighbors(ineigh)
-            jatom = s%neighbors(iatom)%neigh_j(ineigh)
-            in2 = s%atom(jatom)%imass
 
 ! Allocate block size
             norb_nu = species(in2)%norb_max
             allocate (pvxc_SN_neighbors%block(norb_mu, norb_nu))
-            pvxc_SN_neighbors%block = 0.0d0
             allocate (pvxc_SN_bond_neighbors%block(norb_mu, norb_nu))
+            pvxc_SN_neighbors%block = 0.0d0
             pvxc_SN_bond_neighbors%block = 0.0d0
+
+! If r1 .eq. r2, then this is a case of a seslf-interaction or "on-site" term;
+! therefore, we do not calculate here.
+            if (iatom .eq. jatom .and. mbeta .eq. 0) then
+
+! Do nothing here - special case. Interaction already calculated in "on-site" case.
+            else
 
 ! SPECIAL LOOP: we want to minimize the number of calls to lda-function
 ! we only need to call lda_ceperley-adler for each pair of shells
 ! but then we need to calculate the (mu,nu)-block of matrix elements
 
 ! Loop over shells i-atom
-            n1 = 0
-            do issh = 1, species(in1)%nssh
+              n1 = 0
+              do issh = 1, species(in1)%nssh
 
 ! n1 : counter used to determine orbitals imu
-              l1 = species(in1)%shell(issh)%lssh
-              n1 = n1 + l1 + 1
+                l1 = species(in1)%shell(issh)%lssh
+                n1 = n1 + l1 + 1
 
 ! Loop over shells ineigh
-              n2 = 0
-              do jssh = 1, species(in2)%nssh
+                n2 = 0
+                do jssh = 1, species(in2)%nssh
 
 ! n2 : counter used to determine orbitals inu
-                l2 = species(in2)%shell(jssh)%lssh
-                n2 = n2 + l2 + 1
+                  l2 = species(in2)%shell(jssh)%lssh
+                  n2 = n2 + l2 + 1
 
 ! Call lda-function for rho_in
-                prho_in_shell =                                              &
-     &           s%rho_in_weighted(iatom)%neighbors(ineigh)%block(issh,jssh)
-                call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,     &
-     &                                   dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
+                  prho_in_shell =                                              &
+     &              s%rho_in_weighted(iatom)%neighbors(ineigh)%block(issh,jssh)
+                  call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,     &
+     &                                     dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
 
 ! Call lda-function for rho_bond
-                prho_bond_shell =                                            &
-     &           s%rho_bond_weighted(iatom)%neighbors(ineigh)%block(issh,jssh)
-                call lda_ceperley_alder (prho_bond_shell, exc_bond,          &
-     &                                   muxc_bond, dexc_bond, d2exc_bond,   &
-     &                                   dmuxc_bond, d2muxc_bond)
+                  prho_bond_shell =                                            &
+     &              s%rho_bond_weighted(iatom)%neighbors(ineigh)%block(issh,jssh)
+                  call lda_ceperley_alder (prho_bond_shell, exc_bond,          &
+     &                                     muxc_bond, dexc_bond, d2exc_bond,   &
+     &                                     dmuxc_bond, d2muxc_bond)
 
 ! Calculate vxc_SN and vxc_SN_bond for (mu,nu)-block
 ! loop over orbitals in the iatom-shell (imu)
-                do m1 = -l1, l1
-                  imu = n1 + m1
+                  do m1 = -l1, l1
+                    imu = n1 + m1
 ! loop over orbitals in the ineigh-shell (inu)
-                  do m2 = -l2, l2
-                    inu = n2 + m2
-                    poverlap = s%overlap(iatom)%neighbors(ineigh)%block(imu,inu)
-                    prho_in = s%rho_in(iatom)%neighbors(ineigh)%block(imu,inu)
-                    prho_bond = s%rho_bond(iatom)%neighbors(ineigh)%block(imu,inu)
+                    do m2 = -l2, l2
+                      inu = n2 + m2
+                      poverlap = s%overlap(iatom)%neighbors(ineigh)%block(imu,inu)
+                      prho_in = s%rho_in(iatom)%neighbors(ineigh)%block(imu,inu)
+                      prho_bond = s%rho_bond(iatom)%neighbors(ineigh)%block(imu,inu)
 
 ! calculate GSN for rho_in
-                    pvxc_SN_neighbors%block(imu,inu) = muxc_in*poverlap      &
-     &                + dmuxc_in*(prho_in - prho_in_shell*poverlap)
+                      pvxc_SN_neighbors%block(imu,inu) = muxc_in*poverlap      &
+     &                  + dmuxc_in*(prho_in - prho_in_shell*poverlap)
 
 ! calculate GSN for rho_bond ("atomic" correction)
-                    pvxc_SN_bond_neighbors%block(imu,inu) =                  &
-     &                + muxc_bond*poverlap                                   &
-     &                + dmuxc_bond*(prho_bond - prho_bond_shell*poverlap)
+                      pvxc_SN_bond_neighbors%block(imu,inu) =                  &
+     &                  muxc_bond*poverlap                                     &
+     &                  + dmuxc_bond*(prho_bond - prho_bond_shell*poverlap)
+                    end do !do m2 = -l2, l2
+                  end do !do m1 = -l1, l1
 
-                  end do !do m2 = -l2, l2
-                end do !do m1 = -l1, l1
+                  n2 = n2 + l2
+                end do  ! do jssh = 1, nssh(in1)
 
-                n2 = n2 + l2
-              end do  ! do jssh = 1, nssh(in1)
+                n1 = n1 + l1
+              end do  ! do issh = 1, nssh(in1)
 
-              n1 = n1 + l1
-            end do  ! do issh = 1, nssh(in1)
-
+            end if ! end if for r1 .eq. r2 case
 ! end of SPECIAL LOOP
           end do ! end loop over neighbors
+        end do ! end loop over atoms
+
+! ***************************************************************************
+!
+!                       O N  -  S I T E    P I E C E
+!
+! ***************************************************************************
+! Loop over the atoms in the central cell.
+        do iatom = 1, s%natoms
+          matom = s%neigh_self(iatom)
+          in1 = s%atom(iatom)%imass
+          norb_mu = species(in1)%norb_max
+          num_neigh = s%neighbors(iatom)%neighn
+
+          ! cut some lengthy notation
+          pvxc_SN=>vxc_SN(iatom); pvxc_SN_neighbors=>pvxc_SN%neighbors(matom)
+          pvxc_SN_bond=>vxc_SN_bond(iatom)
+          pvxc_SN_bond_neighbors=>pvxc_SN_bond%neighbors(matom)
+          allocate (pvxc_SN_neighbors%block(norb_mu, norb_mu))
+          allocate (pvxc_SN_bond_neighbors%block(norb_mu, norb_mu))
+          pvxc_SN_neighbors%block = 0.0d0
+          pvxc_SN_bond_neighbors%block = 0.0d0
+
+! Allocate block size
+          norb_nu = species(in1)%norb_max
+
+! SPECIAL LOOP: we want to minimize the number of calls to lda-function
+! we only need to call lda_ceperley-adler for each pair of shells
+! but then we need to calculate the (mu,nu)-block of matrix elements
+
+! Loop over shells i-atom
+          n1 = 0
+          do issh = 1, species(in1)%nssh
+
+! n1 : counter used to determine orbitals imu
+            l1 = species(in1)%shell(issh)%lssh
+            n1 = n1 + l1 + 1
+
+! Call lda-function for rho_in
+            prho_in_shell =                                                  &
+     &        s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,issh)
+              call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,       &
+     &                                 dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
+
+            prho_bond_shell =                                                &
+     &        s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,issh)
+              call lda_ceperley_alder (prho_bond_shell, exc_bond,            &
+     &                                     muxc_bond, dexc_bond, d2exc_bond, &
+     &                                     dmuxc_bond, d2muxc_bond)
+
+! Calculate vxc_SN and vxc_SN_bond for (mu,nu)-block
+! loop over orbitals in the iatom-shell (imu)
+            do m1 = -l1, l1
+              imu = n1 + m1
+              prho_in = s%rho_in(iatom)%neighbors(matom)%block(imu,imu)
+              prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,imu)
+
+! calculate GSN for rho_in
+              pvxc_SN_neighbors%block(imu,imu) = muxc_in                     &
+     &          + dmuxc_in*(prho_in - prho_in_shell)
+
+              pvxc_SN_bond_neighbors%block(imu,imu) = muxc_bond              &
+     &          + dmuxc_bond*(prho_bond - prho_bond_shell)
+            end do
+
+! Loop over shells ineigh
+            n2 = 0
+            do jssh = 1, species(in1)%nssh
+
+! n2 : counter used to determine orbitals inu
+              l2 = species(in1)%shell(jssh)%lssh
+              n2 = n2 + l2 + 1
+
+! Call lda-function for rho_in
+              prho_in_shell =                                                &
+     &          s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,jssh)
+              call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,       &
+     &                                 dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
+
+              prho_bond_shell =                                              &
+     &              s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,jssh)
+              call lda_ceperley_alder (prho_bond_shell, exc_bond,            &
+     &                                     muxc_bond, dexc_bond, d2exc_bond, &
+     &                                     dmuxc_bond, d2muxc_bond)
+
+! Calculate vxc_SN and vxc_SN_bond for (mu,nu)-block
+! loop over orbitals in the iatom-shell (imu)
+              do m1 = -l1, l1
+                imu = n1 + m1
+! loop over orbitals in the ineigh-shell (inu)
+                do m2 = -l2, l2
+                  inu = n2 + m2
+                  if (imu .ne. inu) then
+                    prho_in = s%rho_in(iatom)%neighbors(matom)%block(imu,inu)
+                    prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,inu)
+
+! calculate GSN for rho_in
+                    pvxc_SN_neighbors%block(imu,inu) = dmuxc_in*prho_in
+                    pvxc_SN_bond_neighbors%block(imu,inu) = dmuxc_bond*prho_bond
+                  end if ! imu .eq. inu
+                end do !do m2 = -l2, l2
+              end do !do m1 = -l1, l1
+
+              n2 = n2 + l2
+            end do  ! do jssh = 1, nssh(in1)
+
+            n1 = n1 + l1
+          end do  ! do issh = 1, nssh(in1)
         end do ! end loop over atoms
 
 ! Deallocate Arrays
@@ -455,22 +585,25 @@
 ! ===========================================================================
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
-          ! cut some lengthy notation
-          pvxc_bond=>vxc_bond(iatom)
           r1 = s%atom(iatom)%ratom
           in1 = s%atom(iatom)%imass
           norb_mu = species(in1)%norb_max
+
+          ! cut some lengthy notation
+          pvxc_bond=>vxc_bond(iatom)
+
           num_neigh = s%neighbors(iatom)%neighn
           allocate (pvxc_bond%neighbors(num_neigh))
 
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
-            ! cut some more lengthy notation
-            pvxc_bond_neighbors=>pvxc_bond%neighbors(ineigh)
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
+
+            ! cut some more lengthy notation
+            pvxc_bond_neighbors=>pvxc_bond%neighbors(ineigh)
 
 ! Allocate block size
             norb_nu = species(in2)%norb_max
@@ -501,10 +634,10 @@
 ! We calculate here the "on-site" term: mu and nu are in the same atom "i"
 !    vxc_bond (mu,nu) = < mu | V_xc (rho_i) | nu >
 
-! transform from l-block to mu-block and get the matrix element from the data files
+! Transform from l-block to mu-block and get the matrix element from the data files
 ! Fdata_1c (onecenter:uncentro)
 
-! this loop defining dQ maybe outside this subroutine
+! This loop defining dQ (maybe could be placed outside this subroutine)
               do inu = 1, norb_nu
                 jssh = species(in1)%orbital(inu)%issh
                 do imu = 1, norb_mu
@@ -566,9 +699,7 @@
               end do
               deallocate (bcxcm)
               deallocate (bcxcx)
-
             end if ! end if for r1 .eq. r2 case
-
           end do ! end loop over neighbors
         end do ! end loop over atoms
 
@@ -661,4 +792,3 @@
 ! End Module
 ! ===========================================================================
         end module M_assemble_vxc
-

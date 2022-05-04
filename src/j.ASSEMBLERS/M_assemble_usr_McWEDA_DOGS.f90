@@ -237,13 +237,13 @@
 
 ! Calculate q(iatom)*q(jatom) - q0(iatom)*q0(jatom) = QQ
             if (iatom .eq. jatom) then
-             ! eklr = eklr + (P_eq2/2.0d0)*s%ewald(iatom,jatom)                 &
-     !&                                   *(Zi*Zj - Q(iatom)*Q(jatom))
+              eklr = eklr + (P_eq2/2.0d0)*s%ewald(iatom,jatom)                 &
+     &                                   *(Zi*Zj - Q(iatom)*Q(jatom))
             else
-              !eklr = eklr + (P_eq2/2.0d0)*s%ewald(iatom,jatom)                 &
-     !&                                   *(Zi*Zj - Q(iatom)*Q(jatom))          &
-     !&                    + (P_eq2/2.0d0)*s%ewald(jatom,iatom)                 &
-     !&                                   *(Zi*Zj - Q(iatom)*Q(jatom))
+              eklr = eklr + (P_eq2/2.0d0)*s%ewald(iatom,jatom)                 &
+     &                                   *(Zi*Zj - Q(iatom)*Q(jatom))          &
+     &                    + (P_eq2/2.0d0)*s%ewald(jatom,iatom)                 &
+     &                                   *(Zi*Zj - Q(iatom)*Q(jatom))
             end if
            end do
         end do

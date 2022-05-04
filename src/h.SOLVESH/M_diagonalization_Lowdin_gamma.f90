@@ -458,7 +458,7 @@
 ! Argument Declaration and Description
 ! ===========================================================================
 ! Input
-        real, intent (in) :: dot    !> the dot product of k*r
+        real, intent (inout) :: dot    !> the dot product of k*r
 
 ! Local Parameters and Data Declaration
 ! ===========================================================================
@@ -470,6 +470,7 @@
 
 ! Procedure
 ! ===========================================================================
+        dot = 0.0d0
         phase = 1.0d0
 
 ! Format Statements
