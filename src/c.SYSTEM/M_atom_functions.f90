@@ -284,7 +284,7 @@
 
             wf(ispecies)%shell_data(issh)%rcutoff = rcutoff
             wf(ispecies)%rcutoffA_max = max(wf(ispecies)%rcutoffA_max,rcutoffA)
-            dr = rcutoffA/dfloat(mesh - 1)
+            dr = rcutoffA/float(mesh - 1)
             wf(ispecies)%shell_data(issh)%dr = dr
             wf(ispecies)%dr_min = min(wf(ispecies)%dr_min,dr)
             close (unit = 12)
@@ -293,7 +293,7 @@
 ! Now test the mesh and cutoffs
           mesh_max = int(wf(ispecies)%rcutoffA_max/wf(ispecies)%dr_min) + 1
           wf(ispecies)%mesh_max = mesh_max
-          rcutoffA_max = dfloat(mesh_max - 1)*wf(ispecies)%dr_min
+          rcutoffA_max = float(mesh_max - 1)*wf(ispecies)%dr_min
           write (ilogfile,*)
           write (ilogfile,'(4x, A)') ' Compare max cutoffs:  '
           write (ilogfile,'(4x, a31, F9.5, A2)') ' rcutoffA_max (from mesh*dr) = ', &
@@ -638,7 +638,7 @@
 
 ! Loop over the shells.
           do issh = 0, species(ispecies)%nssh    ! 0 is the pure Neutral Atom
-            dr = na(ispecies)%rcutoffA_max/dfloat(mesh - 1)
+            dr = na(ispecies)%rcutoffA_max/float(mesh - 1)
             na(ispecies)%shell_data(issh)%dr = dr
             na(ispecies)%dr_min = min(na(ispecies)%dr_min, dr)
           end do
@@ -646,7 +646,7 @@
 ! Now test the mesh and cutoffs
           mesh_max = int(na(ispecies)%rcutoffA_max/na(ispecies)%dr_min) + 1
           na(ispecies)%mesh_max = mesh_max
-          rcutoffA_max = dfloat(mesh_max - 1)*na(ispecies)%dr_min
+          rcutoffA_max = float(mesh_max - 1)*na(ispecies)%dr_min
           write (ilogfile,*)
           write (ilogfile,*) ' rcutoffA_max (from mesh*dr) = ', rcutoffA_max
           write (ilogfile,*) ' rcutoffA_max (from files) = ', na(ispecies)%rcutoffA_max

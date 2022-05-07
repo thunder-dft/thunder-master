@@ -271,7 +271,7 @@
 
 ! Local Parameters and Data Declaration
 ! ===========================================================================
-        character*2 periodic (103)
+        character (len = 2) periodic (103)
         data periodic  / 'H ', 'He', 'Li', 'Be', 'B ', 'C ', 'N ', 'O ',   &
              'F ', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P ', 'S ', 'Cl', 'Ar',    &
              'K ', 'Ca', 'Sc', 'Ti', 'V ', 'Cr', 'Mn', 'Fe', 'Co', 'Ni',    &
@@ -679,6 +679,7 @@
           end if
           write (12,403) filename
         end do
+        close (unit = 12)
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -740,7 +741,7 @@
         integer, parameter :: P_nspecies = 6
         integer, parameter :: P_nssh = 3
 
-        character*2 periodic (103)
+        character (len = 2) periodic (103)
         data periodic  / 'H ', 'He', 'Li', 'Be', 'B ', 'C ', 'N ', 'O ',    &
              'F ', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P ', 'S ', 'Cl', 'Ar',    &
              'K ', 'Ca', 'Sc', 'Ti', 'V ', 'Cr', 'Mn', 'Fe', 'Co', 'Ni',    &
