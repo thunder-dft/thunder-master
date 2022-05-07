@@ -12,7 +12,6 @@ ifneq (,$(findstring GENERIC, ${MACHINE}))
       MKLPATH = $(MKLROOT)/lib/intel64
       FFTPATH = $(MKLROOT)/include/fftw
 	ifneq (,$(findstring ifort,${COMPILER}))
-		F77 = ifort
 		F90 = ifort
 		FFLAGS = -O3 -r8 -fpp -ipo -fpe0 -ftz -align #-p -inline-level=0
 		ifneq (,$(findstring DEBUG,${MODE}))
@@ -36,8 +35,7 @@ ifneq (,$(findstring GENERIC, ${MACHINE}))
 	endif
 
 	ifneq (,$(findstring gfortran, ${COMPILER}))
-		F77 = ${COMPILER}
-		F90 = ${COMPILER}
+		F90 = ${COMPILER} -std=f2008
 
 		ifneq (,$(findstring MKL, ${LINALG}))
 		      FFLAGS = -O2 -fdefault-real-8 -m64 -I$(MKLROOT)/include

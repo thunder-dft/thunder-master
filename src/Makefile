@@ -30,6 +30,10 @@ SHELL = /bin/bash
 COMPILER = ifort
 #COMPILER = gfortran
 
+# Choose the Linear Algebra libraries
+LINALG = LAPACK
+#LINALG = MKL
+
 # Do you use DEBUG or Optimization Mode? (DEBUG/OPT)
 #MODE = OPT
 MODE = DEBUG
