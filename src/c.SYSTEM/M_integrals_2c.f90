@@ -857,7 +857,7 @@
 ! of the number of points equivalent for all cases. Change the number of
 ! points to be integrated to be dependent upon the distance between the
 ! centers and this defined density.
-          dz = ((rcutoff1 + rcutoff2)/2.0d0)/dfloat(nz)
+          dz = ((rcutoff1 + rcutoff2)/2.0d0)/float(nz)
           nnz = int((zmax - zmin)/dz)
           if (mod(nnz,2) .eq. 0) nnz = nnz + 1; allocate (zmult (nnz))
 
@@ -877,7 +877,7 @@
 !----------------------------------------------------------------------------
           xntegral = 0.00
           do iz = 1, nnz
-            z1 = zmin + dfloat(iz-1)*dz
+            z1 = zmin + float(iz-1)*dz
             temp = zint (itype, ispecies, jspecies, isorp, z1, ideriv,       &
      &                   index_2c, d, nrho, rint, rcutoff1, rcutoff2,        &
      &                   rhomin, rhomax)
@@ -990,7 +990,7 @@
 ! the number of points equivalent for all cases. Change the number of points
 ! to be integrated to be dependent upon the distance between the centers and
 ! this defined density.
-        drho = max(rcutoff1,rcutoff2)/dfloat(nrho)
+        drho = max(rcutoff1,rcutoff2)/float(nrho)
         nnrho = int((rhomax - rhomin)/drho)
         if (mod(nnrho,2) .eq. 0) nnrho = nnrho + 1; allocate (rhomult(nnrho))
 
@@ -1010,7 +1010,7 @@
 !----------------------------------------------------------------------------
         xntegral = 0.00
         do irho = 1, nnrho
-          rho = rhomin + dfloat(irho - 1)*drho
+          rho = rhomin + float(irho - 1)*drho
           temprho = rint (itype, ispecies, jspecies, isorp, d, rho, z1, z2,  &
      &                    ideriv, index_2c)
           temprho = temprho * rhomult(irho)

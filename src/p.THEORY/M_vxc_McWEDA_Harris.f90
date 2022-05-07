@@ -823,7 +823,7 @@
 ! ===========================================================================
 ! Establish drho for this one-center case.
         rcutoff1 = species(ispecies)%rcutoffA_max
-        drho = rcutoff1/dfloat(nrho_rho_store)
+        drho = rcutoff1/float(nrho_rho_store)
 
 ! One-center piece: exc[n1(r1)]
 ! Compute the exchange correlation potential for the one-center case
@@ -1048,7 +1048,7 @@
 ! ===========================================================================
 ! Establish drho for this one-center case.
         rcutoff1 = species(ispecies)%rcutoffA_max
-        drho = rcutoff1/dfloat(nrho_rho_store)
+        drho = rcutoff1/float(nrho_rho_store)
 
 ! One-center piece: vxc[n1(r1)]
 ! Compute the exchange correlation potential for the one-center case
@@ -1195,11 +1195,11 @@
               zmin = min(-rcutoff1, d - rcutoff2)
               zmax = max(rcutoff1, d + rcutoff2)
 
-              dz = ((rcutoff1 + rcutoff2)/2.0d0)/dfloat(nz_rho_store)
+              dz = ((rcutoff1 + rcutoff2)/2.0d0)/float(nz_rho_store)
               nnz = int((zmax - zmin)/dz)
               if (mod(nnz, 2) .eq. 0) nnz = nnz + 1
 
-              drho = ((rcutoff1 + rcutoff2)/2.0d0)/dfloat(nrho_rho_store)
+              drho = ((rcutoff1 + rcutoff2)/2.0d0)/float(nrho_rho_store)
               nnrho = int((rhomax - rhomin)/drho)
               if (mod(nnrho,2) .eq. 0) nnrho = nnrho + 1
 
@@ -1900,8 +1900,8 @@
         if (imidz .lt. 2) imidz = 2
         if (imidz .gt. nnz - 2) imidz = nnz - 2
 
-        prho = (rho - rhomin)/drho - dfloat(imidrho - 1)
-        pz = (z - zmin)/dz - dfloat(imidz - 1)
+        prho = (rho - rhomin)/drho - float(imidrho - 1)
+        pz = (z - zmin)/dz - float(imidz - 1)
 
         fun(-1,-1) = frho(imidrho - 1, imidz - 1)
         fun(-1, 0) = frho(imidrho - 1, imidz)
