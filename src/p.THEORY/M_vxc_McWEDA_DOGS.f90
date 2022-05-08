@@ -528,7 +528,7 @@
 ! ===========================================================================
 ! Establish drho for this one-center case.
         rcutoff1 = species(ispecies)%rcutoffA_max
-        drho = rcutoff1/dfloat(nrho_rho_store)
+        drho = rcutoff1/float(nrho_rho_store)
 
 ! One-center piece: vxc[n1(r1)]
 ! Compute the exchange correlation potential for the one-center case
@@ -885,7 +885,7 @@
 ! ===========================================================================
 ! Establish drho for this one-center case.
         rcutoff1 = species(ispecies)%rcutoffA_max
-        drho = rcutoff1/dfloat(nrho_rho_store)
+        drho = rcutoff1/float(nrho_rho_store)
 
 ! One-center piece: vxc[n1(r1)]
 ! Compute the exchange correlation potential for the one-center case
