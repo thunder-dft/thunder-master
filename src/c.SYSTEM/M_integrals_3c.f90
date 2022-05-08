@@ -1262,7 +1262,7 @@
         rmax = 0.5d0*(rcutoff1 + rcutoff2)
 
 ! Set up integration factors
-        dr = (rmax - rmin)/dfloat(nnr - 1)
+        dr = (rmax - rmin)/float(nnr - 1)
         rmult(1) = dr*41.0D0/140.0d0
         do ir = 2, nnr - 1
           if (mod(ir,6) .eq. 2) rmult(ir) = dr*216.0d0/140.0d0
@@ -1278,7 +1278,7 @@
 !              Do integral over r:
 ! ***************************************************************************
         do ir = 1, nnr
-          r = rmin + dfloat(ir - 1)*dr
+          r = rmin + float(ir - 1)*dr
 
           thetamat = 0.0d0
           call thetaint (itype, ispecies, jspecies, kspecies, ispmin, ispmax,&
@@ -1404,7 +1404,7 @@
         allocate (avgVmat(ispmin:(ispmax - ispmin + 1), nME3c_max)); avgVmat = 0.0d0
 
 ! Set up integration factors
-        dtheta = 4.0d0*atan(1.0d0)/dfloat(nntheta - 1)
+        dtheta = 4.0d0*atan(1.0d0)/float(nntheta - 1)
         thetamult(1) = dtheta*41.0D0/140.0d0
         do itheta = 2, nntheta - 1
           if (mod(itheta,6) .eq. 2) thetamult(itheta) = dtheta*216.0d0/140.0d0
@@ -1420,7 +1420,7 @@
 !              Do integral over theta:
 ! ***************************************************************************
         do itheta = 1, nntheta
-          theta = dfloat(itheta - 1)*dtheta
+          theta = float(itheta - 1)*dtheta
           ds = sin(theta)
 
           r1 = r**2 + 0.25d0*(dbcx**2) + r*dbcx*cos(theta)

@@ -996,7 +996,7 @@
 
         i = (l - m + 1)*(l + m + 1)
         j = (2*l + 1)*(2*l + 3)
-        arg = dcmplx(dble(i)/dble(j))
+        arg = cmplx(dble(i)/dble(j))
         c1 = sqrt(arg)
 
         return
@@ -1014,7 +1014,7 @@
 
         i = (l - m)*(l + m)
         j = (2*l - 1)*(2*l + 1)
-        arg = dcmplx(dble(i)/dble(j))
+        arg = cmplx(dble(i)/dble(j))
         c2 = sqrt(arg)
 
         return

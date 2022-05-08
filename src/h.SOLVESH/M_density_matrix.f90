@@ -172,6 +172,7 @@
           write (22,100) ikpoint, efermi,                                    &
      &      s%kpoints(ikpoint)%eigen(ihomo+1) - s%kpoints(ikpoint)%eigen(ihomo)
 
+
 ! write out the eigenvalues
           write (22,200) (s%kpoints(ikpoint)%eigen(imu), imu = 1, s%norbitals)
         end do
