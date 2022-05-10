@@ -200,9 +200,9 @@
 ! Now, DIAGONALIZE THE HAMILTONIAN in the non-orthogonal basis set
 ! ****************************************************************************
 ! Eigenvectors are needed to calculate the charges and for forces!
+        ! first find optimal length of work
         call zhegv (1, 'V', 'U', s%norbitals, Hmatrix, s%norbitals, Smatrix,         &
      &               s%norbitals, eigen, work, -1, rwork , info)
-        ! first find optimal length of work
         lwork = work(1)
         deallocate (work)
         allocate (work(lwork))

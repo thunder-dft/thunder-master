@@ -89,6 +89,9 @@
 
           real, dimension (3) :: k           ! kpoint vector
 
+          ! k-dependent S12 matrix
+          complex, pointer :: S12matrix (:, :)
+
           ! the real and imaginary components of the eigenvectors
           complex, pointer :: c (:, :)
 
