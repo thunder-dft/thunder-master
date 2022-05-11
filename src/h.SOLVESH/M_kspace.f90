@@ -42,12 +42,16 @@
 !                            Hamiltonian matrix in k space.
 ! ============================================================================
         module M_kspace
+
+! /GLOBAL
         use M_assemble_blocks
+
+! /SYSTEM
         use M_species
         use M_configuraciones
-        use M_diagonalization
 
-!       use M_assemble_vxc
+! /SOLVESH
+        use M_diagonalization
 
 ! Type declaration
 ! =========================================================================
@@ -92,7 +96,7 @@
 ! ===========================================================================
         type(T_structure), target :: s            !< the structure to be used
 
-        integer, intent (in) :: iscf_iteration   !< which scf iteration?
+        integer, intent (in) :: iscf_iteration    !< which scf iteration?
 
 ! Parameters and Data Declaration
 ! ===========================================================================
@@ -101,7 +105,7 @@
 ! Variable Declaration and Description
 ! ===========================================================================
         integer ikpoint
-        integer logfile                     ! writing to which unit
+        integer logfile                           !< writing to which unit
 
         interface
           function phase (dot)
@@ -217,7 +221,6 @@
             pH_neighbors=>pHamiltonian%neighbors(ineigh)
             pK_neighbors=>pkinetic%neighbors(ineigh)
             pvna_neighbors=>pvna%neighbors(ineigh)
-
             pvxc_neighbors=>pvxc%neighbors(ineigh)
 
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
