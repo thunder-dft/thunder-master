@@ -51,9 +51,14 @@
 ! Module Declaration
 ! ===========================================================================
         module M_configuraciones
+
+/ GLOBAL
+        use M_precision
+        use M_assemble_blocks
+
+/ SYSTEM
         use M_species
         use M_kpoints
-        use M_assemble_blocks
 
 ! Type Declaration
 ! ===========================================================================
