@@ -38,7 +38,7 @@
                                                          ! except for use of libraries
 
 !Identifiers for important files
-        integer, parameter :: ilogfile=21                ! output.log unit number
+        integer, parameter :: ilogfile = 21              ! output.log unit number
 
 !Mathematical constants
         double precision, parameter :: pi = 3.141592653589793238462643d0  ! pi = 4.0d0*atan(1.0d0)

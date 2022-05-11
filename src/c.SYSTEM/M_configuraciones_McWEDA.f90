@@ -275,7 +275,7 @@
         ! options namelist
         integer iquench, iensemble
         integer iconstraint_rcm, iconstraint_vcm, iconstraint_L, iconstraint_KE
-        integer ifix_neighbors
+        integer ifix_neighbors, ifix_CHARGES
         integer nstepi, nstepf
         integer max_scf_iterations_set
 
@@ -291,7 +291,7 @@
         namelist /options/ nstepi, nstepf, iquench, iensemble, T_initial,    &
      &                     T_final, T_want, taurelax,                        &
      &                     iconstraint_rcm, iconstraint_vcm, iconstraint_L,  &
-     &                     iconstraint_KE, ifix_neighbors,                   &
+     &                     iconstraint_KE, ifix_neighbors, ifix_CHARGES,     &
      &                     efermi_T, dt, max_scf_iterations_set,             &
      &                     scf_tolerance_set, beta_set, Ecut_set
 
@@ -420,19 +420,18 @@
         iconstraint_L = 1
         iconstraint_KE = 1
         ifix_neighbors = 0
+        ifix_CHARGES = 0
         max_scf_iterations_set = max_scf_iterations
         scf_tolerance_set = scf_tolerance
         beta_set = beta
         Ecut_set = Ecut
 
 ! Open structures.inp file and read global &OUTPUT options
-
         filename = 'structures.inp'
         INQUIRE(FILE=filename, EXIST=file_exists)   ! file_exists will be TRUE if the file                                                                    
                                                     ! exists and FALSE otherwise                                                                              
         if ( file_exists ) then
            write (*,*) 'Reading: >'//filename//'<'
-           open (unit = 222, file = filename, status = 'old')
         else
            write(*,*) 'ERROR: Could not open: ', filename
            call exit(1)
@@ -440,11 +439,19 @@
 
         string = '&OUTPUT'
         call read_sections (filename, string, read_string)
-        if (read_string) read (222, nml = output)
+        if (read_string) then
+          open (unit = 222, file = filename, status = 'old')
+          read (222, nml = output)
+          close (unit = 222)
+        end if
 
         string = '&OPTIONS'
         call read_sections (filename, string, read_string)
-        if (read_string) read (222, nml = options)
+        if (read_string) then
+          open (unit = 222, file = filename, status = 'old')
+          read (222, nml = options)
+          close (unit = 222)
+        end if
 
 ! State what is being written out
         write (ilogfile,*)

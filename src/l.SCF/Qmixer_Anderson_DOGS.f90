@@ -127,9 +127,9 @@
 ! Procedure
 ! ===========================================================================
 ! Check to see if the structure has changed
-		if (.not. associated (current)) then
+	    if (.not. associated (current)) then
           current => t
-		else if (.not. associated(current, target=t) .and. allocated (Fv)) then
+        else if (.not. associated(current, target=t) .and. allocated (Fv)) then
           deallocate (Fv)
           deallocate (Xv)
           deallocate (delF)
@@ -196,7 +196,7 @@
         Fv(:, iscf_iteration) = Qoutmixer(:) - Qinmixer(:)
 
 ! Calculate the new sigma
-		sigma = dot_product(Fv(:,iscf_iteration),Fv(:,iscf_iteration))
+        sigma = dot_product(Fv(:,iscf_iteration),Fv(:,iscf_iteration))
         sigma = sigma/imix
 
 ! Initially - only perform simple extrapolation

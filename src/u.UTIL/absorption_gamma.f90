@@ -390,17 +390,17 @@
 ! maximum points in x, y, and z.
                 zntegral = 0.d0
                 do iz = 1, nnz
-                  z = zmin + dfloat(iz-1)*dgrid
+                  z = zmin + float(iz-1)*dgrid
                   r_dipole(3) = z
 
                   yntegral = 0.d0
                   do iy = 1, nny
-                    y = ymin + dfloat(iy-1)*dgrid
+                    y = ymin + float(iy-1)*dgrid
                     r_dipole(2) = y
 
                     xntegral = 0.d0
                     do ix = 1, nnx
-                      x = xmin + dfloat(ix-1)*dgrid
+                      x = xmin + float(ix-1)*dgrid
                       r_dipole(1) = x
 
 ! Loop over the atoms in the central cell.
@@ -489,7 +489,7 @@
         open (unit = inpfile, file = slogfile, status = 'unknown')
 
         do igrid = 1, nenergy_grid
-          energy = energy_step*dfloat(igrid - 1)
+          energy = energy_step*float(igrid - 1)
           xntensity = 0.0d0
           do ilevel = -nhomo, 0
             do itransition = 1, ntransitions

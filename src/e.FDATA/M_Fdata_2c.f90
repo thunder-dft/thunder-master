@@ -470,8 +470,10 @@
         integer iindex, imu, inu               !< counters for building matrix
         integer ipoint, ileft, imid, iright    !< points along the grid
         integer iprod, isum                    !< product, sum points on grid
+        integer kpoint, jpoint                 !< different grid points
 
         real pden, prod                        !< stuff for products
+        real xsumoverj, xprod
 
         real, dimension (:), allocatable :: Fdata     !< F(x)
         real, dimension (:), allocatable :: dFdatadx  !< dF(x)
@@ -480,9 +482,6 @@
         type(T_Fdata_cell_2c), pointer :: pFdata_cell
         type(T_Fdata_bundle_2c), pointer :: pFdata_bundle
 
-		integer kpoint, jpoint
-		real xsumoverj, xprod
-
 ! Procedure
 ! ===========================================================================
         pFdata_bundle => Fdata_bundle_2c(ispecies,jspecies)
@@ -490,10 +489,10 @@
       &   pFdata_bundle%Fdata_cell_2c(pFdata_bundle%index_2c(iint,isub))
         allocate (dFdatadx(pFdata_cell%nME))
         allocate (Fdata(pFdata_cell%nME))
-		dFdatadx = 0.0d0
-		Fdata = 0.0d0
-		xx = 0.00
-		pdenom = 0.00
+        dFdatadx = 0.0d0
+        Fdata = 0.0d0
+        xx = 0.00
+        pdenom = 0.00
 
 ! The following should never happen.  Delete them might improve performance
         if (x .lt. 0.0d0) then
@@ -582,8 +581,8 @@
 
 ! Deallocate Arrays
 ! ===========================================================================
-		deallocate (dFdatadx)
-		deallocate (Fdata)
+        deallocate (dFdatadx)
+        deallocate (Fdata)
 
 ! Format Statements
 ! ===========================================================================

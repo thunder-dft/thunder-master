@@ -117,7 +117,7 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer ispecies		          !< counter for number of species
+        integer ispecies                  !< counter for number of species
 
         integer nssh                      !< counters for number of shells
         integer issh, jssh, kssh
@@ -137,7 +137,7 @@
 
           ! Open ouput file for this species pair
           write (filename, '("/xc_1c", ".", i2.2, ".dat")')                  &
-     &  	species(ispecies)%nZ
+     &           species(ispecies)%nZ
           open (11, file = trim(fdata_location)//trim(filename),             &
      &          status = 'old')
 
