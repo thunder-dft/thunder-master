@@ -119,7 +119,7 @@
             call writeout_ME_SandH (s)
           end if
 
-          call diagonalization_initialize (s, iscf_iteration)
+          call diagonalization_initialize (s, iscf_iteration, ikpoint)
           if (iscf_iteration .eq. 1) call kspace_Smatrix (s, ikpoint)
           call kspace_Lowdin (s, iscf_iteration, ikpoint)
         end do
@@ -879,14 +879,18 @@
 ! Variable Declaration and Description
 ! ===========================================================================
         integer iatom                             !< counter over atoms
+        integer ikpoint                           !< counter over kpoints
         integer ineigh                            !< counter over neighbors
 
 ! Procedure
 ! ===========================================================================
         deallocate (eigen)
         deallocate (Smatrix)
-        deallocate (S12matrix)
         deallocate (Hmatrix)
+
+        do ikpoint = 1, s%nkpoints
+          deallocate (s%kpoints(ikpoint)%S12matrix)
+        end do
 
         do iatom = 1, s%natoms
           do ineigh = 1, s%neighbors(iatom)%neighn

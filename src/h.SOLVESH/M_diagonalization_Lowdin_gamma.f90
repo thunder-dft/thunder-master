@@ -185,12 +185,13 @@
         write (logfile,*)
         write (logfile,*) ' Call diagonalizer '
 
+        ! first find optimal length of rwork
         call dsyev ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
      &               rwork, -1, info)
-        ! first find optimal length of rwork
         lrwork = rwork(1)
         deallocate (rwork)
         allocate(rwork(lrwork))
+
         call dsyev ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
      &               rwork, lrwork, info)
 
@@ -385,12 +386,13 @@
 ! Now, DIAGONALIZE THE HAMILTONIAN in the orthogonal basis set
 ! ****************************************************************************
 ! Eigenvectors are needed to calculate the charges and for forces!
+        ! first find optimal length of rwork
         call dsyev ('V', 'U', s%norbitals, Hmatrix, s%norbitals, eigen,      &
      &               rwork, -1, info)
-        !first find optimal length of rwork
         lrwork = rwork(1)
         deallocate (rwork)
         allocate (rwork(lrwork))
+
         call dsyev ('V', 'U', s%norbitals, Hmatrix, s%norbitals, eigen,      &
      &               rwork, lrwork, info)
 

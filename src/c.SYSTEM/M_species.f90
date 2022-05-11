@@ -223,7 +223,7 @@
            open (unit = 11, file = 'Fdata.inp', status = 'old')
         else
            write(*,*) 'ERROR: Could not open: "Fdata.inp"'
-           call exit(1)
+           stop
         end if
 
         read (11,*) nspecies

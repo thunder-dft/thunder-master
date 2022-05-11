@@ -43,6 +43,8 @@
 ! Module declaration
 ! ============================================================================
         module M_diagonalization
+
+! /SYSTEM
         use M_configuraciones
 
 ! Type declarations for Hamiltonian matrix in k-space
@@ -88,22 +90,32 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine diagonalization_initialize (s, iscf_iteration)
+        subroutine diagonalization_initialize (s, iscf_iteration, ikpoint)
         implicit none
 
 ! Argument Declaration and Description
 ! ===========================================================================
         integer, intent (in) :: iscf_iteration   !< which scf iteration?
+        integer, intent (in) :: ikpoint          !< which kpoint
 
-        type(T_structure), target :: s            !< the structure to be used
+        type(T_structure), target :: s           !< the structure to be used
+
+        type(T_kpoint), pointer :: pkpoint       !< point to specific kpoint
 
 ! Parameters and Data Declaration
 ! ===========================================================================
 ! None
 
-! Variable Declaration and Description
+! Allocate Arrays
 ! ===========================================================================
          if (iscf_iteration .eq. 1) then
+           !cut some lengthy notation
+           pkpoint=>s%kpoints(ikpoint)
+           allocate (pkpoint%S12matrix (s%norbitals, s%norbitals))
+           pkpoint%S12matrix = 0.0d0
+         end if
+
+         if (iscf_iteration .eq. 1 .and. ikpoint .eq. 1) then
            allocate (eigen(s%norbitals))
 
            allocate (Smatrix (s%norbitals, s%norbitals))
@@ -282,7 +294,7 @@
         subroutine diagonalize_H_Lowdin (s, iscf_iteration, ikpoint)
         implicit none
 
-        include '../constants.h'
+        include '../include/constants.h'
     
 ! Argument Declaration and Description
 ! ===========================================================================
@@ -297,20 +309,22 @@
 
 ! ===========================================================================
 ! Local variables declarations
-        integer info                   ! error information
-        integer lrwork, lwork          ! size of the working arrays
-        integer imu                    ! counters over eigenstates
+        integer info                   !< error information
+        integer lrwork, lwork          !< size of the working arrays
+        integer imu                    !< counters over eigenstates
 
         real sqlami        ! square root of overlap eigenvalues
 
-        double precision, pointer :: rwork (:)        ! working vector
+        double precision, pointer :: rwork (:)        !< working vector
 
         double complex, allocatable :: work(:)
 
-        ! checks to see if structure has changed
-        type(T_structure), pointer, save :: current
-
         character (len = 25) :: slogfile
+
+        ! checks to see if structure has changed
+!       type(T_structure), pointer, save :: current
+
+        type(T_kpoint), pointer :: pkpoint   !< point to current kpoint
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -322,19 +336,22 @@
 ! Procedure
 ! ===========================================================================
 ! Check to see if the structure has changed
-        if (.not. associated (current)) then
-          current => s
-        else if (.not. associated(current, target=s) .and. allocated (S12matrix)) then
-          deallocate (S12matrix)
-          current => s
-        end if
+!       if (.not. associated (current)) then
+!         current => s
+!       else if (.not. associated(current, target=s) .and. allocated (S12matrix)) then
+!         deallocate (S12matrix)
+!         current => s
+!       end if
 
-        if (iscf_iteration .eq. 1) then
-          allocate (S12matrix (s%norbitals, s%norbitals)); S12matrix = 0.0d0
-        end if
+!       if (iscf_iteration .eq. 1) then
+!         allocate (S12matrix (s%norbitals, s%norbitals)); S12matrix = 0.0d0
+!       end if
 
 ! Initialize some constants
         s%norbitals_new = size(eigen,1)
+
+! Cut some lengthy notation
+        pkpoint=>s%kpoints(ikpoint)
 
 ! ****************************************************************************
 ! CALCULATE (S^-1/2) --> lam12
@@ -356,7 +373,7 @@
 
           call zgemm ('N', 'C', s%norbitals, s%norbitals, s%norbitals_new,   &
      &                 a1, Smatrix, s%norbitals, Smatrix, s%norbitals, a0,   &
-     &                 S12matrix, s%norbitals)
+     &                 pkpoint%S12matrix, s%norbitals)
         end if
 
 ! NOTE: S12matrix here NOW contains the matrix S^-1/2
@@ -369,14 +386,12 @@
 ! Set M=H*(S^-.5)
 ! We do not need Smatrix any more at this point, so use it as a dummy
         Smatrix = 0.0d0
-        call zhemm ( 'R', 'U', s%norbitals, s%norbitals, a1, S12matrix,      &
-     &               s%norbitals, Hmatrix, s%norbitals, a0, Smatrix,         &
-     &               s%norbitals )
+        call zhemm ( 'R', 'U', s%norbitals, s%norbitals, a1, pkpoint%S12matrix,&
+     &               s%norbitals, Hmatrix, s%norbitals, a0, Smatrix, s%norbitals)
 
 ! Set Z=(S^-.5)*M
-        call zhemm ( 'L', 'U', s%norbitals, s%norbitals, a1, S12matrix,      &
-     &               s%norbitals, Smatrix, s%norbitals, a0, Hmatrix,         &
-     &               s%norbitals)
+        call zhemm ( 'L', 'U', s%norbitals, s%norbitals, a1, pkpoint%S12matrix,&
+     &               s%norbitals, Smatrix, s%norbitals, a0, Hmatrix, s%norbitals)
 
         if (iwriteout_dos .eq. 1) then
           slogfile = s%basisfile(:len(trim(s%basisfile))-4)
@@ -390,12 +405,13 @@
 ! Now, DIAGONALIZE THE HAMILTONIAN in the orthogonal basis set
 ! ****************************************************************************
 ! Eigenvectors are needed to calculate the charges and for forces!
+        ! first find optimal length of work
         call zheev ('V', 'U', s%norbitals, Hmatrix, s%norbitals, eigen,      &
      &              work, -1, rwork , info)
-        ! first find optimal length of work
         lwork = work(1)
         deallocate (work)
         allocate (work (lwork))
+
         call zheev ('V', 'U', s%norbitals, Hmatrix, s%norbitals, eigen,      &
      &              work, lwork, rwork , info)
 
@@ -404,9 +420,8 @@
 ! S12matrix = S^-1/2 in AO basis
 ! We do not need Smatrix any more at this point, so use it as a dummy
         Smatrix = 0.0d0
-        call zhemm ('L', 'U', s%norbitals, s%norbitals, a1, S12matrix,       &
-     &               s%norbitals, Hmatrix, s%norbitals, a0, Smatrix,         &
-     &               s%norbitals)
+        call zhemm ('L', 'U', s%norbitals, s%norbitals, a1, pkpoint%S12matrix,&
+     &               s%norbitals, Hmatrix, s%norbitals, a0, Smatrix, s%norbitals)
 
 ! INFORMATION FOR THE LOWDIN CHARGES
 ! After calling diagonalization_H_Lowdin what we have remaining is Hmatrix

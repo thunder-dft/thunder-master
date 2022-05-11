@@ -52,8 +52,8 @@ THEORY = DOGS
 #THEORY = KS
 
 # Choose the METHOD - GAMMA, KPOINTS, or MDET (which is also GAMMA)
-METHOD = GAMMA
-#METHOD = KPOINTS
+#METHOD = GAMMA
+METHOD = KPOINTS
 #METHOD = MDET
 #METHOD = KS
 
@@ -133,7 +133,7 @@ SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix.o
 endif
 ifneq (,$(findstring KPOINTS, ${METHOD}))
 SOLVESH = M_diagonalization_Lowdin_kpoints.o M_kspace_Lowdin.o M_density_matrix.o
-UTIL = dos_kpoints.o
+UTIL = absorption_gamma.o dos_kpoints.o M_isosurfaces.o 
 endif
 ifneq (,$(findstring MDET, ${METHOD}))
 SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix_MDET.o
