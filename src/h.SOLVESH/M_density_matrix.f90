@@ -172,7 +172,6 @@
           write (22,100) ikpoint, efermi,                                    &
      &      s%kpoints(ikpoint)%eigen(ihomo+1) - s%kpoints(ikpoint)%eigen(ihomo)
 
-
 ! write out the eigenvalues
           write (22,200) (s%kpoints(ikpoint)%eigen(imu), imu = 1, s%norbitals)
         end do
@@ -917,7 +916,7 @@
 ! Format Statements
 ! ===========================================================================
 101     format (75('*'))
-102     format (1x, ' Matrices connected to neighbor ', i3, ','              &
+102     format (1x, ' Matrices connected to neighbor ', i3, ',',               &
      &          ' jatom = ', i4, ', ', ' mbeta = ', i4, ', ', ' d = ', f6.3)
 103     format (75('='))
 104     format (9f8.3)

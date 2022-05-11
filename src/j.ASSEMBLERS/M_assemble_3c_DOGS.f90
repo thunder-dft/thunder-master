@@ -124,7 +124,7 @@
 
         interface
           function smoother (z, rend, x)
-          	real smoother
+            real smoother
             real, intent(in) :: z, rend, x
           end function smoother
         end interface

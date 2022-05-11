@@ -117,7 +117,7 @@
 ! ===========================================================================
         integer ispecies                   !< counters for number of species
 
-        integer nssh                      !< counters for number of shells
+        integer nssh                       !< counters for number of shells
         integer issh, jssh
 
         character (len=32) filename
@@ -135,7 +135,7 @@
 
           ! Open ouput file for this species pair
           write (filename, '("/xc_1c", ".", i2.2, ".dat")')                  &
-     &  	species(ispecies)%nZ
+     &           species(ispecies)%nZ
           open (11, file = trim(fdata_location)//trim(filename),             &
      &          status = 'old')
 

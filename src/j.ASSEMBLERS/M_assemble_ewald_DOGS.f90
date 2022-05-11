@@ -810,7 +810,7 @@
                   if (jatom .eq. iatom) factor = 0.5d0
 
                   cvec = il1*a1vec + il2*a2vec + il3*a3vec
-		  		  cvec = cvec + s%atom(iatom)%ratom
+                  cvec = cvec + s%atom(iatom)%ratom
                   z = distance (s%atom(jatom)%ratom, cvec)
 
 ! skip the infinite self term.

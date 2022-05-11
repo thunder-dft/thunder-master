@@ -556,7 +556,7 @@
 ! Format Statements
 ! ===========================================================================
 101     format (75('*'))
-102     format (4x, 'Matrices connected to neighbor ', i3, ','              &
+102     format (4x, 'Matrices connected to neighbor ', i3, ',',             &
      &          ' jatom = ', i4, ', ', ' mbeta = ', i4, ', ', ' d = ', f6.3)
 103     format (75('='))
 104     format (4x, 9f8.3)
