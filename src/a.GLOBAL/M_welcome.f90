@@ -77,6 +77,8 @@
 ! Program Declaration
 ! ===========================================================================
         subroutine banner
+
+! /GLOBAL
         use M_precision
 
         implicit none

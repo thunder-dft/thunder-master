@@ -58,6 +58,11 @@
 ! Module Declaration
 ! ===========================================================================
         module M_atom_functions
+
+! /GLOBAL
+        use M_precision
+
+! /SYSTEM
         use M_species
 
 ! Type Declaration
