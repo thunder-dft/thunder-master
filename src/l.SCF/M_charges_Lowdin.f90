@@ -160,7 +160,7 @@
         do iatom = 1, s%natoms
           in1 = s%atom(iatom)%imass
           nssh = species(in1)%nssh
-          write (inpfile,*) (s%atom(iatom)%shell(issh)%Qin, issh = 1, nssh)
+          write (inpfile,*) (s%atom(iatom)%shell(issh)%Qout, issh = 1, nssh)
         end do
         close (unit = inpfile)
 

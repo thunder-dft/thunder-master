@@ -73,7 +73,7 @@
         subroutine initialize_density_matrix (s)
         implicit none
 
-        include '../constants.h'
+        include '../include/constants.h'
 
 ! Argument Declaration and Description
 ! ===========================================================================
@@ -184,6 +184,11 @@
                   end do ! do lmu
                 end do ! do issh
               end if
+!              write (*,*) ' iatom, jatom = ', iatom, jatom
+!              write (*,*) ' pRho_neighbors%block = '
+!              do imu = 1, norb_mu
+!                write (*,*) (pRho_neighbors%block(imu,inu), inu = 1, norb_nu)
+!              end do
               write (inpfile) pRho_neighbors%block
             end do ! end loop over neighbors
           end do ! end loop over atoms
@@ -216,7 +221,7 @@
         subroutine density_matrix (s)
         implicit none
 
-        include '../constants.h'
+        include '../include/constants.h'
 
 ! Argument Declaration and Description
 ! ===========================================================================
@@ -429,7 +434,7 @@
         subroutine calculate_ebs (s, ebs)
         implicit none
 
-        include '../constants.h'
+        include '../include/constants.h'
 
 ! Argument Declaration and Description
 ! ===========================================================================
@@ -505,7 +510,7 @@
         subroutine read_fermie (s)
         implicit none
 
-        include '../constants.h'
+        include '../include/constants.h'
 
 ! Argument Declaration and Description
 ! ===========================================================================
@@ -540,7 +545,7 @@
         slogfile = trim(slogfile)//'.OCCUPATION'
         open (unit = inpfile, file = slogfile, status = 'old')
 
-        write (logfile,*) 
+        write (logfile,*)
         write (logfile,*) ' Reading from the OCCUPATION file! '
         do ikpoint = 1, s%nkpoints
           s%kpoints(ikpoint)%ioccupy = 0
@@ -555,7 +560,7 @@
             s%kpoints(ikpoint)%ioccupy(imu) = iband
             s%kpoints(ikpoint)%foccupy(imu) = fband
           end do
-        end do	  
+        end do
         close (unit = inpfile)
 
 ! End Subroutine
@@ -588,7 +593,7 @@
         subroutine fermie (s, qstate, efermi)
         implicit none
 
-        include '../constants.h'
+        include '../include/constants.h'
 
 ! Argument Declaration and Description
 ! ===========================================================================
@@ -762,15 +767,18 @@
 ! ===========================================================================
 ! Program Declaration
 ! ===========================================================================
-        subroutine initialize_mdet (s)
+        subroutine initialize_mdet (s, icurrent_state)
         implicit none
-
-        include '../constants.h'
 
 ! Argument Declaration and Description
 ! ===========================================================================
 ! Input
         type(T_structure), target :: s           !< the structure to be used.
+
+! Output
+        integer, intent (out) :: icurrent_state
+
+        icurrent_state = 0
 
 ! End Subroutine
 ! ===========================================================================

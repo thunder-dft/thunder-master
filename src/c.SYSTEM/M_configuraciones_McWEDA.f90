@@ -52,11 +52,11 @@
 ! ===========================================================================
         module M_configuraciones
 
-/ GLOBAL
+! /GLOBAL
         use M_precision
         use M_assemble_blocks
 
-/ SYSTEM
+! /SYSTEM
         use M_species
         use M_kpoints
 
@@ -269,6 +269,7 @@
 
           ! Density matrix
           type(T_assemble_neighbors), pointer :: denmat (:)
+          type(T_assemble_neighbors), pointer :: denmat_old (:)
           type(T_assemble_neighbors), pointer :: capemat (:)
           type(T_assemble_neighbors), pointer :: denmat_PP (:)
           ! ********************************************************
@@ -439,7 +440,7 @@
            write (*,*) 'Reading: >'//filename//'<'
         else
            write(*,*) 'ERROR: Could not open: ', filename
-           call exit(1)
+           stop
         end if
 
         string = '&OUTPUT'
@@ -1013,7 +1014,7 @@
 
 ! Procedure
 ! ===========================================================================
-        do ikpoint=1, s%nkpoints
+        do ikpoint = 1, s%nkpoints
           deallocate (s%kpoints(ikpoint)%eigen)
           deallocate (s%kpoints(ikpoint)%foccupy)
           deallocate (s%kpoints(ikpoint)%ioccupy)

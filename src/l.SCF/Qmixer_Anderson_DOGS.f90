@@ -249,8 +249,7 @@
             lwork = (mix_order - 1)**2
             allocate (work(lwork))
             allocate (ipiv(mix_order - 1))
-            info = 0
-            call dsysv('U', mix_order - 1, 1, amatrix, mix_order - 1,         &
+            call dsysv('U', mix_order - 1, 1, amatrix, mix_order - 1,          &
      &                 ipiv, F_dot_delF, mix_order - 1, work, lwork, info)
 
 ! If there is an error, then just use the simple mixing

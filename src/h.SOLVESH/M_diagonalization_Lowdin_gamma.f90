@@ -94,12 +94,13 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine diagonalization_initialize (s, iscf_iteration)
+        subroutine diagonalization_initialize (s, iscf_iteration, ikpoint)
         implicit none
 
 ! Argument Declaration and Description
 ! ===========================================================================
-        integer, intent (in) :: iscf_iteration   !< which scf iteration?
+        integer, intent (in) :: iscf_iteration    !< which scf iteration?
+        integer, intent (in) :: ikpoint           !< which kpoint
 
         type(T_structure), target :: s            !< the structure to be used
 
@@ -169,7 +170,7 @@
         integer mineig                      !< minimum non-zero eigenvalue
         integer imu, jmu                    !< counters over eigenstates
 
-        double precision, allocatable :: rwork (:)   ! working vector
+        real (kind = dp), allocatable :: rwork (:)   ! working vector
 
 ! Allocate Arrays
 ! ===========================================================================

@@ -454,30 +454,53 @@
           do ineigh = 1, s%neighbors(iatom)%neighn
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
-            if (iatom .eq. jatom .and. mbeta .eq. 0) then
-              s%neigh_self(iatom) = ineigh
-              exit
-            end if
             s%neighbors(iatom)%neigh_back(ineigh) = -999
+
+            ! find neigh_self
+            if (iatom .eq. jatom .and. mbeta .eq. 0) then
+              if (s%neigh_self(iatom) .ne. -999) then
+                write (*,*) ' We already found neigh_self, cannot find again! '
+                write (*,*) ' iatom, neigh_self(iatom) = ', iatom, s%neigh_self(iatom)
+                stop
+              end if
+              s%neigh_self(iatom) = ineigh
+            end if
+
+            ! find neigh_back
             do jneigh = 1, s%neighbors(jatom)%neighn
               jbeta = s%neighbors(jatom)%neigh_b(jneigh)
               katom = s%neighbors(jatom)%neigh_j(jneigh)
-              if (iatom .ne. katom                                           &
-     &            .or. distance(s%xl(mbeta)%a,s%xl(jbeta)%a) .gt. 1.0d-3) then
+              if (iatom .ne. katom                                             &
+     &             .or. abs(s%xl(mbeta)%a(1) + s%xl(jbeta)%a(1)) .gt. 1.0d-3   &
+     &             .or. abs(s%xl(mbeta)%a(2) + s%xl(jbeta)%a(2)) .gt. 1.0d-3   &
+     &             .or. abs(s%xl(mbeta)%a(3) + s%xl(jbeta)%a(3)) .gt. 1.0d-3) then
                   ! do nothing - there is no match here
-                else
-                  s%neighbors(iatom)%neigh_back(ineigh) = jneigh
-                exit
+              else
+                if (s%neighbors(iatom)%neigh_back(ineigh) .ne. -999) then
+                  write (*,*) ' We already found neigh_back, cannot find again! '
+                  write (*,*) ' iatom, ineigh, neigh_back(iatom) = ',          &
+     &                          iatom, ineigh, s%neighbors(iatom)%neigh_back(ineigh)
+                  stop
+                end if
+                s%neighbors(iatom)%neigh_back(ineigh) = jneigh
               end if
             end do
-          end do
+          end do ! end loop over neighbors
+
+          ! check neigh_back
+          do ineigh = 1, s%neighbors(iatom)%neighn
+            if (s%neighbors(iatom)%neigh_back(ineigh) .eq. -999) then
+              write (*,*) ' Cannot find neigh_back for iatom = ', iatom
+              write (*,*) ' structure = ', s%basisfile
+              stop
+            end if
+          end do ! end loop over neighbors
+        end do ! end loop over atoms
+
+        ! check neigh_self
+        do iatom = 1, s%natoms
           if (s%neigh_self(iatom) .eq. -999) then
             write (*,*) ' Cannot find neigh_self for iatom = ', iatom
-            write (*,*) ' structure = ', s%basisfile
-            stop
-          end if
-          if (s%neighbors(iatom)%neigh_back(ineigh) .eq. -999) then
-            write (*,*) ' Cannot find neigh_back for iatom = ', iatom
             write (*,*) ' structure = ', s%basisfile
             stop
           end if

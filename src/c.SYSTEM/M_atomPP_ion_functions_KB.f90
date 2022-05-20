@@ -56,6 +56,11 @@
 ! Module Declaration
 ! ============================================================================
         module M_atomPP_ion_functions
+
+! /GLOBAL
+        use M_precision
+
+! /SYSTEM
         use M_species
         use M_atom_functions
         use M_atomPP_functions

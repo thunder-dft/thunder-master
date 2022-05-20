@@ -72,7 +72,7 @@
 
           real Qneutral                    ! neutral charge
           real Qneutral_ion                ! neutral charge for ion
-          real Qin, Qout                   ! input charge
+          real Qin, Qout                   ! input, output charges
           real dQ                          ! input charge minus neutral charge
 
           ! for wavefunctions
