@@ -1,6 +1,6 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2009
 !                           Fireball Committee
 ! West Virginia University - James P. Lewis, Chair
 ! Arizona State University - Otto F. Sankey
@@ -29,24 +29,24 @@
 ! M_assemble_2c
 ! Module Description
 ! ===========================================================================
-!        This is a module containing all of the assembler programs required
-! to assemble all of the matrix elements for the two-center interactions for
-! the Harris interactions.
-! It contains the following subroutines within the module:
-!
-!       assemble_S.f90 - assemble the overlap matrix
-!       assemble_T.f90 - assemble the kinetic matrix
-!       assemble_vna.f90 - assemble neutral atom potential matrix
-!       destroy_assemble_2c.f90 -
-!
-! For a complete list of the interactions see the files 2c.Z1.Z2.dir now
-! located in the Fdata directory.  This list will change depending on
-! the datafiles included there. This list is an output from running create.x
+!>       This is a module containing all of the assembler programs required
+!! to assemble all of the matrix elements for the two-center interactions for
+!! the Harris interactions.
+!! It contains the following subroutines within the module:
+!!
+!!       assemble_S.f90 - assemble the overlap matrix
+!!       assemble_T.f90 - assemble the kinetic matrix
+!!       assemble_vna_DOGS.f90 - assemble charged atom potential matrix
+!!
+!! For a complete list of the interactions see the files 2c.Z1.Z2.dir now
+!! located in the Fdata directory.  This list will change depending on
+!! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
         module M_assemble_2c
         use M_assemble_blocks
         use M_configuraciones
         use M_Fdata_2c
+        use M_neighbors
         use M_rotations
 
 ! Type Declaration
@@ -56,16 +56,17 @@
 ! module procedures
         contains
 
+
 ! ===========================================================================
 ! assemble_S.f90
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
-!       This routine calculates the overlap matrix interactions.
+!>       This routine calculates the overlap matrix interactions.
 !
 ! ===========================================================================
 ! Code written by:
-! James P. Lewis
+!> @author James P. Lewis
 ! Box 6315, 209 Hodges Hall
 ! Department of Physics
 ! West Virginia University
@@ -92,20 +93,20 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, ineigh          !< counter over atoms and neighbors
-        integer in1, in2, in3          !< species numbers
-        integer jatom                  !< neighbor of iatom
-        integer interaction, isorp     !< which interaction and subtype
-        integer num_neigh              !< number of neighbors
-        integer mbeta                  !< the cell containing neighbor of iatom
+        integer iatom, ineigh           !< counter over atoms and neighbors
+        integer in1, in2, in3           !< species numbers
+        integer jatom                   !< neighbor of iatom
+        integer interaction, isorp      !< which interaction and subtype
+        integer num_neigh               !< number of neighbors
+        integer mbeta                   !< the cell containing neighbor of iatom
 
-        integer norb_mu, norb_nu       !< size of the block for the pair
+        integer norb_mu, norb_nu        !< size of the block for the pair
 
-        real z                         !< distance between r1 and r2
+        real z                          !< distance between r1 and r2
 
-        real, dimension (3, 3) :: eps  !< the epsilon matrix
-        real, dimension (3) :: r1, r2  !< positions of iatom and jatom
-        real, dimension (3) :: sighat  !< unit vector along r2 - r1
+        real, dimension (3, 3) :: eps   !< the epsilon matrix
+        real, dimension (3) :: r1, r2   !< positions of iatom and jatom
+        real, dimension (3) :: sighat   !< unit vector along r2 - r1
 
         real, dimension (:, :), allocatable :: sm
         real, dimension (:, :), allocatable :: sx
@@ -122,30 +123,30 @@
 
 ! Allocate Arrays
 ! ===========================================================================
-        allocate (s%overlap (s%natoms))
+        allocate (s%overlap(s%natoms))
 
 ! Procedure
 ! ===========================================================================
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
-          r1 = s%atom(iatom)%ratom
-          in1 = s%atom(iatom)%imass
-          norb_mu = species(in1)%norb_max
-
           ! cut some lengthy notation
           poverlap=>s%overlap(iatom)
 
-! Loop over the neighbors of each iatom.
+          r1 = s%atom(iatom)%ratom
+          in1 = s%atom(iatom)%imass
+          norb_mu = species(in1)%norb_max
           num_neigh = s%neighbors(iatom)%neighn
           allocate (poverlap%neighbors(num_neigh))
+
+! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
+            ! cut some more lengthy notation
+            pS_neighbors=>poverlap%neighbors(ineigh)
+
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
-
-            ! cut some more lengthy notation
-            pS_neighbors=>poverlap%neighbors(ineigh)
 
 ! Allocate the block size
             norb_nu = species(in2)%norb_max
@@ -176,13 +177,14 @@
             interaction = P_overlap
             in3 = in2
 
-            allocate (sm (norb_mu, norb_nu)); sm = 0.0d0
-            allocate (sx (norb_mu, norb_nu)); sx = 0.0d0
-            call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,        &
+            allocate (sm (norb_mu, norb_nu))
+            allocate (sx (norb_mu, norb_nu))
+            call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,           &
      &                            norb_mu, norb_nu, sm)
             call rotate (in1, in3, eps, norb_mu, norb_nu, sm, sx)
             pS_neighbors%block = sx
-            deallocate (sm, sx)
+            deallocate (sm)
+            deallocate (sx)
           end do ! end loop over neighbors
         end do ! end loop over atoms
 
@@ -239,7 +241,7 @@
         integer iatom, ineigh            !< counter over atoms and neighbors
         integer in1, in2, in3            !< species numbers
         integer jatom                    !< neighbor of iatom
-        integer interaction, isorp    !< which interaction and subtype
+        integer interaction, isorp       !< which interaction and subtype
         integer num_neigh                !< number of neighbors
         integer mbeta                    !< the cell containing iatom's neighbor
 
@@ -272,24 +274,24 @@
 ! ===========================================================================
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
-          r1 = s%atom(iatom)%ratom
-          in1 = s%atom(iatom)%imass
-          norb_mu = species(in1)%norb_max
-
           ! cut some lengthy notation
           pkinetic=>s%kinetic(iatom)
 
-! Loop over the neighbors of each iatom.
+          r1 = s%atom(iatom)%ratom
+          in1 = s%atom(iatom)%imass
+          norb_mu = species(in1)%norb_max
           num_neigh = s%neighbors(iatom)%neighn
           allocate (pkinetic%neighbors(num_neigh))
+
+! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
+            ! cut some more lengthy notation
+            pK_neighbors=>pkinetic%neighbors(ineigh)
+
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
-
-            ! cut some more lengthy notation
-            pK_neighbors=>pkinetic%neighbors(ineigh)
 
 ! Allocate block size
             norb_nu = species(in2)%norb_max
@@ -319,14 +321,14 @@
             isorp = 0
             interaction = P_kinetic
             in3 = in2
-            allocate (tm (norb_mu, norb_nu)); tm = 0.0d0
-            allocate (tx (norb_mu, norb_nu)); tx = 0.0d0
+            allocate (tm (norb_mu, norb_nu))
+            allocate (tx (norb_mu, norb_nu))
             call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,           &
      &                            norb_mu, norb_nu, tm)
             call rotate (in1, in3, eps, norb_mu, norb_nu, tm, tx)
-
             pK_neighbors%block = tx
-            deallocate (tm, tx)
+            deallocate (tm)
+            deallocate (tx)
           end do ! end loop over neighbors
         end do ! end loop over atoms
 
@@ -345,69 +347,12 @@
 
 
 ! ===========================================================================
-! assemble_dipole_z.f90
+! assemble_vna_2c.f90
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
-!>       This routine calculates the dipole_z matrix interactions.
-!
-! ===========================================================================
-! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
-!
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
-! ===========================================================================
-!
-! Program Declaration
-! ===========================================================================
-        subroutine assemble_dipole_z (s)
-        implicit none
-
-! Argument Declaration and Description
-! ===========================================================================
-        type(T_structure), target :: s           !< the structure to be used.
-
-! Parameters and Data Declaration
-! ===========================================================================
-! None
-
-! Variable Declaration and Description
-! ===========================================================================
-! None
-
-! Allocate Arrays
-! ===========================================================================
-! None
-
-! Procedure
-! ===========================================================================
-! None
-
-! Deallocate Arrays
-! ===========================================================================
-! None
-
-! Format Statements
-! ===========================================================================
-! None
-
-! End Subroutine
-! ===========================================================================
-        return
-        end subroutine assemble_dipole_z
-
-
-! ===========================================================================
-! assemble_vna.f90
-! ===========================================================================
-! Subroutine Description
-! ===========================================================================
-!>       This routine calculates neutral atom potential matrix interactions.
+!>       This routine calculates matrix elements for the Hartree interactions.
+! This is the self-consistent version of the code.
 !
 ! ===========================================================================
 ! Code written by:
@@ -439,25 +384,27 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, ineigh, matom    !< counter over atoms and neighbors
+        integer iatom, ineigh           !< counter over atoms and neighbors
         integer in1, in2, in3           !< species numbers
         integer jatom                   !< neighbor of iatom
         integer interaction, isorp      !< which interaction and subtype
+        integer issh                    !< counting over shells
         integer num_neigh               !< number of neighbors
+        integer matom                   !< matom is the self-interaction atom
         integer mbeta                   !< the cell containing neighbor of iatom
 
         integer norb_mu, norb_nu        !< size of the block for the pair
 
+        real rcutoff1_min, rcutoff2_min, rend  !< for smoothing
+        real stinky                     !< smoothing value
+        real xsmooth                    !< for smoothing function
         real z                          !< distance between r1 and r2
 
         real, dimension (3, 3) :: eps   !< the epsilon matrix
         real, dimension (3) :: r1, r2   !< positions of iatom and jatom
         real, dimension (3) :: sighat   !< unit vector along r2 - r1
 
-! bcnam = Hartree matrix in molecular coordinates
-! bcnax = Hartree matrix in crystal coordinates
-        real, dimension (:, :), allocatable :: bcnam
-        real, dimension (:, :), allocatable :: bcnax
+        real, dimension (:, :), allocatable :: bcnam, bcnax, emnpl
 
         interface
           function distance (a, b)
@@ -465,6 +412,16 @@
             real, intent (in), dimension (3) :: a, b
           end function distance
         end interface
+
+        interface
+          function smoother (z, rend, x)
+          	real smoother
+            real, intent(in) :: z, rend, x
+          end function smoother
+        end interface
+
+        type(T_assemble_block), pointer :: pS_neighbors
+        type(T_assemble_neighbors), pointer :: poverlap
 
         type(T_assemble_block), pointer :: pvna_neighbors
         type(T_assemble_neighbors), pointer :: pvna
@@ -480,31 +437,29 @@
 ! blocks.  We calculate the atom cases in a separate loop.
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
-          r1 = s%atom(iatom)%ratom
-          in1 = s%atom(iatom)%imass
-          norb_mu = species(in1)%norb_max
-
           ! cut some lengthy notation
           pvna=>s%vna(iatom)
 
-! Loop over the neighbors of each iatom.
+          r1 = s%atom(iatom)%ratom
+          in1 = s%atom(iatom)%imass
+          norb_mu = species(in1)%norb_max
           num_neigh = s%neighbors(iatom)%neighn
           allocate (pvna%neighbors(num_neigh))
+
+! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
+            ! cut some more lengthy notation
+            pvna_neighbors=>pvna%neighbors(ineigh)
+
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
 
-            ! cut some more lengthy notation
-            pvna_neighbors=>pvna%neighbors(ineigh)
-
 ! Allocate block size
             norb_nu = species(in2)%norb_max
             allocate (pvna_neighbors%block(norb_mu, norb_nu))
-            allocate (pvna_neighbors%blocko(norb_mu, norb_nu))
             pvna_neighbors%block = 0.0d0
-            pvna_neighbors%blocko = 0.0d0
 
 ! SET-UP STUFF
 ! ****************************************************************************
@@ -532,32 +487,36 @@
 
 ! Get the matrix from the data files - which is the matrix in molecular
 ! coordinates (stored in bcnam). Rotate the matrix into crystal coordinates.
-! The rotated  matrix elements are stored in bcnax, where x means crytal
+! The rotated  matrix elements are stored in bccax, where x means crytal
 ! coordinates.
 ! For the vna_ontopL case, the potential is in the first atom - left (iatom):
-              isorp = 0
               interaction = P_vna_ontopL
               in3 = in2
 
-              allocate (bcnam (norb_mu, norb_nu)); bcnam = 0.0d0
-              allocate (bcnax (norb_mu, norb_nu)); bcnax = 0.0d0
-              call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,         &
-     &                              norb_mu, norb_nu, bcnam)
-              call rotate (in1, in3, eps, norb_mu, norb_nu, bcnam, bcnax)
+! Allocate block size
+              allocate (bcnam (norb_mu, norb_nu))
+              allocate (bcnax (norb_mu, norb_nu))
 
-              pvna_neighbors%blocko = pvna_neighbors%blocko + bcnax*P_eq2
+! Neutral atom case
+              isorp = 0
+              call getMEs_Fdata_2c (in1, in3, interaction, isorp, z, norb_mu,&
+     &                              norb_nu, bcnam)
+              call rotate (in1, in3, eps, norb_mu, norb_nu, bcnam, bcnax)
+              pvna_neighbors%block = pvna_neighbors%block + bcnax*P_eq2
 
 ! For the vna_ontopR case, the potential is in the second atom - right (iatom):
-              isorp = 0
               interaction = P_vna_ontopR
               in3 = in2
 
-              call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,         &
-     &                              norb_mu, norb_nu, bcnam)
+! Neutral atom case
+              isorp = 0
+              call getMEs_Fdata_2c (in1, in2, interaction, isorp, z, norb_mu,&
+     &                              norb_nu, bcnam)
               call rotate (in1, in3, eps, norb_mu, norb_nu, bcnam, bcnax)
+              pvna_neighbors%block = pvna_neighbors%block + bcnax*P_eq2
 
-              pvna_neighbors%blocko = pvna_neighbors%blocko + bcnax*P_eq2
-              deallocate (bcnam, bcnax)
+              deallocate (bcnam)
+              deallocate (bcnax)
             end if ! end if for r1 .eq. r2 case
           end do ! end loop over neighbors
         end do ! end loop over atoms
@@ -569,21 +528,22 @@
 ! First, do vna_atom case. Here we compute <i | v(j) | i> matrix elements.
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
+          ! cut some lengthy notation
+          pvna=>s%vna(iatom)
+          poverlap=>s%overlap(iatom)
+
           matom = s%neigh_self(iatom)
           r1 = s%atom(iatom)%ratom
           in1 = s%atom(iatom)%imass
           norb_mu = species(in1)%norb_max
-
-          ! cut some more lengthy notation
-          pvna=>s%vna(iatom); pvna_neighbors=>pvna%neighbors(matom)
-
-! Allocate block size
-          allocate (pvna_neighbors%block(norb_mu, norb_mu))
-          pvna_neighbors%block = 0.0d0
+          num_neigh = s%neighbors(iatom)%neighn
 
 ! Loop over the neighbors of each iatom.
-          num_neigh = s%neighbors(iatom)%neighn
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
+            ! cut some more lengthy notation
+            pvna_neighbors=>pvna%neighbors(matom)
+            pS_neighbors=>poverlap%neighbors(matom)
+
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
@@ -604,25 +564,66 @@
             end if
             call epsilon_function (r2, sighat, eps)
 
+! Find the smoothing quantity - here we calculate the long-range effective
+! monopole.  This term is included so that we obtain no discontinuities when
+! atoms leave or enter the rcutoff_1 + rcutoff_2 range criteria.
+! Therefore, "close" two-center interactions are exact, while more distant
+! two-center integrals go to effective monopoles.  The monopoles are effective
+! in the sense that the two atoms in the matrix element, each has a different
+! charge.  Since they are separated, this gives a monopole contribution at long
+! range.
+
+! The smoothing function is found by calling smoother(r,rbegin,rend).
+! We define our final matrix element answer as
+! smoother(r)*exact_piece + (1 - smoother(r))*longrange.  The distance r is the
+! distance of the third center from the "effective" center of the bondcharge.
+! The effective center of the bondcharge is (d + rc1 - rc2)/2 from r1 except in
+! weird cases (see below). The distance rbegin is the distance at which we
+! include only exact answers and do not smooth. The distance rend is the
+! distance past which smooth(r) is zero, so that the result is long-range only.
+! We skipped self-interaction terms.
+            xsmooth = 0.8d0  ! parameter for smoothing
+
+            rcutoff1_min = 99.0d0
+            do issh = 1, species(in1)%nssh
+              rcutoff1_min = min(rcutoff1_min, species(in1)%shell(issh)%rcutoffA)
+            end do
+
+            rcutoff2_min = 99.0d0
+            do issh = 1, species(in2)%nssh
+              rcutoff2_min = min(rcutoff2_min, species(in2)%shell(issh)%rcutoffA)
+            end do
+
+            rend = rcutoff1_min + rcutoff2_min
+            stinky = smoother (z, rend, xsmooth)
+
 ! Get the matrix from the data files - which is the matrix in molecular
 ! coordinates (stored in bcnam). Rotate the matrix into crystal coordinates.
 ! The rotated  matrix elements are stored in sx, where x means crytal
 ! coordinates.
-! For these interactions, there are no subtypes and isorp = 0
-            isorp = 0
             interaction = P_vna_atom
             in3 = in1
 
 ! Allocate block size
             norb_nu = species(in3)%norb_max
-            allocate (bcnam (norb_mu, norb_nu)); bcnam = 0.0d0
-            allocate (bcnax (norb_mu, norb_nu)); bcnax = 0.0d0
-            call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,           &
-     &                            norb_mu, norb_nu, bcnam)
-            call rotate (in1, in3, eps, norb_mu, norb_nu, bcnam, bcnax)
+            allocate (bcnam (norb_mu, norb_nu))
+            allocate (bcnax (norb_mu, norb_nu))
+            allocate (emnpl (norb_mu, norb_nu))
 
+! Set value for emnpl
+            emnpl = 0.0d0
+            if (z .gt. 1.0d-4) emnpl = pS_neighbors%block/z
+
+! Neutral atom case
+            isorp = 0
+            call getMEs_Fdata_2c (in1, in2, interaction, isorp, z, norb_mu,  &
+     &                            norb_nu, bcnam)
+            call rotate (in1, in3, eps, norb_mu, norb_nu, bcnam, bcnax)
             pvna_neighbors%block = pvna_neighbors%block + bcnax*P_eq2
-            deallocate (bcnam, bcnax)
+
+            deallocate (bcnam)
+            deallocate (bcnax)
+            deallocate (emnpl)
           end do ! end loop over neighbors
         end do ! end loop over atoms
 
@@ -645,7 +646,7 @@
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
-!>       This routine deallocates the arrays containing the assemble_2c
+!>       This routine deallocates the arrays containing the assemble_2c_DOGS
 !! information.
 !
 ! ===========================================================================
@@ -675,16 +676,16 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, ineigh             !< counter over atoms and neighbors
+        integer iatom                             !< counter over atoms
+        integer ineigh                            !< counter over neighbors
 
 ! Procedure
 ! ===========================================================================
         do iatom = 1, s%natoms
-          do ineigh=1, s%neighbors(iatom)%neighn
+          do ineigh = 1, s%neighbors(iatom)%neighn
             deallocate (s%overlap(iatom)%neighbors(ineigh)%block)
             deallocate (s%kinetic(iatom)%neighbors(ineigh)%block)
             deallocate (s%vna(iatom)%neighbors(ineigh)%block)
-            deallocate (s%vna(iatom)%neighbors(ineigh)%blocko)
           end do
           deallocate (s%overlap(iatom)%neighbors)
           deallocate (s%kinetic(iatom)%neighbors)

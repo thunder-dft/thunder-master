@@ -223,7 +223,7 @@
             norb_nu = species(in2)%norb_max
             allocate(pH_neighbors%block(norb_mu, norb_nu))
 
-            pH_neighbors%block = pK_neighbors%blocko + pvna_neighbors%block  &
+            pH_neighbors%block = pK_neighbors%block + pvna_neighbors%block   &
         &                       + pvna_neighbors%blocko                      &
         &                       + pvxc_neighbors%block - pSR_neighbors%block &
         &                       + pLR_neighbors%block
@@ -404,7 +404,7 @@
             norb_nu = species(in2)%norb_max
             do imu = 1, norb_mu
               write (logfile,104)                                            &
-     &         (pK_neighbors%blocko(imu,inu), inu = 1, norb_nu)
+     &         (pK_neighbors%block(imu,inu), inu = 1, norb_nu)
             end do
 
 ! Neutral atom matrix elements
