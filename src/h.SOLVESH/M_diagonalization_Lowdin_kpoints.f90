@@ -321,9 +321,6 @@
 
         character (len = 25) :: slogfile
 
-        ! checks to see if structure has changed
-!       type(T_structure), pointer, save :: current
-
         type(T_kpoint), pointer :: pkpoint   !< point to current kpoint
 
 ! Allocate Arrays
@@ -397,10 +394,10 @@
         ! first find optimal length of work
         call zheev ('V', 'U', s%norbitals, Hmatrix, s%norbitals, eigen,      &
      &              work, -1, rwork , info)
+
         lwork = work(1)
         deallocate (work)
         allocate (work (lwork))
-
         call zheev ('V', 'U', s%norbitals, Hmatrix, s%norbitals, eigen,      &
      &              work, lwork, rwork , info)
 

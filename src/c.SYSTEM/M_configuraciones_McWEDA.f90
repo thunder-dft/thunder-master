@@ -770,6 +770,9 @@
             s%atom(iatom)%Q = 0.0d0
             allocate(s%atom(iatom)%shell(nssh))
             read (inpfile,*) (s%atom(iatom)%shell(issh)%Qin, issh = 1, nssh)
+            do issh = 1, nssh
+              s%atom(iatom)%shell(issh)%Qout = s%atom(iatom)%shell(issh)%Qin
+            end do
             write (logfile,402) iatom, s%atom(iatom)%species%symbol, nssh,   &
      &        (s%atom(iatom)%shell(issh)%Qin, issh = 1, nssh)
             do issh = 1, nssh
