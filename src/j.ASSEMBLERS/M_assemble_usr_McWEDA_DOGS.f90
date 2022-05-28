@@ -349,8 +349,6 @@
         e_vxc_bond_sn = 0.0d0
         e_vxc_bond = 0.d0
 
-        uxcdc_bond = 0.0d0
-
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
           in1 = s%atom(iatom)%imass
@@ -371,7 +369,6 @@
               e_vxc_bond = e_vxc_bond + vxc_1c(in1)%dV(issh,issh,jssh)*Qin*dQ
             end do
           end do
-          uxcdc_bond = uxcdc_bond + e_xc_bond - e_vxc_bond
 
 ! SN and bond_SN
 ! Loop over shells i-atom
@@ -408,6 +405,7 @@
         end do ! end loop over atoms
 
 ! The different contributions then are:
+        uxcdc_bond = e_xc_bond - e_vxc_bond
         uxcdc_sn = e_xc_sn - e_vxc_sn
         uxcdc_bond_sn = e_xc_bond_sn - e_vxc_bond_sn
 
