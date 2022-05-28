@@ -333,7 +333,7 @@
 
 ! beta = 0.08 means: Careful mixing (only 8 percent of the new charge).
 ! For larger max_order values, the choice of beta becomes less important.
-        real, parameter :: beta = 0.04d0    ! factor for mixing old and new
+        real, parameter :: beta = 0.08d0    ! factor for mixing old and new
 
 ! Ecut = 200.0d0
 ! This is the energy cutoff for determining the coarseness of the density grid.

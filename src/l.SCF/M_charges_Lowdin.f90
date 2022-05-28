@@ -101,14 +101,10 @@
         integer iorbital                   !< counter over orbitals
         integer imu                        !< another counting to find spot
         integer in1                        !< species number for iatom
-        integer inpfile                    !< reading from which unit
         integer issh, jssh                 !< counter over shells
-        integer nssh                       !< number of shells
         integer mmu                        !< spot in the array - block_slot
 
         real aux1, aux2, aux3              !< temporary multipliers
-
-        character (len = 25) :: slogfile
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -116,13 +112,9 @@
 
 ! Procedure
 ! ===========================================================================
-! Initialize logfile
-        inpfile = s%inpfile
-
 ! Loop over the atoms.
         do iatom = 1, s%natoms
           in1 = s%atom(iatom)%imass
-          s%atom(iatom)%Q = 0.0d0
           do issh = 1, species(in1)%nssh
             s%atom(iatom)%shell(issh)%Qout = 0.0d0
           end do
@@ -143,7 +135,6 @@
                     aux3 = aux2*cabs(s%kpoints(ikpoint)%c_Lowdin(mmu,iorbital))**2
                     s%atom(iatom)%shell(issh)%Qout =                           &
      &                s%atom(iatom)%shell(issh)%Qout + aux3
-                    s%atom(iatom)%Q = s%atom(iatom)%Q + aux3
                   end do
                 end do
               end if
@@ -152,17 +143,6 @@
 
 ! End loop over atoms
         end do
-
-! Writout the charges to a .CHARGES file
-        slogfile = s%basisfile(:len(trim(s%basisfile))-4)
-        slogfile = trim(slogfile)//'.CHARGES'
-        open (unit = inpfile, file = slogfile, status = 'unknown')
-        do iatom = 1, s%natoms
-          in1 = s%atom(iatom)%imass
-          nssh = species(in1)%nssh
-          write (inpfile,*) (s%atom(iatom)%shell(issh)%Qout, issh = 1, nssh)
-        end do
-        close (unit = inpfile)
 
 ! Format Statements
 ! ===========================================================================
@@ -208,8 +188,12 @@
 ! ===========================================================================
         integer iatom                       !< counter over the atoms
         integer in1                         !< species number for iatom
+        integer inpfile                     !< reading from which unit
         integer issh                        !< counter over shells
+        integer nssh                        !< number of shells
         integer logfile                     !< writing to which unit
+
+        character (len = 25) :: slogfile
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -218,6 +202,7 @@
 ! Procedure
 ! ===========================================================================
 ! Initialize logfile
+        inpfile = s%inpfile
         logfile = s%logfile
 
         write (logfile,*)
@@ -237,10 +222,26 @@
         write (logfile,500)
         do iatom = 1, s%natoms
           in1 = s%atom(iatom)%imass
+          s%atom(iatom)%Q = 0.0d0
+          nssh = species(in1)%nssh
+          do issh = 1, nssh
+            s%atom(iatom)%Q = s%atom(iatom)%Q + s%atom(iatom)%shell(issh)%Qout
+          end do
           write (logfile,503) iatom, species(in1)%symbol, s%atom(iatom)%Q
         end do
         write (logfile,500)
         write (logfile,*) '  '
+
+! Writout the charges to a .CHARGES file
+        slogfile = s%basisfile(:len(trim(s%basisfile))-4)
+        slogfile = trim(slogfile)//'.CHARGES'
+        open (unit = inpfile, file = slogfile, status = 'unknown')
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          nssh = species(in1)%nssh
+          write (inpfile,*) (s%atom(iatom)%shell(issh)%Qin, issh = 1, nssh)
+        end do
+        close (unit = inpfile)
 
 ! Format Statements
 ! ===========================================================================

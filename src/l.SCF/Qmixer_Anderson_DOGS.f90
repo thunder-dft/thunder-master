@@ -151,7 +151,7 @@
         do iatom = 1, t%natoms
           in1 = t%atom(iatom)%imass
           do issh = 1, species(in1)%nssh
-            imix = imix +1
+            imix = imix + 1
             Qin = t%atom(iatom)%shell(issh)%Qin
             Qout = t%atom(iatom)%shell(issh)%Qout
             dqmax = max(abs(Qin - Qout), dqmax)
@@ -171,12 +171,12 @@
         allocate (Qinmixer (imix))
         allocate (Qoutmixer (imix))
 
-        if (.not. allocated (Fv))then
-          allocate (Fv (imix, max_scf_iterations))
-          allocate (Xv (imix, max_scf_iterations))
-          allocate (delF (imix, max_scf_iterations))
-          allocate (delX (imix, max_scf_iterations))
-          allocate (sigma_saved (max_scf_iterations))
+        if (.not. allocated (Fv)) then
+          allocate (Fv (imix, max_scf_iterations_set)); Fv = 0.0d0
+          allocate (Xv (imix, max_scf_iterations_set)); Xv = 0.0d0
+          allocate (delF (imix, max_scf_iterations_set)); delF = 0.0d0
+          allocate (delX (imix, max_scf_iterations_set)); delX = 0.0d0
+          allocate (sigma_saved (max_scf_iterations_set)); sigma_saved = 0.0d0
         end if
 
 ! Store all the charges into one dimensional arrays for easier manipulation.
@@ -201,6 +201,7 @@
 
 ! Initially - only perform simple extrapolation
         if (mix_order .eq. 1 .or. sigma .lt. scf_tolerance_set) then
+          write (logfile,*) ' Doing simple mixing! '
           Qinmixer(:) = Qinmixer(:) + beta_set*Fv(:,iscf_iteration)
           sigma_saved(iscf_iteration) = sigma
         else
@@ -246,11 +247,21 @@
             end do
 
 ! Solve for gammas Eq. 5.31, 7.4 (We move a-inverse to other side: a * gamma = <|>)
-            lwork = (mix_order - 1)**2
+            ! first call dsysv with lwork = -1
+            lwork = 1
             allocate (work(lwork))
-            allocate (ipiv(mix_order - 1))
+            allocate (ipiv(mix_order - 1)); ipiv = 0
+            call dsysv('U', mix_order - 1, 1, amatrix, mix_order - 1,          &
+     &                 ipiv, F_dot_delF, mix_order - 1, work, -1, info)
+
+            ! allocate according to result of first call
+            lwork = work(1)
+            deallocate (work)
+            allocate (work(lwork))
             call dsysv('U', mix_order - 1, 1, amatrix, mix_order - 1,          &
      &                 ipiv, F_dot_delF, mix_order - 1, work, lwork, info)
+            do iloop = istep + 1, iscf_iteration - 1
+            end do
 
 ! If there is an error, then just use the simple mixing
             if (info .ne. 0) then
@@ -260,10 +271,10 @@
             end if
             deallocate (work, ipiv, amatrix)
           end do
-          istep = iscf_iteration - mix_order
 
 ! Generate new guess at charges Eq. 7.7  (F_dot_delF is now gamma)
           Qinmixer(:) = Qinmixer(:) + beta_set*Fv(:,iscf_iteration)  ! First-order term
+          istep = iscf_iteration - mix_order
           do iloop = istep + 1, iscf_iteration - 1
             Qinmixer(:) =                                                        &
      &        Qinmixer(:) - F_dot_delF(iloop)*(delX(:,iloop) + beta_set*delF(:,iloop))
@@ -281,6 +292,7 @@
           in1 = t%atom(iatom)%imass
           do issh = 1, species(in1)%nssh
             imix = imix + 1
+            t%atom(iatom)%shell(issh)%Qout = t%atom(iatom)%shell(issh)%Qin
             t%atom(iatom)%shell(issh)%Qin = Qinmixer(imix)
             ztotal_out = ztotal_out + t%atom(iatom)%shell(issh)%Qin
           end do

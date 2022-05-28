@@ -349,6 +349,8 @@
         e_vxc_bond_sn = 0.0d0
         e_vxc_bond = 0.d0
 
+        uxcdc_bond = 0.0d0
+
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
           in1 = s%atom(iatom)%imass
@@ -360,7 +362,7 @@
 !    see PRB 71, 235101 (2005)
 ! e_vxc_bond : energy already included in the band-structure through vxc_bond
           do issh = 1, species(in1)%nssh
-          Qin = s%atom(iatom)%shell(issh)%Qin
+            Qin = s%atom(iatom)%shell(issh)%Qin
             e_xc_bond = e_xc_bond + vxc_1c(in1)%E(issh,issh)*Qin
             e_vxc_bond = e_vxc_bond + vxc_1c(in1)%V(issh,issh)*Qin
             do jssh = 1, species(in1)%nssh
@@ -369,6 +371,7 @@
               e_vxc_bond = e_vxc_bond + vxc_1c(in1)%dV(issh,issh,jssh)*Qin*dQ
             end do
           end do
+          uxcdc_bond = uxcdc_bond + e_xc_bond - e_vxc_bond
 
 ! SN and bond_SN
 ! Loop over shells i-atom
@@ -407,10 +410,9 @@
 ! The different contributions then are:
         uxcdc_sn = e_xc_sn - e_vxc_sn
         uxcdc_bond_sn = e_xc_bond_sn - e_vxc_bond_sn
-        uxcdc_bond = e_xc_bond - e_vxc_bond
 
 ! The total double-counting XC term ( Eq. (16): PRB 71, 235101 (2005) )
-        uxcdcc = uxcdc_sn + uxcdc_bond - uxcdc_bond_sn
+        uxcdcc = uxcdc_bond + uxcdc_sn - uxcdc_bond_sn
 
 ! Deallocate Arrays
 ! ===========================================================================

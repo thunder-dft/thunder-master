@@ -191,11 +191,11 @@
         allocate (Qoutmixer (imix))
 
         if (.not. allocated (Fv))then
-          allocate (Fv (imix, max_scf_iterations))
-          allocate (Xv (imix, max_scf_iterations))
-          allocate (delF (imix, max_scf_iterations))
-          allocate (delX (imix, max_scf_iterations))
-          allocate (sigma_saved (max_scf_iterations))
+          allocate (Fv (imix, max_scf_iterations_set))
+          allocate (Xv (imix, max_scf_iterations_set))
+          allocate (delF (imix, max_scf_iterations_set))
+          allocate (delX (imix, max_scf_iterations_set))
+          allocate (sigma_saved (max_scf_iterations_set))
         end if
 
 ! Store all the charges into one dimensional arrays for easier manipulation.

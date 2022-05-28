@@ -330,23 +330,12 @@
 ! ===========================================================================
         lwork = 1
         allocate (work(lwork))
+
         lrwork = 3*s%norbitals - 2
         allocate (rwork(lrwork))
 
 ! Procedure
 ! ===========================================================================
-! Check to see if the structure has changed
-!       if (.not. associated (current)) then
-!         current => s
-!       else if (.not. associated(current, target=s) .and. allocated (S12matrix)) then
-!         deallocate (S12matrix)
-!         current => s
-!       end if
-
-!       if (iscf_iteration .eq. 1) then
-!         allocate (S12matrix (s%norbitals, s%norbitals)); S12matrix = 0.0d0
-!       end if
-
 ! Initialize some constants
         s%norbitals_new = size(eigen,1)
 
