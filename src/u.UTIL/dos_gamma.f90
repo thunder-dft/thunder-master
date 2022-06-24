@@ -76,7 +76,6 @@
 ! ===========================================================================
         integer iatom, jatom               !< counter over atoms
         integer igrid                      !< counter of energy grid points
-        integer ikpoint                    !< loop over ikpoints
         integer inpfile                    !< reading from which unit
         integer in1, in2                   !< species numbers
         integer imu                        !< counter of orbitals

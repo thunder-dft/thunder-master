@@ -1,24 +1,26 @@
 ! copyright info:
-!                             @Copyright 2008
-!                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
-! Academy of Sciences of the Czech Republic - Pavel JelinekmNZxbnmb
-
 !
+!                             @Copyright 2022
+!                           Fireball Committee
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
+! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
+
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
-! West Virginia University - Khorgolkhuu Odbadrakh
+! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -39,20 +41,20 @@
 !!      diagonalize_H_Lowdin - perform Lowdin transformation of Hamiltonian
 !!                             and then diagonalize the transformed Hamiltonian
 !
-! ===========================================================================
 ! Code written by:
-!> @author Khorgolkhuu Odbadrakh
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
-! ============================================================================
-! Module declaration
+! Phone: +852 6612 9539 (mobile)
+! ===========================================================================
+! Module Declaration
 ! ============================================================================
         module M_diagonalization
+
+! /SYSTEM
         use M_configuraciones
 
 ! Type declarations for Hamiltonian matrix in k-space
@@ -62,7 +64,6 @@
 
 ! define matrices
         double precision, allocatable :: Smatrix (:, :)
-        double precision, allocatable, save :: S12matrix (:, :)
         double precision, allocatable :: Hmatrix (:, :)
 
 ! define parameter for linear dependence criteria
@@ -80,18 +81,6 @@
 ! The dimensions of these dummy matrices must be initialized to
 ! norbitals by norbitals.
 !
-! ===========================================================================
-! Code written by:
-!> @author Kh. Odbadrakh
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
-!
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
-! ===========================================================================
-!
 ! Program Declaration
 ! ===========================================================================
         subroutine diagonalization_initialize (s, iscf_iteration, ikpoint)
@@ -99,10 +88,12 @@
 
 ! Argument Declaration and Description
 ! ===========================================================================
-        integer, intent (in) :: iscf_iteration    !< which scf iteration?
-        integer, intent (in) :: ikpoint           !< which kpoint
+        integer, intent (in) :: iscf_iteration   !< which scf iteration?
+        integer, intent (in) :: ikpoint          !< which kpoint
 
-        type(T_structure), target :: s            !< the structure to be used
+        type(T_structure), target :: s           !< the structure to be used
+
+        type(T_kpoint), pointer :: pkpoint       !< point to specific kpoint
 
 ! Parameters and Data Declaration
 ! ===========================================================================
@@ -110,14 +101,21 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        if (iscf_iteration .eq. 1) then
-          allocate (eigen(s%norbitals))
+         if (iscf_iteration .eq. 1) then
+           !cut some lengthy notation
+           pkpoint=>s%kpoints(ikpoint)
+           allocate (pkpoint%S12matrix (s%norbitals, s%norbitals))
+           pkpoint%S12matrix = 0.0d0
+         end if
 
-          allocate (Smatrix (s%norbitals, s%norbitals))
-          allocate (Hmatrix (s%norbitals, s%norbitals))
-        end if
-        Smatrix = 0.0d0
-        Hmatrix = 0.0d0
+         if (iscf_iteration .eq. 1 .and. ikpoint .eq. 1) then
+           allocate (eigen(s%norbitals))
+
+           allocate (Smatrix (s%norbitals, s%norbitals))
+           allocate (Hmatrix (s%norbitals, s%norbitals))
+         end if
+         Smatrix = 0.0d0
+         Hmatrix = 0.0d0
 
 ! End subroutine
 ! ===========================================================================
@@ -132,18 +130,6 @@
 ! ===========================================================================
 !>       This is diagonalization subroutine for real matrix using blas
 ! libraries....
-!
-! ===========================================================================
-! Code written by:
-!> @author Kh. Odbadrakh
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
-!
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
-! ===========================================================================
 !
 ! Program Declaration
 ! ===========================================================================
@@ -265,19 +251,6 @@
 !> This subroutine performs Lowdin transformation on the Hamiltonian
 !! matix H in k space: (S^-1/2)*H*(S^-1/2) and then diagonalizes it, and
 !! stores the eigenvalues in the structure kpoints(ikpoint)%eigen(:)
-
-
-! ===========================================================================
-! Code written by:
-!> @author Kh. Odbadrakh
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
-!
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
-! ===========================================================================
 !
 ! Program Declaration
 ! ===========================================================================
@@ -306,10 +279,9 @@
 
         double precision, allocatable :: rwork (:)        ! working vector
 
-        ! checks to see if structure has changed
-        type(T_structure), pointer, save :: current
-
         character (len = 25) :: slogfile
+
+        type(T_kpoint), pointer :: pkpoint   !< point to current kpoint
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -318,22 +290,13 @@
 
 ! Procedure
 ! ===========================================================================
-! Check to see if the structure has changed
-        if (.not. associated (current, target=s)) then
-          current => s
-        else if (.not. associated(current, target=s) .and. allocated (S12matrix)) then
-          deallocate (S12matrix)
-          current => s
-        end if
-
-        if (iscf_iteration .eq. 1) then
-          allocate (S12matrix (s%norbitals, s%norbitals)); S12matrix = 0.0d0
-        end if
-
 ! Initialize some constants
         a0 = 0.0d0
         a1 = 1.0d0
         s%norbitals_new = size(eigen,1)
+
+! Cut some lengthy notation
+        pkpoint=>s%kpoints(ikpoint)
 
 ! ****************************************************************************
 ! CALCULATE (S^-1/2) --> lam12
@@ -354,7 +317,7 @@
           end do
           call dgemm ('N', 'C', s%norbitals, s%norbitals, s%norbitals_new,  &
      &                a1, Smatrix, s%norbitals, Smatrix, s%norbitals, a0,    &
-     &                S12matrix, s%norbitals)
+     &                pkpoint%S12matrix, s%norbitals)
         end if
 
 ! NOTE: S12matrix here NOW contains the matrix S^-1/2
@@ -367,13 +330,13 @@
 ! Set M=H*(S^-.5)
 ! We do not need Smatrix any more at this point, so use it as a dummy
         Smatrix = 0.0d0
-        call dsymm ('R', 'U', s%norbitals, s%norbitals, a1, S12matrix,       &
-     &               s%norbitals, Hmatrix, s%norbitals, a0, Smatrix,         &
+        call dsymm ('R', 'U', s%norbitals, s%norbitals, a1, pkpoint%S12matrix, &
+     &               s%norbitals, Hmatrix, s%norbitals, a0, Smatrix,           &
      &               s%norbitals)
 
 ! Set Z=(S^-.5)*M
-        call dsymm ('L', 'U', s%norbitals, s%norbitals, a1, S12matrix,       &
-     &               s%norbitals, Smatrix, s%norbitals, a0, Hmatrix,         &
+        call dsymm ('L', 'U', s%norbitals, s%norbitals, a1, pkpoint%S12matrix, &
+     &               s%norbitals, Smatrix, s%norbitals, a0, Hmatrix,           &
      &               s%norbitals)
 
         if (iwriteout_dos .eq. 1) then
@@ -402,8 +365,8 @@
 ! S12matrix = S^-1/2 in AO basis
 ! We do not need Smatrix any more at this point, so use it as a dummy
         Smatrix = 0.0d0
-        call dsymm ('L', 'U', s%norbitals, s%norbitals, a1, S12matrix,       &
-     &               s%norbitals, Hmatrix, s%norbitals, a0, Smatrix,         &
+        call dsymm ('L', 'U', s%norbitals, s%norbitals, a1, pkpoint%S12matrix, &
+     &               s%norbitals, Hmatrix, s%norbitals, a0, Smatrix,           &
      &               s%norbitals)
 
 ! NOTE: After multiplication Smatrix = S^-1/2 * yy
@@ -439,18 +402,7 @@
 ! Function Description
 ! ===========================================================================
 !>       Returns the phase of k*r.
-!
-! ===========================================================================
-! Code written by:
-!> @author James P. Lewis
-! Department of Physics and Astronomy
-! Brigham Young University
-! N233 ESC P.O. Box 24658
-! Provo, UT 84602-4658
-! FAX (801) 422-2265
-! Office Telephone (801) 422-7444
-! ===========================================================================
-!
+!!
 ! Program Declaration
 ! ===========================================================================
         function phase (dot)

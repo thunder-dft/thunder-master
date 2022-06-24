@@ -1,19 +1,22 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
@@ -55,14 +58,13 @@
 !! Hartree interactions and is stored in uee.
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -202,12 +204,12 @@
                 do jssh = 1, species(in2)%nssh
                   u0(iatom)%neighbors(ineigh)%E =                             &
      &              u0(iatom)%neighbors(ineigh)%E                             &
-     &              + species(in1)%shell(issh)%Qneutral                       &
+     &               + species(in1)%shell(issh)%Qneutral                      &
      &                *species(in2)%shell(jssh)%Qneutral*coulomb(issh,jssh)
                 end do
               end do
-              u0(iatom)%neighbors(ineigh)%E = (P_eq2/2.0d0)*(Zi*Zj/z          &
-     &          - u0(iatom)%neighbors(ineigh)%E)
+              u0(iatom)%neighbors(ineigh)%E =                                 &
+     &         (P_eq2/2.0d0)*(Zi*Zj/z - u0(iatom)%neighbors(ineigh)%E)
             end if
             deallocate (coulomb)
 
@@ -281,25 +283,28 @@
         integer norb_mu                  !< size of the block for the pair
 
 ! Loops
-        integer issh, n1, l1, ind1
+        integer issh, n1, l1, m1
 
-! Ceperley-Adler
-        real arhoin
-        real arhobond
-        real ovlap
-        real rhoin
-        real rhobond
-        real dexc_in, dexc_bond
-        real d2exc_in, d2exc_bond
-        real dmuxc_in, dmuxc_bond
-        real exc_in, exc_bond
-        real muxc_in, muxc_bond
-        real d2muxc_in, d2muxc_bond
+        real poverlap                    !< temporary storage
+        real prho_in_shell               !< temporary storage
+        real prho_bond_shell             !< temporary storage
+        real prho_in                     !< temporary storage
+        real prho_bond                   !< temporary storage
 
+        ! Ceperley-Alder terms
+        real dexc_in, dexc_bond          !< 1st derivative of xc energy
+        real d2exc_in, d2exc_bond        !< 2nd derivative of xc energy
+        real dmuxc_in, dmuxc_bond        !< 1st derivative of xc potential
+        real exc_in, exc_bond            !< xc energy
+        real muxc_in, muxc_bond          !< xc potential
+        real d2muxc_in, d2muxc_bond      !< 2nd derivative of xc potential
+
+        real q_mu                        !< charges
+
+        ! results
         real e_xc_sn, e_xc_bond_sn, e_xc_bond
         real e_vxc_sn, e_vxc_bond_sn, e_vxc_bond
         real uxcdc_sn, uxcdc_bond_sn, uxcdc_bond
-        real q_mu
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -307,12 +312,9 @@
 ! Procedure
 ! ===========================================================================
 ! Initialize
-        e_xc_sn = 0.d0
-        e_xc_bond_sn = 0.0d0
-        e_xc_bond = 0.d0
-        e_vxc_sn = 0.d0
-        e_vxc_bond_sn = 0.0d0
-        e_vxc_bond = 0.d0
+        e_xc_bond = 0.0d0; e_vxc_bond = 0.d0
+        e_xc_sn = 0.d0; e_vxc_sn = 0.0d0
+        e_xc_bond_sn = 0.0d0; e_vxc_bond_sn = 0.0d0
 
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
@@ -324,48 +326,65 @@
 ! Loop over shells i-atom
           n1 = 0
           do issh = 1, species(in1)%nssh
+
 ! Calculate exc_bond : xc-energy from first term on the right in Eq. (16)
 !    see PRB 71, 235101 (2005)
 ! e_vxc_bond : energy already included in the band-structure through vxc_bond
             e_xc_bond = e_xc_bond + vxc_1c(in1)%E(issh,issh)*s%atom(iatom)%shell(issh)%Qneutral
             e_vxc_bond = e_vxc_bond + vxc_1c(in1)%V(issh,issh)*s%atom(iatom)%shell(issh)%Qneutral
+
+! n1 : counter used to determine orbitals imu
             l1 = species(in1)%shell(issh)%lssh
             n1 = n1 + l1 + 1
-            q_mu = s%atom(iatom)%shell(issh)%Qneutral / (2*l1 +1)
-            arhoin = s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,issh)
-            call lda_ceperley_alder (arhoin, exc_in, muxc_in, dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
-            arhobond = s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,issh)
-            call lda_ceperley_alder (arhobond, exc_bond, muxc_bond, dexc_bond, d2exc_bond, dmuxc_bond, d2muxc_bond)
+            q_mu = s%atom(iatom)%shell(issh)%Qneutral/(2*l1+1)
+
+! Call lda-function for rho_in
+            prho_in_shell =                                                    &
+     &        s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,issh)
+              call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,         &
+     &                                 dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
+
+            prho_bond_shell =                                                  &
+     &        s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,issh)
+              call lda_ceperley_alder (prho_bond_shell, exc_bond,              &
+     &                                 muxc_bond, dexc_bond, d2exc_bond,       &
+     &                                 dmuxc_bond, d2muxc_bond)
 
 ! Set the xc-submatrices
 ! loop over orbitals in the iatom-shell
-            do ind1 = -l1, l1
-              imu = n1 + ind1
-              ovlap = s%overlap(iatom)%neighbors(matom)%block(imu,imu)
-              rhoin = s%rho_in(iatom)%neighbors(matom)%block(imu,imu)
-              rhobond = s%rho_bond(iatom)%neighbors(matom)%block(imu,imu)
+            do m1 = -l1, l1
+              imu = n1 + m1
+              poverlap = s%overlap(iatom)%neighbors(matom)%block(imu,imu)
+              prho_in = s%rho_in(iatom)%neighbors(matom)%block(imu,imu)
+              prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,imu)
+
 ! calculate SN part
 ! exc_sn : xc-energy from second term on the right in Eq. (16): PRB 71, 235101 (2005)
 ! e_vxc_sn : energy already included in the band-structure through vxc_sn
-              e_xc_sn = e_xc_sn + q_mu*(exc_in*ovlap + dexc_in*(rhoin - arhoin*ovlap))
-              e_vxc_sn = e_vxc_sn + q_mu*(muxc_in*ovlap + dmuxc_in*(rhoin - arhoin*ovlap))
+              e_xc_sn = e_xc_sn                                                &
+     &          + q_mu*(exc_in*poverlap + dexc_in*(prho_in - prho_in_shell*poverlap))
+              e_vxc_sn = e_vxc_sn                                              &
+     &          + q_mu*(muxc_in*poverlap + dmuxc_in*(prho_in - prho_in_shell*poverlap))
+
 ! calculate SN-AT part ("atomic" correction)
 ! exc_sn_bond : xc-energy from third term on the right in Eq. (16): PRB 71, 235101 (2005)
 ! e_vxc_bond_sn : energy already included in the band-structure through vxc_sn_bond
-              e_xc_bond_sn = e_xc_bond_sn + q_mu*(exc_bond*ovlap + dexc_bond*(rhobond - arhobond*ovlap))
-              e_vxc_bond_sn = e_vxc_bond_sn + q_mu*(muxc_bond*ovlap + dmuxc_bond*(rhobond - arhobond*ovlap))
-            end do !do ind1 = -l1, l1
+              e_xc_bond_sn = e_xc_bond_sn                                      &
+     &          + q_mu*(exc_bond*poverlap + dexc_bond*(prho_bond - prho_bond_shell*poverlap))
+              e_vxc_bond_sn = e_vxc_bond_sn                                    &
+     &          + q_mu*(muxc_bond*poverlap + dmuxc_bond*(prho_bond - prho_bond_shell*poverlap))
+            end do ! end loop m1 = -l1, l1
             n1 = n1 + l1
-          end do !do issh = 1, nssh(in1)
+          end do ! end loop issh = 1, nssh(in1)
         end do ! end loop over atoms
 
 ! The different contributions then are:
+        uxcdc_bond = e_xc_bond - e_vxc_bond
         uxcdc_sn = e_xc_sn - e_vxc_sn
         uxcdc_bond_sn = e_xc_bond_sn - e_vxc_bond_sn
-        uxcdc_bond = e_xc_bond - e_vxc_bond
 
 ! The total double-counting XC term ( Eq. (16): PRB 71, 235101 (2005) )
-        uxcdcc = uxcdc_sn + uxcdc_bond - uxcdc_bond_sn
+        uxcdcc = uxcdc_bond + uxcdc_sn - uxcdc_bond_sn
 
 ! Deallocate Arrays
 ! ===========================================================================

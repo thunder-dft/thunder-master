@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -82,13 +84,23 @@
 !
 ! ===========================================================================
         module M_Dassemble_3c
+
+! /GLOBAL
         use M_assemble_blocks
+
+! /SYSTEM
         use M_configuraciones
-        use M_Fdata_3c
         use M_neighbors
         use M_rotations
         use M_Drotations
+
+! /FDATA
+        use M_Fdata_3c
+
+! /ASSEMBLERS
         use M_assemble_3c
+
+! /SOLVESH
         use M_density_matrix
 
 ! Type Declaration
@@ -287,19 +299,19 @@
               isorp = 0
 
 ! Allocate block arrays
-              allocate (bcnam (norb_mu, norb_nu)); bcnam = 0.00
-              allocate (dpbcnam (norb_mu, norb_nu)); dpbcnam = 0.00
-              allocate (dxbcnam (norb_mu, norb_nu)); dxbcnam = 0.00
-              allocate (dybcnam (norb_mu, norb_nu)); dybcnam = 0.00
+              allocate (bcnam (norb_mu,norb_nu)); bcnam = 0.00
+              allocate (dpbcnam (norb_mu,norb_nu)); dpbcnam = 0.00
+              allocate (dxbcnam (norb_mu,norb_nu)); dxbcnam = 0.00
+              allocate (dybcnam (norb_mu,norb_nu)); dybcnam = 0.00
               call getDMEs_Fdata_3c (in1, in2, in3, interaction, isorp, x,     &
      &                               z, norb_mu, norb_nu, cost, rhat, sighat,  &
      &                               bcnam, dpbcnam, dxbcnam, dybcnam)
 
-              allocate (f3naMa(3, norb_mu, norb_nu)); f3naMa = 0.0d0
-              allocate (f3naMb(3, norb_mu, norb_nu)); f3naMb = 0.0d0
-              allocate (f3naXa(3, norb_mu, norb_nu)); f3naXa = 0.0d0
-              allocate (f3naXb(3, norb_mu, norb_nu)); f3naXb = 0.0d0
-              allocate (f3naXc(3, norb_mu, norb_nu)); f3naXc = 0.0d0
+              allocate (f3naMa(3,norb_mu,norb_nu)); f3naMa = 0.0d0
+              allocate (f3naMb(3,norb_mu,norb_nu)); f3naMb = 0.0d0
+              allocate (f3naXa(3,norb_mu,norb_nu)); f3naXa = 0.0d0
+              allocate (f3naXb(3,norb_mu,norb_nu)); f3naXb = 0.0d0
+              allocate (f3naXc(3,norb_mu,norb_nu)); f3naXc = 0.0d0
 
 ! ***************************************************************************
 ! Now consider the components of the different forces which is determined
@@ -329,7 +341,7 @@
 
 ! Now recover f3naMb which is a three-dimensional array
                 f3naMb(:,imu,inu) = - sighat*dybcnam(imu,inu)               &
-     &           + bmt*dpbcnam(imu,inu) - f3naMa(:,imu,inu)/2.0d0
+     &            + bmt*dpbcnam(imu,inu) - f3naMa(:,imu,inu)/2.0d0
               end do ! end loop over matrix elements
 
 ! ***************************************************************************
@@ -368,11 +380,11 @@
               do inu = 1, norb_nu
                 do imu = 1, norb_mu
                   pfalpha%f3naa = pfalpha%f3naa                              &
-      &             - pRho_neighbors%block(imu,inu)*f3naXa(:,imu,inu)
+      &             - pRho_neighbors%block(imu,inu)*f3naXa(:,imu,inu)*P_eq2
                   pfi%f3nab = pfi%f3nab                                      &
-      &             - pRho_neighbors%block(imu,inu)*f3naXb(:,imu,inu)
+      &             - pRho_neighbors%block(imu,inu)*f3naXb(:,imu,inu)*P_eq2
                   pfj%f3nac = pfj%f3nac                                      &
-      &             - pRho_neighbors%block(imu,inu)*f3naXc(:,imu,inu)
+      &             - pRho_neighbors%block(imu,inu)*f3naXc(:,imu,inu)*P_eq2
                 end do
               end do
 

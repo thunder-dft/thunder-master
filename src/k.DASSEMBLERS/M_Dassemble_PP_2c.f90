@@ -1,24 +1,27 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
+!
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
 ! by the Government is subject to restrictions as set forth in subdivision
@@ -41,10 +44,16 @@
 !! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
         module M_Dassemble_PP_2c
+
+! /GLOBAL
         use M_assemble_blocks
+
+! /SYSTEM
         use M_configuraciones
-        use M_Fdata_2c
         use M_Drotations_PP
+
+! /FDATA
+        use M_Fdata_2c
 
 ! Type Declaration
 ! ===========================================================================
@@ -205,14 +214,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Subroutine Declaration
@@ -397,14 +405,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!! @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Subroutine Declaration
@@ -690,8 +697,8 @@
               do inu = 1, norb_nu
                 do imu = 1, norb_mu
                   do ncc = 1, species(in2)%norb_PP_max
-                    PPx(:,imu,inu) = PPx(:,imu,inu)                          &
-      &              + cl_value(ncc)*psvnl1_neighbors%Dblock(:,imu,ncc)      &
+                    PPx(:,imu,inu) = PPx(:,imu,inu)                            &
+      &              + cl_value(ncc)*psvnl1_neighbors%Dblock(:,imu,ncc)        &
       &                             *psvnl2_neighbors%block(inu,ncc)
                   end do
                 end do
@@ -717,8 +724,8 @@
 ! Notice the explicit negative sign, this makes it force like.
               do inu = 1, norb_nu
                 do imu = 1, norb_mu
-!                 pfi%vnl_ontop(:,kneigh) = pfi%vnl_ontop(:,kneigh)         &
-!    &             - pRho_neighbors%block(imu,inu)*PPx(:,imu,inu)
+                  pfi%vnl_ontop(:,ineigh) = pfi%vnl_ontop(:,ineigh)         &
+     &             - pRho_neighbors%block(imu,inu)*PPx(:,imu,inu)
                 end do
               end do
               deallocate (PPx)

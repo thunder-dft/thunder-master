@@ -1,32 +1,27 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
-! West Virginia University - Barry Haycock
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
+! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
-! RESTRICTED RIGHTS LEGEND
-! Use, duplication, or disclosure of this software and its documentation
-! by the Government is subject to restrictions as set forth in subdivision
-! { (b) (3) (ii) } of the Rights in Technical Data and Computer Software
-! clause at 52.227-7013.
-
-
 ! M_Fdata_3c
 ! Module Description
 ! ===========================================================================
@@ -61,7 +56,6 @@
 ! ===========================================================================
         module M_Fdata_3c
         use M_species
-        !use M_Drotations
 
         include '../include/interactions_3c.h'
 
@@ -652,7 +646,7 @@
         Dp(1) = 1.0d0
         Dp(2) = 3.0d0*cost
         Dp(3) = (15.0d0*cost2 - 3.0d0)/2.0d0
-        Dp(4) = (35.0d0*cost*cost2 - 15.0d0*cost)/2.0d0
+        Dp(4) = 0.5d0*cost*(35.0d0*cost2 - 15.0d0)
 
         ! initialize, finding the correct fdata bundle
         pFdata_bundle => Fdata_bundle_3c(ispecies, jspecies, kspecies)
@@ -856,15 +850,15 @@
      &    *(((pFdata_cell%Fdata_3c(ix+1,iy+1,:) - pFdata_cell%Fdata_3c(ix+1,iy,:)      &
      &         - pFdata_cell%Fdata_3c(ix,iy+1,:) + pFdata_cell%Fdata_3c(ix,iy,:))*py   &
      &         + (pFdata_cell%Fdata_3c(ix-1,iy,:) + pFdata_cell%Fdata_3c(ix+1,iy,:)    &
-     &         - 2.0d0*pFdata_cell%Fdata_3c(ix,iy,:))*px - 0.5d0*(pFdata_cell%Fdata_3c(ix-1,iy,:)               &
-     &         - pFdata_cell%Fdata_3c(ix+1,iy,:)))/dx)
+     &         - 2.0d0*pFdata_cell%Fdata_3c(ix,iy,:))*px                               &
+     &         - 0.5d0*(pFdata_cell%Fdata_3c(ix-1,iy,:) - pFdata_cell%Fdata_3c(ix+1,iy,:)))/dx)
 
-          Dyresult = Dyresult + ptheta                                                   &
-           *(((pFdata_cell%Fdata_3c(ix+1,iy+1,:) - pFdata_cell%Fdata_3c(ix+1,iy,:)       &
-     &      - pFdata_cell%Fdata_3c(ix,iy+1,:) + pFdata_cell%Fdata_3c(ix,iy,:))*px       &
-     &            + (pFdata_cell%Fdata_3c(ix,iy-1,:) + pFdata_cell%Fdata_3c(ix,iy+1,:) &
-     &            - 2.0d0*pFdata_cell%Fdata_3c(ix,iy,:))*py                              &
-     &            - 0.5d0*(pFdata_cell%Fdata_3c(ix,iy-1,:) - pFdata_cell%Fdata_3c(ix,iy+1,:)))/dy)
+          Dyresult = Dyresult + ptheta                                                 &
+           *(((pFdata_cell%Fdata_3c(ix+1,iy+1,:) - pFdata_cell%Fdata_3c(ix+1,iy,:)     &
+     &         - pFdata_cell%Fdata_3c(ix,iy+1,:) + pFdata_cell%Fdata_3c(ix,iy,:))*px   &
+     &         + (pFdata_cell%Fdata_3c(ix,iy-1,:) + pFdata_cell%Fdata_3c(ix,iy+1,:)    &
+     &         - 2.0d0*pFdata_cell%Fdata_3c(ix,iy,:))*py                               &
+     &         - 0.5d0*(pFdata_cell%Fdata_3c(ix,iy-1,:) - pFdata_cell%Fdata_3c(ix,iy+1,:)))/dy)
 
 !          dQ_Ldx = ((fun(1,1) - fun(1,0) - fun(0,1) + fun(0,0))*py           &
 !     &            + (fun(-1,0) + fun(1,0) - 2.0d0*fun(0,0))*px               &

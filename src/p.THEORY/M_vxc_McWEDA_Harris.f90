@@ -44,11 +44,15 @@
 ! Module Declaration
 ! ===========================================================================
         module M_vxc_Harris
+
+! /SYSTEM
         use M_atom_functions
         use M_atomPP_functions
         use M_atomPP_ion_functions
         use M_species
         use M_integrals_2c
+
+! /XC_FUNCTIONALS
         use M_xc_1c
         use M_xc_2c
 
@@ -100,13 +104,12 @@
 ! ===========================================================================
 ! Code written by:
 ! James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Subroutine Declaration
@@ -237,13 +240,12 @@
 ! ====================================================================
 ! Code written by:
 ! James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ====================================================================
 !
 ! Program Declaration
@@ -371,13 +373,12 @@
 ! ====================================================================
 ! Code written by:
 ! James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ====================================================================
 !
 ! Program Declaration
@@ -838,7 +839,7 @@
 
         exc = 0.0d0
         call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,      &
-     &                      density_pp, exc, vxc, dnuxc, dnuxcs, dexc)
+     &                     density_pp, exc, vxc, dnuxc, dnuxcs, dexc)
 
 ! Answers are in Hartrees convert to eV.
         dexc_1c = P_hartree*exc

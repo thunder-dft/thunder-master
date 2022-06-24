@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2008
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -40,10 +42,16 @@
 !! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
         module M_assemble_3c
+
+! /GLOBAL
         use M_assemble_blocks
+
+! /SYSTEM
         use M_configuraciones
-        use M_Fdata_3c
         use M_rotations
+
+! /FDATA
+        use M_Fdata_3c
 
 ! Type Declaration
 ! ===========================================================================
@@ -96,7 +104,7 @@
         integer issh                     !< counting over shells
         integer norb_mu, norb_nu         !< size of the block for the pair
 
-        real distance_13, distance_23  !< distance from 3rd atom
+        real distance_13, distance_23    !< distance from 3rd atom
         real dQ                          !< net charge on atom
         real rcutoff1_min, rcutoff2_min, rcutoff3_min, rend  !< for smoothing
         real stinky                      !< smoothing value
@@ -274,8 +282,7 @@
               call rotate (in1, in2, eps, norb_mu, norb_nu, bcnam, bcnax)
 
               ! Add this piece into the total
-              s%vna(iatom)%neighbors(mneigh)%block =                         &
-     &          s%vna(iatom)%neighbors(mneigh)%block + bcnax*P_eq2
+              pvna_neighbors%block = pvna_neighbors%block + bcnax*P_eq2
 
 ! Charged atom cases
               do isorp = 1, species(in3)%nssh

@@ -134,11 +134,6 @@
           real, allocatable :: vna_atom (:, :)  ! atom case
           real, allocatable :: vna_ontop (:, :) ! ontop case
 
-          ! three-center force terms for Hartree interactions
-          real, dimension (3) :: f3naa
-          real, dimension (3) :: f3nab
-          real, dimension (3) :: f3nac
-
           real, dimension (3) :: vnl
           ! vnl forces - add these together to vnl in the end
           real, allocatable :: vnl_atom (:, :)  ! atom case
@@ -154,16 +149,20 @@
           real, allocatable :: ewaldsr (:, :)
           real, allocatable :: ewaldlr (:, :)
 
+          ! three-center force terms for Hartree interactions
+          real, dimension (3) :: f3naa
+          real, dimension (3) :: f3nab
+          real, dimension (3) :: f3nac
+
           ! three-center force terms for exchange-correlation interactions
           real, dimension (3) :: f3xca
           real, dimension (3) :: f3xcb
           real, dimension (3) :: f3xcc
 
-          ! three-center components
-          real, allocatable :: f3naMa (:, :, :)
-          real, allocatable :: f3naMb (:, :, :)
-          real, allocatable :: f3naXa (:, :, :)
-          real, allocatable :: f3naXb (:, :, :)
+          ! three-center force terms for non-local pseudopotential interactions
+          real, dimension (3) :: f3nla
+          real, dimension (3) :: f3nlb
+          real, dimension (3) :: f3nlc
 
           ! Short-range force (double-counting terms)
           real, dimension (3) :: usr
@@ -284,6 +283,10 @@
         integer ifix_neighbors, ifix_CHARGES
         integer nstepi, nstepf
         integer max_scf_iterations_set
+
+        ! for shifting the system away from origin
+        integer ishiftO
+        real, dimension (3) :: shifter
 
         real dt
         real T_initial, T_final
@@ -434,12 +437,12 @@
 
 ! Open structures.inp file and read global &OUTPUT options
         filename = 'structures.inp'
-        INQUIRE(FILE=filename, EXIST=file_exists)   ! file_exists will be TRUE if the file                                                                    
-                                                    ! exists and FALSE otherwise                                                                              
+        inquire (FILE=filename, EXIST=file_exists)   ! file_exists will be TRUE if the file
+                                                     ! exists and FALSE otherwise
         if ( file_exists ) then
-           write (*,*) 'Reading: >'//filename//'<'
+           write (*,*) ' Reading: >'//filename//'<'
         else
-           write(*,*) 'ERROR: Could not open: ', filename
+           write(*,*) ' ERROR: Could not open: ', filename
            stop
         end if
 
@@ -487,6 +490,50 @@
      &    write (ilogfile,*) ' Writing out the xyz file. '
         if (iwriteout_ewf .eq. 1)                                           &
      &    write (ilogfile,*) ' Writing out the isosurfaces file. '
+
+! Now write out all the options and output parameters - default values
+! are written out and input values are written out accordingly
+        filename = 'structures.output'
+        open (unit = 222, file = filename, status = 'unknown')
+        write (222, *) ' &OUTPUT'
+        write (222, '(1x, a26, i10)') ' iwriteout_ME_SandH     = ', iwriteout_ME_SandH
+        write (222, '(1x, a26, i10)') ' iwriteout_density      = ', iwriteout_density
+        write (222, '(1x, a26, i10)') ' iwriteout_cdcoeffs     = ', iwriteout_cdcoeffs
+        write (222, '(1x, a26, i10)') ' iwriteout_charges      = ', iwriteout_charges
+        write (222, '(1x, a26, i10)') ' iwriteout_energies     = ', iwriteout_energies
+        write (222, '(1x, a26, i10)') ' iwriteout_populations  = ', iwriteout_populations
+        write (222, '(1x, a26, i10)') ' iwriteout_forces       = ', iwriteout_forces
+        write (222, '(1x, a26, i10)') ' iwriteout_neighbors    = ', iwriteout_neighbors
+        write (222, '(1x, a26, i10)') ' iwriteout_dos          = ', iwriteout_dos
+        write (222, '(1x, a26, i10)') ' iwriteout_abs          = ', iwriteout_abs
+        write (222, '(1x, a26, i10)') ' iwriteout_xyz          = ', iwriteout_xyz
+        write (222, '(1x, a26, i10)') ' iwriteout_ewf          = ', iwriteout_ewf
+        close (unit = 222)
+
+        filename = 'structures.options'
+        open (unit = 222, file = filename, status = 'unknown')
+        write (222, *) ' &OPTIONS'
+        write (222, '(1x, a26, i10)') ' nstepi                 = ', nstepi
+        write (222, '(1x, a26, i10)') ' nstepf                 = ', nstepf
+        write (222, '(1x, a26, i10)') ' iquench                = ', iquench
+        write (222, '(1x, a26, f10.1)') ' T_initial              = ', T_initial
+        write (222, '(1x, a26, f10.1)') ' T_final                = ', T_final
+        write (222, '(1x, a26, f10.1)') ' T_want                 = ', T_want
+        write (222, '(1x, a26, f10.1)') ' taurelax               = ', taurelax
+        write (222, '(1x, a26, f10.1)') ' efermi_T               = ', efermi_T
+        write (222, '(1x, a26, f10.2)') ' dt                     = ', dt
+        write (222, '(1x, a26, i10)') ' iensemble              = ', iensemble
+        write (222, '(1x, a26, i10)') ' iconstraint_rcm        = ', iconstraint_rcm
+        write (222, '(1x, a26, i10)') ' iconstraint_vcm        = ', iconstraint_vcm
+        write (222, '(1x, a26, i10)') ' iconstraint_L          = ', iconstraint_L
+        write (222, '(1x, a26, i10)') ' iconstraint_KE         = ', iconstraint_KE
+        write (222, '(1x, a26, i10)') ' ifix_neighbors         = ', ifix_neighbors
+        write (222, '(1x, a26, i10)') ' ifix_CHARGES           = ', ifix_CHARGES
+        write (222, '(1x, a26, i10)') ' max_scf_iterations_set = ', max_scf_iterations_set
+        write (222, '(1x, a26, f10.8)') ' scf_tolerance_set      = ', scf_tolerance_set
+        write (222, '(1x, a26, f10.2)') ' beta_set               = ', beta_set
+        write (222, '(1x, a26, f10.1)') ' Ecut_set               = ', Ecut_set
+        close (unit = 222)
 
 ! Format Statements
 ! ===========================================================================
@@ -538,10 +585,6 @@
         integer ix                          !< counter over x, y, and z
         integer logfile                     !< writing to which unit
         integer nZread                      !< Z atomic number read from file
-
-        ! for shifting the system away from origin
-        integer ishiftO
-        real, dimension (3) :: shifter
 
         real xmass_total
 

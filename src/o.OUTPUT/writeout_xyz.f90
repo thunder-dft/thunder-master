@@ -97,7 +97,11 @@
         write (inpfile,*) etot
         do iatom = 1, t%natoms
           in1 = t%atom(iatom)%imass
-          write (inpfile,101) species(in1)%symbol, t%atom(iatom)%ratom
+          if (ishiftO .eq. 1) then
+            write (inpfile,101) species(in1)%symbol, t%atom(iatom)%ratom - shifter
+          else
+            write (inpfile,101) species(in1)%symbol, t%atom(iatom)%ratom
+          end if
 
 ! Finish loop over atoms.
         end do

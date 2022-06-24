@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2013
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -33,19 +35,25 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Department of Physics and Astronomy
-! Brigham Young University
-! N233 ESC P.O. Box 24658
-! Provo, UT 84602-4658
-! FAX (801) 422-2265
-! Office Telephone (801) 422-7444
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
+!
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
 ! ===========================================================================
         subroutine Qmixer (t, iscf_iteration, sigma)
+
+! /SYSTEM
         use M_configuraciones
+
+! /SCF
+        use M_charges
+
         implicit none
 
 ! Argument Declaration and Description

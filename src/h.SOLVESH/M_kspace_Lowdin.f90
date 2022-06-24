@@ -230,10 +230,9 @@
             norb_nu = species(in2)%norb_max
             allocate(pH_neighbors%block(norb_mu, norb_nu))
 
-            pH_neighbors%block = pK_neighbors%block + pvna_neighbors%block   &
-        &                       + pvna_neighbors%blocko                      &
-        &                       + pvxc_neighbors%block - pSR_neighbors%block &
-        &                       + pLR_neighbors%block
+            pH_neighbors%block = pK_neighbors%block + pvna_neighbors%block     &
+        &                       + pvna_neighbors%blocko + pvxc_neighbors%block &
+        &                       - pSR_neighbors%block + pLR_neighbors%block
           end do
         end do
 
@@ -592,14 +591,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 135 Willey St.
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -676,6 +674,14 @@
             end do ! do inu
           end do ! do ineigh
         end do ! do iatom
+
+! TESTING - Set Smatrix to identity
+!       Smatrix = 0.0d0
+!       do jmu = 1, s%norbitals
+!         do jnu = 1, s%norbitals
+!           if (jmu .eq. jnu) Smatrix(jmu,jnu) = 1.0d0
+!         end do
+!       end do
 
 ! DIAGONALIZE THE OVERLAP MATRIX
         call diagonalize_S (s)
@@ -821,7 +827,7 @@
               do imu = 1, norb_mu
                 jmu = imu + s%iblock_slot(iatom)
                 Hmatrix(jmu,jnu) =                                           &
-     &           Hmatrix(jmu,jnu) + phase(dot)*pvnl_neighbors%block(imu,inu)
+      &           Hmatrix(jmu,jnu) + phase(dot)*pvnl_neighbors%block(imu,inu)
               end do ! do imu
             end do ! do inu
           end do ! do ineigh
