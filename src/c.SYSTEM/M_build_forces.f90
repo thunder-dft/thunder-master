@@ -491,15 +491,15 @@
 
 ! vna three-center contribution to the total force
 ! ****************************************************************************
-          pfi%ftot = pfi%ftot - pfi%f3naa - pfi%f3nab - pfi%f3nac
+          pfi%ftot = pfi%ftot + pfi%f3naa + pfi%f3nab + pfi%f3nac
 
 ! vxc three-center contribution to the total force
 ! ****************************************************************************
-          pfi%ftot = pfi%ftot - pfi%f3xca - pfi%f3xcb - pfi%f3xcc
+          pfi%ftot = pfi%ftot + pfi%f3xca + pfi%f3xcb + pfi%f3xcc
 
 ! vnl three-center contribution to the total force
 ! ****************************************************************************
-          pfi%ftot = pfi%ftot - pfi%f3nla - pfi%f3nlb - pfi%f3nlc
+          pfi%ftot = pfi%ftot + pfi%f3nla + pfi%f3nlb + pfi%f3nlc
         end do ! end loop over atoms
 ! ***************************************************************************
 !                                   E N D
@@ -574,7 +574,7 @@
 
 ! overlap repulsive contribution to total force
 ! ****************************************************************************
-          pfi%ftot = pfi%ftot - pfi%pulay
+!         pfi%ftot = pfi%ftot - pfi%pulay
         end do
 ! ***************************************************************************
 !                                  E N D

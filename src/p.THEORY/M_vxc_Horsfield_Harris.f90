@@ -45,11 +45,18 @@
 ! Module Declaration
 ! ===========================================================================
         module M_vxc_Horsfield
+
+! /GLOBAL
+        use M_precision
+
+! /SYSTEM
         use M_atom_functions
         use M_atomPP_functions
         use M_atomPP_ion_functions
         use M_species
         use M_integrals_2c
+
+! /CREATE
         use M_xc_1c
         use M_xc_2c
 

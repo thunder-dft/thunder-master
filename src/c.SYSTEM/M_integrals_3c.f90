@@ -47,6 +47,11 @@
 ! Module Declaration
 ! ============================================================================
        module M_integrals_3c
+
+! /GLOBAL
+       use M_precision
+
+! /SYSTEM
        use M_atom_functions
        use M_species
 
@@ -139,7 +144,6 @@
 ! Local Variable Declaration and Description
 ! ===========================================================================
         integer ispecies, jspecies, kspecies        ! counters over species
-        integer logfile                             !< writing to which unit
 
         type (T_Fdata_bundle_3c), pointer :: pFdata_bundle
 
@@ -149,17 +153,14 @@
 
 ! Procedure
 ! ===========================================================================
-! Initialize logfile
-        logfile = 21
-
-        write (logfile, *)
-        write (logfile, *) ' Sizing three-center integrals: '
+        write (ilogfile, *)
+        write (ilogfile, *) ' Sizing three-center integrals: '
         do ispecies = 1, nspecies
           do jspecies = 1, nspecies
             do kspecies = 1, nspecies
               ! cut some lengthy notation
               pFdata_bundle=>Fdata_bundle_3c(ispecies, jspecies, kspecies)
-              write (logfile,100) ispecies, jspecies, kspecies, pFdata_bundle%nFdata_cell_3c
+              write (ilogfile,100) ispecies, jspecies, kspecies, pFdata_bundle%nFdata_cell_3c
               allocate (pFdata_bundle%Fdata_cell_3c(pFdata_bundle%nFdata_cell_3c))
 
 ! Set this back to zero and then start counting as interactions are computed.
