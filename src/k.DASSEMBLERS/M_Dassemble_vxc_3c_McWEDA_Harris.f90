@@ -383,10 +383,8 @@
                 call Drotate (in1, in2, eps, depsB, norb_mu, norb_nu, bcxcm, &
      &                        vdxcMb, vdxcXb)
 
-! Make things force-like and determine f3naXc, whcih is found from Newtons Laws:
-                vdxcXa(:,:,:) = - vdxcXa(:,:,:)
-                vdxcXb(:,:,:) = - vdxcXb(:,:,:)
-                vdxcXc(:,:,:) = - vdxcXa(:,:,:) - vdxcXb(:,:,:)
+! Determine vdxcXc from Newton's Laws:
+                vdxcXc  = - vdxcXa - vdxcXb
 
                 rhoxa = rhoxa + vdxcXa*Qneutral
                 rhoxb = rhoxb + vdxcXb*Qneutral
@@ -429,9 +427,12 @@
                      vdxcMb(:,issh,jssh) = - sighat(:)*dybcxcm(issh,jssh)    &
      &                                      + bmt(:)*dpbcxcm(issh,jssh)      &
      &                                      - vdxcMa(:,issh,jssh)/2.0d0
-                     vdxcMc(:,issh,jssh) = - vdxcMa(:,issh,jssh) - vdxcMb(:,issh,jssh)
                    end do ! jssh
                 end do ! issh
+
+! Determine vdxcMc from Newton's Laws:
+                vdxcMc = - vdxcMa - vdxcMb
+
                 rhoma_shell = rhoma_shell + vdxcMa*Qneutral
                 rhomb_shell = rhomb_shell + vdxcMb*Qneutral
                 rhomc_shell = rhomc_shell + vdxcMc*Qneutral
@@ -466,34 +467,30 @@
 ! loop over orbitals in the ineigh-shell (inu)
                      do m2 = -l2, l2
                        inu = n2 + m2
-                       mxca(:,imu,inu) = mxca(:,imu,inu)                       &
-             &          - rhop_a*d2muxc_in*(prho_in_neighbors%block(imu,inu)   &
-             &          - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu)) &
-             &          - dmuxc_in*rhoxa(:,imu,inu)
+                       mxca(:,imu,inu) = dmuxc_in*rhoxa(:,imu,inu)             &
+             &          + rhop_a*d2muxc_in*(prho_in_neighbors%block(imu,inu)   &
+             &                              - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu))
              
-                       mxcb(:,imu,inu) = mxcb(:,imu,inu)                       &
-             &          - rhop_b*d2muxc_in*(prho_in_neighbors%block(imu,inu)   &
-             &          - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu)) &
-             &          - dmuxc_in*rhoxb(:,imu,inu)
-             
-                       mxcc(:,imu,inu) = mxcc(:,imu,inu)                       &
-             &          - rhop_c*d2muxc_in*(prho_in_neighbors%block(imu,inu)   &
-             &          - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu)) &
-             &          - dmuxc_in*rhoxc(:,imu,inu)
+                       mxcb(:,imu,inu) = dmuxc_in*rhoxb(:,imu,inu)             &
+             &          + rhop_b*d2muxc_in*(prho_in_neighbors%block(imu,inu)   &
+             &                              - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu))
                      end do !** m2 = -l2, l2
                    end do !** m1 = -l1, l1
                    n2 = n2 + l2
                 end do ! jssh = 1, species(in2)%nssh
                 n1 = n1 + l1
               end do ! issh = 1, species(in1)%nss
-              
+
+! Determine mxcc from Newton's Laws:
+              mxcc = - mxca - mxcb
+
               do inu = 1, norb_nu
                 do imu = 1, norb_mu
-                  pfalpha%f3xca = pfalpha%f3xca + pRho_neighbors%block(imu,inu)*mxca(:,imu,inu)
-                  pfi%f3xcb = pfi%f3xcb + pRho_neighbors%block(imu,inu)*mxcb(:,imu,inu)
-                  pfj%f3xcc = pfj%f3xcc + pRho_neighbors%block(imu,inu)*mxcc(:,imu,inu)
-                end do !imu , norb_mu
-              end do !inu =1, norb_nu
+                  pfalpha%f3xca = pfalpha%f3xca - pRho_neighbors%block(imu,inu)*mxca(:,imu,inu)
+                  pfi%f3xcb = pfi%f3xcb - pRho_neighbors%block(imu,inu)*mxcb(:,imu,inu)
+                  pfj%f3xcc = pfj%f3xcc - pRho_neighbors%block(imu,inu)*mxcc(:,imu,inu)
+                end do ! imu , norb_mu
+              end do ! inu = 1, norb_nu
             end if ! if (mneigh .ne. 0)
             deallocate (rhoxa, rhoxb, rhoxc)
             deallocate (mxca, mxcb, mxcc)

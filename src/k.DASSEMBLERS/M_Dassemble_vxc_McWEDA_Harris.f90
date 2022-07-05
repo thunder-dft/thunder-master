@@ -503,7 +503,7 @@
 ! calculate GSN for rho_bond ("atomic" correction)
 ! Use "+" here because the energy contribution for the bond-part is "-"
                         pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh)  &
-     &                   - pRho_neighbors_matom%block(imu,inu)                 &
+     &                   + pRho_neighbors_matom%block(imu,inu)                 &
      &                    *(Dprho_bond_shell*d2muxc_bond*prho_bond             &
      &                      + dmuxc_bond*Dprho_bond)
                       end if ! imu .eq. inu
@@ -705,7 +705,7 @@
               do inu = 1, norb_nu
                 do imu = 1, norb_mu
                   pfi%vxc_off_site(:,ineigh) = pfi%vxc_off_site(:,ineigh)     &
-     &              - pRho_neighbors%block(imu,inu)*vdbcxcx(:,imu,inu)
+      &              - pRho_neighbors%block(imu,inu)*vdbcxcx(:,imu,inu)
                 end do
               end do
               deallocate (bcxcm, bcxcx)

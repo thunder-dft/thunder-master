@@ -373,8 +373,8 @@
      &                      bcnam, f3naMb, f3naXb)
 
 ! Make things force-like and determine f3naXc, whcih is found from Newtons Laws:
-              f3naXa = - f3naXa
-              f3naXb = - f3naXb
+!             f3naXa = - f3naXa
+!             f3naXb = - f3naXb
               f3naXc = - f3naXa - f3naXb
 
               do inu = 1, norb_nu

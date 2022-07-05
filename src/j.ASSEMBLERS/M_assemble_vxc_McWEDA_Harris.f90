@@ -145,12 +145,12 @@
 ! Calculate rho_in (density) matrix elements
         write (logfile,*) ' Calling rho (density) input assemblers. '
         call assemble_rho_2c (s)
-        call assemble_rho_3c (s)
+!       call assemble_rho_3c (s)
 
 ! calculate average_rho matrix elements
 ! See PRB 71, 235101 (2005), Eqs. (19), (22) and (25)
         call assemble_rho_weighted_2c (s)
-        call assemble_rho_weighted_3c (s)
+!       call assemble_rho_weighted_3c (s)
 
 ! calculate  XC-potential matrix elements
 ! See PRB 71, 235101 (2005), Eqs. (16), (21) and (24)
@@ -189,8 +189,8 @@
 ! equation (16) PRB 71, 235101 (2005)
 ! vxc = vxc_bond + vxc_SN - vxc_SN_bond
             pvxc_neighbors%block = vxc_bond(iatom)%neighbors(ineigh)%block     &
-     &                            + vxc_SN(iatom)%neighbors(ineigh)%block      &
-     &                            - vxc_SN_bond(iatom)%neighbors(ineigh)%block
+    &                             + vxc_SN(iatom)%neighbors(ineigh)%block      &
+    &                             - vxc_SN_bond(iatom)%neighbors(ineigh)%block
           end do
         end do
 
