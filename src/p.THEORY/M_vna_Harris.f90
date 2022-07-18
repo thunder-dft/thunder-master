@@ -111,8 +111,14 @@
           do jspecies = 1, nspecies
             pFdata_bundle=>Fdata_bundle_2c(ispecies, jspecies)
 
-            ! We add three - vna_ontopL, vna_ontopR, and vna_atom
-            pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c + 3
+            ! We add one for vna_ontopL
+            pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c + 1
+
+            ! We add one for vna_ontopR
+            pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c + 1
+
+            ! We add one for vna_atom
+            pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c + 1
           end do ! jspecies
         end do ! ispecies
 
@@ -951,7 +957,7 @@
         pFdata_bundle=>Fdata_bundle_2c(ispecies, jspecies)
         pFdata_cell=>pFdata_bundle%Fdata_cell_2c(itype)
 
-!Pick up "passed" data
+! Pick up "passed" data
         n1 =  pFdata_cell%N_mu(index_2c)
         l1 =  pFdata_cell%L_mu(index_2c)
         m1 =  pFdata_cell%M_mu(index_2c)

@@ -192,7 +192,7 @@
 ! Determine exchange-correlation potentials
 
 ! C Lee-Yang-Parr
-		if (iexc .eq. 9) then
+        if (iexc .eq. 9) then
 
 ! X Becke gga by default
           ix = 2
@@ -207,8 +207,9 @@
 
 ! If the improper iexc option was entered then the program will stop.
         else
-          write (*,*) ' In get_potxc_1c - '
-          write (*,*) ' stop: xc option not implemented', iexc
+          write (*,*) ' In get_potxc_1c.f90 - '
+          write (*,*) ' You must recomplile create.x for iexc = 3 '
+          write (*,*) ' Set XC = LDA in include/OPTIONS and recompile. '
           stop
         end if
 

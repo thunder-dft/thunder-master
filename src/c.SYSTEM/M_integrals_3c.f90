@@ -951,10 +951,10 @@
 
         interface
           subroutine phiint (itype, ispecies, jspecies, kspecies, ispmin,    &
-                             ispmax, r, ds, zr, rna, avgVmat)
+                             ispmax, r, ds, zr, r1, r2, rna, avgVmat)
             integer, intent (in) :: ispecies, jspecies, kspecies,           &
      &                              ispmin, ispmax, itype
-            real, intent (in) :: ds, r, zr
+            real, intent (in) :: ds, r, zr, r1, r2
             real, intent (in) :: rna (3)
             real, intent (out) :: avgVmat(ispmin:, :)
           end subroutine phiint
@@ -1232,10 +1232,10 @@
 
         interface
           subroutine phiint (itype, ispecies, jspecies, kspecies, ispmin,    &
-                             ispmax, r, ds, zr, rna, avgVmat)
+                             ispmax, r, ds, zr, r1, r2, rna, avgVmat)
             integer, intent (in) :: ispecies, jspecies, kspecies,           &
      &                              ispmin, ispmax, itype
-            real, intent (in) :: ds, r, zr
+            real, intent (in) :: ds, r, zr, r1, r2
             real, intent (in) :: rna (3)
             real, intent (out) :: avgVmat(ispmin:, :)
           end subroutine phiint
@@ -1342,10 +1342,10 @@
 
         interface
           subroutine phiint (itype, ispecies, jspecies, kspecies, ispmin,    &
-                             ispmax, r, ds, zr, rna, avgVmat)
+                             ispmax, r, ds, zr, r1, r2, rna, avgVmat)
             integer, intent (in) :: ispecies, jspecies, kspecies,           &
      &                              ispmin, ispmax, itype
-            real, intent (in) :: ds, r, zr
+            real, intent (in) :: ds, r, zr, r1, r2
             real, intent (in) :: rna (3)
             real, intent (out) :: avgVmat(ispmin:, :)
           end subroutine phiint
@@ -1454,7 +1454,7 @@
 
 ! Do integral over phi:
           call phiint (itype, ispecies, jspecies, kspecies, ispmin, ispmax,  &
-                       r, ds, zr, rna, avgVmat)
+                       r, ds, zr, r1, r2, rna, avgVmat)
 
           prod = thetamult(itheta)*sin(theta)
           do index_3c = 1, nME3c_max

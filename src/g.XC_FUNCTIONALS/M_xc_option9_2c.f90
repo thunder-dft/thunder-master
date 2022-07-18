@@ -205,7 +205,8 @@
 ! If the improper iexc option was entered then the program will stop.
         else
           write (*,*) ' In get_potxc_2c.f90 - '
-          write (*,*) ' stop: xc option not implemented', iexc
+          write (*,*) ' You must recomplile create.x for iexc = 3 '
+          write (*,*) ' Set XC = LDA in include/OPTIONS and recompile. '
           stop
         end if
 

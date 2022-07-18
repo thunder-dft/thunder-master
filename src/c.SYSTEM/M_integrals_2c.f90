@@ -762,9 +762,9 @@
 !
 ! ===========================================================================
         subroutine evaluate_integral_2c (itype, ispecies, jspecies, isorp,   &
-     &                                     ideriv, rcutoff1, rcutoff2, d,    &
-     &                                     nz, nrho, rint, phunction, zmin,  &
-     &                                     zmax, rhomin, rhomax, Fdata)
+     &                                   ideriv, rcutoff1, rcutoff2, d,      &
+     &                                   nz, nrho, rint, phunction, zmin,    &
+     &                                   zmax, rhomin, rhomax, Fdata)
         implicit none
 
 ! Auguments Declaration and Description

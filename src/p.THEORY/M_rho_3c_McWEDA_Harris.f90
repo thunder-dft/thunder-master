@@ -217,9 +217,9 @@
               ! Test ouput file for this species triplet
               itheta = 1
               isorp = 1
-              write (filename, '("/", "rho_3c_", i2.2, "_", i2.2, ".", i2.2,   &
-     &                                       ".", i2.2, ".", i2.2, ".dat")')   &
-     &          itheta, isorp, species(ispecies)%nZ,                           &
+              write (filename, '("/", "rho_3c_", i2.2, "_", i2.2, ".", i2.2,  &
+     &                                       ".", i2.2, ".", i2.2, ".dat")')  &
+     &          itheta, isorp, species(ispecies)%nZ,                          &
      &                         species(jspecies)%nZ, species(kspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
               if (skip) cycle
@@ -236,43 +236,43 @@
                 do itheta = 1, P_ntheta
                   pFdata_bundle%nFdata_cell_3c = pFdata_bundle%nFdata_cell_3c + 1
 
-                  write (filename, '("/", "rho_3c_", i2.2, "_", i2.2, ".",     &
-     &                               i2.2, ".", i2.2, ".", i2.2, ".dat")')     &
-     &              itheta, isorp, species(ispecies)%nZ,                       &
+                  write (filename, '("/", "rho_3c_", i2.2, "_", i2.2, ".",    &
+     &                               i2.2, ".", i2.2, ".", i2.2, ".dat")')    &
+     &              itheta, isorp, species(ispecies)%nZ,                      &
      &                             species(jspecies)%nZ, species(kspecies)%nZ
 
                   ! open directory file
-                  write (interactions,                                         &
-     &                   '("/3c.",i2.2,".",i2.2,".",i2.2,".dir")')             &
-     &              species(ispecies)%nZ, species(jspecies)%nZ,                &
+                  write (interactions,                                        &
+     &                   '("/3c.",i2.2,".",i2.2,".",i2.2,".dir")')            &
+     &              species(ispecies)%nZ, species(jspecies)%nZ,               &
      &              species(kspecies)%nZ
-                  open (unit = 13,                                             &
-     &                  file = trim(Fdata_location)//trim(interactions),       &
+                  open (unit = 13,                                            &
+     &                  file = trim(Fdata_location)//trim(interactions),      &
      &                  status = 'unknown', position = 'append')
-                  write (13,100) pFdata_bundle%nFdata_cell_3c, P_rho_3c,       &
-     &                           isorp, itheta, filename(2:30),                &
+                  write (13,100) pFdata_bundle%nFdata_cell_3c, P_rho_3c,      &
+     &                           isorp, itheta, filename(2:30),               &
      &                           pFdata_cell%nME, nna_rho, dna, nbc_rho, dbc
                   close (unit = 13)
 
                   ! Open mu, nu, mvalue file and write out values.
-                  write (filename, '("/",i2.2, "_munu_3c.",                    &
-     &                                   i2.2,".",i2.2,".",i2.2,".dat")')      &
-     &              P_rho_3c, species(ispecies)%nZ, species(jspecies)%nZ,      &
+                  write (filename, '("/",i2.2, "_munu_3c.",                   &
+     &                                   i2.2,".",i2.2,".",i2.2,".dat")')     &
+     &              P_rho_3c, species(ispecies)%nZ, species(jspecies)%nZ,     &
      &                        species(kspecies)%nZ
                   open (unit = 12, file = trim(Fdata_location)//trim(filename),&
      &                  status = 'unknown', position = 'append')
 
                   ! Write out the mapping - stored in mu, nu, and mvalue
-                  write (12,*) (pFdata_cell%mu_3c(index_3c),                   &
+                  write (12,*) (pFdata_cell%mu_3c(index_3c),                  &
      &                                            index_3c = 1, nME3c_max)
-                  write (12,*) (pFdata_cell%nu_3c(index_3c),                   &
+                  write (12,*) (pFdata_cell%nu_3c(index_3c),                  &
      &                                            index_3c = 1, nME3c_max)
-                  write (12,*) (pFdata_cell%mvalue_3c(index_3c),               &
+                  write (12,*) (pFdata_cell%mvalue_3c(index_3c),              &
      &                                                index_3c = 1, nME3c_max)
                 end do
               end do
 
-              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, &
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ,&
      &                             species(kspecies)%nZ
 
 ! Open all the output files.
@@ -280,12 +280,12 @@
               do isorp = ispmin, ispmax
                 do itheta = 1, P_ntheta
                   iounit = iounit + 1
-                  write (filename, '("/", "rho_3c_", i2.2, "_", i2.2, ".",     &
-     &                               i2.2, ".", i2.2, ".", i2.2, ".dat")')     &
-     &                  itheta, isorp, species(ispecies)%nZ,                   &
+                  write (filename, '("/", "rho_3c_", i2.2, "_", i2.2, ".",    &
+     &                               i2.2, ".", i2.2, ".", i2.2, ".dat")')    &
+     &                  itheta, isorp, species(ispecies)%nZ,                  &
      &                  species(jspecies)%nZ, species(kspecies)%nZ
-                  open (unit = (iounit),                                       &
-     &                  file = trim(Fdata_location)//trim(filename),           &
+                  open (unit = (iounit),                                      &
+     &                  file = trim(Fdata_location)//trim(filename),          &
      &                  status = 'unknown')
                 end do
               end do
@@ -304,12 +304,11 @@
 ! The distance is measured from the bondcharge center (b=dbcx/2)
                 do inaba = 1, nna_rho
                   dnax = float(inaba - 1)*dna/float(nna_rho - 1)
-                  call evaluate_integral_3c (nFdata_cell_3c, ispecies,       &
-     &                                       jspecies, kspecies, ispmin,     &
-     &                                       ispmax, ctheta, ctheta_weights, &
-     &                                       dbcx, dnax, nnr_rho,            &
-     &                                       nntheta_rho, psiofr,            &
-     &                                       phiint_rho, qpl)
+                  call evaluate_integral_3c (nFdata_cell_3c, ispecies,        &
+     &                                       jspecies, kspecies, ispmin,      &
+     &                                       ispmax, ctheta, ctheta_weights,  &
+     &                                       dbcx, dnax, nnr_rho, nntheta_rho,&
+     &                                       psiofr, phiint_rho, qpl)
 
 ! ----------------------------------------------------------------------------
 ! qpl's are the answer
@@ -352,9 +351,9 @@
 
 ! Format Statements
 ! ===========================================================================
-100     format (2x, i2, 1x, i2, 1x, i2, 1x, i3, 1x, a29, 1x, i3,             &
+100     format (2x, i2, 1x, i2, 1x, i2, 1x, i3, 1x, a29, 1x, i3,              &
      &          1x, i4, 1x, f9.6, 1x, i4, 1x, f9.6)
-200     format (2x, ' Evaluating rho_3c integrals for nZ = ', i3,            &
+200     format (2x, ' Evaluating rho_3c integrals for nZ = ', i3,             &
      &              ' and nZ = ', i3, ', density on nZ = ', i3)
 
 ! End Subroutine
@@ -375,8 +374,8 @@
 ! The result is written into avgVmat which is are the integral stored
 ! in a mu, nu form - single dimension array form.
 ! ===========================================================================
-        subroutine phiint_rho (itype, ispecies, jspecies, kspecies, ispmin, &
-                               ispmax, r, ds, zr, rna, avgVmat)
+        subroutine phiint_rho (itype, ispecies, jspecies, kspecies, ispmin,  &
+                               ispmax, r, ds, zr, r1, r2, rna, avgVmat)
         implicit none
 
         include '../include/gridsizes.h'
@@ -387,8 +386,9 @@
         integer, intent (in) :: ispecies, jspecies, kspecies  ! the species
         integer, intent (in) :: ispmin, ispmax, itype    ! which type doing
 
+        ! integration coordinates
         real, intent (in) :: r, ds, zr
-        real, intent (in) :: rna (3)           ! the integration coordinates
+        real, intent (in) :: r1, r2, rna(3)
 
 ! Output
         real, intent (out) :: avgVmat(ispmin:,:)
@@ -407,6 +407,7 @@
         integer, allocatable :: mleft (:)  ! m quantum numbers
         integer, allocatable :: mright (:)
 
+        real dummy
         real dphi                       ! interval between theta points
         real xr, yr, r3                 ! coordinate points
         real phi                        ! value of phi at point of integration
@@ -426,6 +427,8 @@
 
 ! Procedure
 ! ===========================================================================
+        dummy = r1
+        dummy = r2
 
 ! Cut some lengthy notation
         pFdata_bundle=>Fdata_bundle_3c(ispecies, jspecies, kspecies)
@@ -482,7 +485,7 @@
 
             prod = vpot*phimult(iphi)
             do index_3c = 1, nME3c_max
-              avgVmat(isorp,index_3c) = avgVmat(isorp,index_3c)              &
+              avgVmat(isorp,index_3c) = avgVmat(isorp,index_3c)               &
         &       + prod*phifactor(mleft(index_3c))*phifactor(mright(index_3c))
             end do
           end do ! isorp
@@ -504,5 +507,5 @@
 
 
 ! End Module
-! =============================================================================
+! ===========================================================================
         end module

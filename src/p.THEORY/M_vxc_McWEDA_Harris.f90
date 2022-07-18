@@ -559,7 +559,7 @@
           allocate (pFdata_cell%fofx(nME1c_max))
 
           ! Open ouput file for this species pair
-          write (filename, '("/xc_1c", ".", i2.2, ".dat")')                 &
+          write (filename, '("/vxc_1c", ".", i2.2, ".dat")')                &
      &      species(ispecies)%nZ
           open (unit = 11, file = trim(Fdata_location)//trim(filename),     &
      &          status = 'unknown')
@@ -578,30 +578,30 @@
           ! Set integration limits
           zmin = -rcutoff1
           zmax = rcutoff1
-          call evaluate_integral_2c (nFdata_cell_1c, ispecies, ispecies,    &
-     &                                isorp, ideriv, rcutoff1, rcutoff1, d,  &
-     &                                nz_vxc, nrho_vxc, rint_exc_1c,         &
-     &                                phifactor, zmin, zmax, rhomin, rhomax, &
+          call evaluate_integral_2c (nFdata_cell_1c, ispecies, ispecies,      &
+     &                                isorp, ideriv, rcutoff1, rcutoff1, d,   &
+     &                                nz_vxc, nrho_vxc, rint_exc_1c,          &
+     &                                phifactor, zmin, zmax, rhomin, rhomax,  &
      &                                pFdata_cell%fofx)
 
           ! Write out details.
           index_1c = 1
           do issh = 1, species(ispecies)%nssh
-            write (11,*) (pFdata_cell%fofx(jssh),                           &
+            write (11,*) (pFdata_cell%fofx(jssh),                             &
      &                    jssh = index_1c, index_1c + species(ispecies)%nssh - 1)
             index_1c = index_1c + species(ispecies)%nssh
           end do
 
-          call evaluate_integral_2c (nFdata_cell_1c, ispecies, ispecies,    &
-     &                               isorp, ideriv, rcutoff1, rcutoff1, d,   &
-     &                               nz_vxc, nrho_vxc, rint_vxc_1c,          &
-     &                               phifactor, zmin, zmax, rhomin, rhomax,  &
+          call evaluate_integral_2c (nFdata_cell_1c, ispecies, ispecies,      &
+     &                               isorp, ideriv, rcutoff1, rcutoff1, d,    &
+     &                               nz_vxc, nrho_vxc, rint_vxc_1c,           &
+     &                               phifactor, zmin, zmax, rhomin, rhomax,   &
      &                               pFdata_cell%fofx)
 
           ! Write out details.
           index_1c = 1
           do issh = 1, species(ispecies)%nssh
-            write (11,*) (pFdata_cell%fofx(jssh),                           &
+            write (11,*) (pFdata_cell%fofx(jssh),                             &
      &                    jssh = index_1c, index_1c + species(ispecies)%nssh - 1)
             index_1c = index_1c + species(ispecies)%nssh
           end do
