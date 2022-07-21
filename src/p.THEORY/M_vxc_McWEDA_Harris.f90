@@ -169,7 +169,8 @@
 ! Subroutine Description
 ! ===========================================================================
 !       This routine calls the subroutines required to calculate the vna_ontop
-! (both left/right cases) and atom cases.
+! (both left/right cases) and atom cases. Also, the over-counting correction
+! to the exchange-correlation energy is calculated here.
 ! ===========================================================================
 ! Subroutine Declaration
 ! ===========================================================================

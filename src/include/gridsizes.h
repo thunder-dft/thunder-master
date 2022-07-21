@@ -25,6 +25,11 @@
         integer, parameter :: nz_coulomb = 106
         integer, parameter :: nrho_coulomb = 106
 
+! UXC (XC Correction)
+        integer, parameter :: ndd_uxc = 107
+        integer, parameter :: nz_uxc = 116
+        integer, parameter :: nrho_uxc = 116
+
 ! RHO (Density for McWeda)
         integer, parameter :: ndd_rho = 107
         integer, parameter :: nz_rho = 106
@@ -45,7 +50,7 @@
         integer, parameter :: nrho_vnl = 106
 
 ! VXC
-        integer, parameter :: ndd_vxc = 127
+        integer, parameter :: ndd_vxc = 107
         integer, parameter :: nz_vxc = 116
         integer, parameter :: nrho_vxc = 116
 
@@ -75,10 +80,10 @@
         integer, parameter :: nnphi_bcna = 31
 
 ! XC3C
-        integer, parameter :: nbc_xc = 29
-        integer, parameter :: nna_xc = 29
+        integer, parameter :: nbc_xc3c = 29
+        integer, parameter :: nna_xc3c = 29
 
         ! number of mesh integration points
-        integer, parameter :: nnr_xc = 63
-        integer, parameter :: nntheta_xc = 63
-        integer, parameter :: nnphi_xc = 31
+        integer, parameter :: nnr_xc3c = 63
+        integer, parameter :: nntheta_xc3c = 63
+        integer, parameter :: nnphi_xc3c = 31

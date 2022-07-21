@@ -749,6 +749,139 @@
         end subroutine make_munuS_atom
 
 
+! ============================================================================
+! make_munu_uxc
+! ============================================================================
+! Subroutine Description
+! ============================================================================
+!       This subroutine calculates the following information (for all pairs
+! of atoms (in1,in2)):
+!
+! num_orb (in1): number of orbitals in atom-type in1
+! mu (index,in1,in2): the mu-position for each matrix-element (index) between
+!                     atom-type in1 and atom-type in2
+! nu (index,in1,in2): the nu-position for each matrix-element (index) between
+!                     atom-type in1 and atom-type in2
+
+! (on the BOX ( num_orb(in1) x num_orb(in2)))
+!
+! Atoms 1 and 2 (bondcharge) are along the z-axis; the third atom is in the
+! xz-plane. The labelling of the orbitals is as follows:
+!
+!   S-shell :                s
+!                            0
+!
+!   P-shell :           py   pz   px
+!                       -1   0    +1
+!
+!   D-shell :     xy    yz   z^2  xz   x^2-y^2
+!                 -2    -1   0    +1     +2
+!
+! This is the USR case, so really there are no munu. However, we need to
+! set the quantum numbers so that we can treat this case like any other
+! two center interactions case.
+!
+! Subroutine Declaration
+! ============================================================================
+        subroutine make_munu_uxc (itype, ispecies, jspecies)
+        implicit none
+
+! Auguments Declaration and Description
+! ============================================================================
+! Input
+        integer, intent(in) :: itype
+        integer, intent(in) :: ispecies, jspecies    ! which pair for mu, nu
+
+! Parameters and Data Declaration
+! ============================================================================
+! None
+
+! Local Variable Declaration adn Description
+! ============================================================================
+        integer index_2c                ! counter for matrix location - mu, nu
+        integer issh, jssh              ! index for looping over shells
+        integer mvalue
+
+        integer n1, l1                  ! left quantum numbers
+        integer n2, l2                  ! right quantum numbers
+        integer nME2c_max
+
+        type (T_Fdata_cell_2c), pointer :: pFdata_cell
+        type (T_Fdata_bundle_2c), pointer :: pFdata_bundle
+
+! Allocate Arrays
+! ============================================================================
+! None
+
+! Procedure
+! ============================================================================
+! Loop over the pairs of species.  For each species pair, establish what the
+! quantum number values for the orbital mu (the left orbital) and nu (the
+! right orbital).
+        ! cut some lengthy notation
+        pFdata_bundle=>Fdata_bundle_2c(ispecies, jspecies)
+        nME2c_max = 1
+
+! Now allocate the sizes for mu_2c, nu_2c, and the quantum numbers NLM
+! for each mu and nu pair.
+        pFdata_cell=>pFdata_bundle%Fdata_cell_2c(itype)
+        pFdata_cell%nME = nME2c_max
+
+        allocate (pFdata_cell%mu_2c(nME2c_max))
+        allocate (pFdata_cell%nu_2c(nME2c_max))
+        allocate (pFdata_cell%mvalue_2c(nME2c_max))
+
+        allocate (pFdata_cell%N_mu(nME2c_max))
+        allocate (pFdata_cell%L_mu(nME2c_max))
+        allocate (pFdata_cell%M_mu(nME2c_max))
+
+        allocate (pFdata_cell%N_nu(nME2c_max))
+        allocate (pFdata_cell%L_nu(nME2c_max))
+        allocate (pFdata_cell%M_nu(nME2c_max))
+
+! Set the values for NLM of each mu, nu pair.
+        index_2c = 0
+        n1 = 0
+!       do issh = 1, species(ispecies)%nssh
+        issh = 1
+          l1 = species(ispecies)%shell(issh)%lssh
+          n1 = n1 + 1
+          n2 = 0
+!         do jssh = 1, species(jspecies)%nssh
+          jssh = 1
+            l2 = species(jspecies)%shell(jssh)%lssh
+            n2 = n2 + 1
+
+            mvalue = 0
+            index_2c = index_2c + 1
+            pFdata_cell%mu_2c(index_2c) = n1 + mvalue
+            pFdata_cell%nu_2c(index_2c) = n2 + mvalue
+            pFdata_cell%mvalue_2c(index_2c) = 0
+
+            pFdata_cell%N_mu(index_2c) = issh
+            pFdata_cell%L_mu(index_2c) = l1
+            pFdata_cell%M_mu(index_2c) = mvalue
+
+            pFdata_cell%N_nu(index_2c) = jssh
+            pFdata_cell%L_nu(index_2c) = l2
+            pFdata_cell%M_nu(index_2c) = mvalue
+!         end do
+!       end do
+
+! Deallocate Arrays
+! ===========================================================================
+! None
+
+! Format Statements
+! ===========================================================================
+! None
+
+! End Subroutine
+! ===========================================================================
+        return
+        end subroutine make_munu_uxc
+
+
 ! ===========================================================================
 ! evaluate_integral_2c
 ! ===========================================================================
@@ -1004,10 +1137,7 @@
         end do
 
 !----------------------------------------------------------------------------
-! Non Adaptive Simpson's Setup
-!----------------------------------------------------------------------------
-!----------------------------------------------------------------------------
-! Actually use the normal Simpson. Set uprho integration
+! Actually use the normal Simpson. Set up rho integration
 !----------------------------------------------------------------------------
         xntegral = 0.00
         do irho = 1, nnrho
