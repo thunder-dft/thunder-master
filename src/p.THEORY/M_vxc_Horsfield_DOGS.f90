@@ -95,6 +95,9 @@
 
 ! Type Declaration
 ! ===========================================================================
+! The charge transfer bit = need a +-dq on each orbital.
+        real, allocatable :: dqorb (:)
+
 ! Some parameters for the derivative parts:
         integer, parameter, dimension (0:4) :: jsign = (/0, -1, +1, -1, +1/)
         integer, parameter, dimension (0:4) :: kspecies_key = (/1, 1, 1, 2, 2/)
@@ -184,6 +187,13 @@
             end do ! ideriv
           end do ! jspecies
         end do ! ispecies
+
+! Initialize the charge transfer bit
+        allocate (dqorb (nspecies))
+        do ispecies = 1, nspecies
+          dqorb(ispecies) = 0.5d0
+          if (species(ispecies)%nssh .eq. 1) dqorb(ispecies) = 0.25d0
+        end do
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -322,8 +332,6 @@
         real rhomin, rhomax
         real xc_fraction
 
-        real, allocatable :: dqorb (:)
-
 ! Simpsons' Variables.
         integer irho, nnrho               ! integrate from irho to nnrho
 
@@ -347,13 +355,6 @@
 ! Set ideriv_min = 1 and ideriv_max = 2 for one center case.
         ideriv_min = 1
         ideriv_max = 2
-
-! Initialize the charge transfer bit
-        allocate (dqorb (nspecies))
-        do ispecies = 1, nspecies
-          dqorb(ispecies) = 0.5d0
-          if (species(ispecies)%nssh .eq. 1) dqorb(ispecies) = 0.25d0
-        end do
 
 ! Loop over species
         do ispecies = 1, nspecies
@@ -531,8 +532,6 @@
         real zmin, zmax
         real rhomin, rhomax
 
-        real, allocatable :: dqorb (:)
-
         type (T_Fdata_cell_2c), pointer :: pFdata_cell
         type (T_Fdata_bundle_2c), pointer :: pFdata_bundle
 
@@ -551,13 +550,6 @@
 ! We do not need isorp for Horsfield exchange-correlation, so set isorp = 0
         isorp = 0
 
-! Initialize the charge transfer bit
-        allocate (dqorb (nspecies))
-        do ispecies = 1, nspecies
-          dqorb(ispecies) = 0.5d0
-          if (species(ispecies)%nssh .eq. 1) dqorb(ispecies) = 0.25d0
-        end do
-
         ! Set initial integration limit
         rhomin = 0.0d0
 
@@ -565,30 +557,30 @@
         do ispecies = 1, nspecies
           do jspecies = 1, nspecies
 
-            ! Set the values of Qneutral_ion to the original Qneutral
-            do issh = 1, species(ispecies)%nssh
-              species(ispecies)%shell(issh)%Qneutral_ion =                  &
-     &          species(ispecies)%shell(issh)%Qneutral
-            end do
-            do issh = 1, species(jspecies)%nssh
-              species(jspecies)%shell(issh)%Qneutral_ion =                  &
-     &          species(jspecies)%shell(issh)%Qneutral
-            end do
-
 ! For the once center case we only do +- dq changes in the density.
             do ideriv = ideriv_min, ideriv_max
+
+              ! Set the values of Qneutral_ion to the original Qneutral
+              do issh = 1, species(ispecies)%nssh
+                species(ispecies)%shell(issh)%Qneutral_ion =                  &
+     &            species(ispecies)%shell(issh)%Qneutral
+              end do
+              do issh = 1, species(jspecies)%nssh
+                species(jspecies)%shell(issh)%Qneutral_ion =                  &
+     &            species(jspecies)%shell(issh)%Qneutral
+              end do
 
               ! change the charge state to affect the density
               if (kspecies_key(ideriv) .eq. 1) then
                 dqint = dqorb(ispecies)/species(ispecies)%nssh
                 do issh = 1, species(ispecies)%nssh
-                  species(ispecies)%shell(issh)%Qneutral_ion =                  &
+                  species(ispecies)%shell(issh)%Qneutral_ion =                &
      &              species(ispecies)%shell(issh)%Qneutral + jsign(ideriv)*dqint
                 end do
               else
                 dqint = dqorb(jspecies)/species(jspecies)%nssh
                 do issh = 1, species(jspecies)%nssh
-                  species(jspecies)%shell(issh)%Qneutral_ion =                  &
+                  species(jspecies)%shell(issh)%Qneutral_ion =                &
      &              species(jspecies)%shell(issh)%Qneutral + jsign(ideriv)*dqint
                 end do
               end if
@@ -750,8 +742,6 @@
         real zmin, zmax
         real rhomin, rhomax
 
-        real, allocatable :: dqorb (:)
-
         type (T_Fdata_cell_2c), pointer :: pFdata_cell
         type (T_Fdata_bundle_2c), pointer :: pFdata_bundle
 
@@ -770,13 +760,6 @@
 ! We do not need isorp for Horsfield exchange-correlation, so set isorp = 0
         isorp = 0
 
-! Initialize the charge transfer bit
-        allocate (dqorb (nspecies))
-        do ispecies = 1, nspecies
-          dqorb(ispecies) = 0.5d0
-          if (species(ispecies)%nssh .eq. 1) dqorb(ispecies) = 0.25d0
-        end do
-
         ! Set initial integration limit
         rhomin = 0.0d0
 
@@ -784,30 +767,30 @@
         do ispecies = 1, nspecies
           do jspecies = 1, nspecies
 
-            ! Set the values of Qneutral_ion to the original Qneutral
-            do issh = 1, species(ispecies)%nssh
-              species(ispecies)%shell(issh)%Qneutral_ion =                  &
-     &          species(ispecies)%shell(issh)%Qneutral
-            end do
-            do issh = 1, species(jspecies)%nssh
-              species(jspecies)%shell(issh)%Qneutral_ion =                  &
-     &          species(jspecies)%shell(issh)%Qneutral
-            end do
-
 ! For the once center case we only do +- dq changes in the density.
             do ideriv = ideriv_min, ideriv_max
+
+              ! Set the values of Qneutral_ion to the original Qneutral
+              do issh = 1, species(ispecies)%nssh
+                species(ispecies)%shell(issh)%Qneutral_ion =                  &
+     &            species(ispecies)%shell(issh)%Qneutral
+              end do
+              do issh = 1, species(jspecies)%nssh
+                species(jspecies)%shell(issh)%Qneutral_ion =                  &
+     &            species(jspecies)%shell(issh)%Qneutral
+              end do
 
               ! change the charge state to affect the density
               if (kspecies_key(ideriv) .eq. 1) then
                 dqint = dqorb(ispecies)/species(ispecies)%nssh
                 do issh = 1, species(ispecies)%nssh
-                  species(ispecies)%shell(issh)%Qneutral_ion =                  &
+                  species(ispecies)%shell(issh)%Qneutral_ion =                &
      &              species(ispecies)%shell(issh)%Qneutral + jsign(ideriv)*dqint
                 end do
               else
                 dqint = dqorb(jspecies)/species(jspecies)%nssh
                 do issh = 1, species(jspecies)%nssh
-                  species(jspecies)%shell(issh)%Qneutral_ion =                  &
+                  species(jspecies)%shell(issh)%Qneutral_ion =                &
      &              species(jspecies)%shell(issh)%Qneutral + jsign(ideriv)*dqint
                 end do
               end if
@@ -967,8 +950,6 @@
         real zmin, zmax
         real rhomin, rhomax
 
-        real, allocatable :: dqorb (:)
-
         type (T_Fdata_cell_2c), pointer :: pFdata_cell
         type (T_Fdata_bundle_2c), pointer :: pFdata_bundle
 
@@ -987,13 +968,6 @@
 ! We are doing only Harris here, so set isorp = 0
         isorp = 0
 
-! Initialize the charge transfer bit
-        allocate (dqorb (nspecies))
-        do ispecies = 1, nspecies
-          dqorb(ispecies) = 0.5d0
-          if (species(ispecies)%nssh .eq. 1) dqorb(ispecies) = 0.25d0
-        end do
-
         ! Set initial integration limit
         rhomin = 0.0d0
 
@@ -1001,30 +975,30 @@
         do ispecies = 1, nspecies
           do jspecies = 1, nspecies
 
-            ! Set the values of Qneutral_ion to the original Qneutral
-            do issh = 1, species(ispecies)%nssh
-              species(ispecies)%shell(issh)%Qneutral_ion =                  &
-     &          species(ispecies)%shell(issh)%Qneutral
-            end do
-            do issh = 1, species(jspecies)%nssh
-              species(jspecies)%shell(issh)%Qneutral_ion =                  &
-     &          species(jspecies)%shell(issh)%Qneutral
-            end do
-
 ! For the once center case we only do +- dq changes in the density.
             do ideriv = ideriv_min, ideriv_max
+
+              ! Set the values of Qneutral_ion to the original Qneutral
+              do issh = 1, species(ispecies)%nssh
+                species(ispecies)%shell(issh)%Qneutral_ion =                  &
+     &            species(ispecies)%shell(issh)%Qneutral
+              end do
+              do issh = 1, species(jspecies)%nssh
+                species(jspecies)%shell(issh)%Qneutral_ion =                  &
+     &            species(jspecies)%shell(issh)%Qneutral
+              end do
 
               ! change the charge state to affect the density
               if (kspecies_key(ideriv) .eq. 1) then
                 dqint = dqorb(ispecies)/species(ispecies)%nssh
                 do issh = 1, species(ispecies)%nssh
-                  species(ispecies)%shell(issh)%Qneutral_ion =                  &
+                  species(ispecies)%shell(issh)%Qneutral_ion =                &
      &              species(ispecies)%shell(issh)%Qneutral + jsign(ideriv)*dqint
                 end do
               else
                 dqint = dqorb(jspecies)/species(jspecies)%nssh
                 do issh = 1, species(jspecies)%nssh
-                  species(jspecies)%shell(issh)%Qneutral_ion =                  &
+                  species(jspecies)%shell(issh)%Qneutral_ion =                &
      &              species(jspecies)%shell(issh)%Qneutral + jsign(ideriv)*dqint
                 end do
               end if

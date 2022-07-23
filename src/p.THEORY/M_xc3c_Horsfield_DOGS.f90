@@ -59,6 +59,9 @@
 ! Fdata points. The smallest unit storage is called Fdata_cell_3C, containing
 ! all Fdata for a particular interaction/subinteraction type.
 
+! The charge transfer bit = need a +-dq on each orbital.
+        real, allocatable :: dqorb (:)
+
 ! Some parameters for the derivative parts:
         integer, parameter, dimension (0:6) :: jsign = (/0, -1, +1, -1, +1, -1, +1/)
         integer, parameter, dimension (0:6) :: kspecies_key = (/1, 1, 1, 2, 2, 3, 3/)
@@ -136,6 +139,13 @@
           end do ! jspecies
         end do ! ispecies
 
+! Initialize the charge transfer bit
+        allocate (dqorb (nspecies))
+        do ispecies = 1, nspecies
+          dqorb(ispecies) = 0.5d0
+          if (species(ispecies)%nssh .eq. 1) dqorb(ispecies) = 0.25d0
+        end do
+
 ! Deallocate Arrays
 ! ===========================================================================
 ! None
@@ -179,7 +189,6 @@
         integer iounit                  ! file for writing
 !       integer isuperloop              ! counter over species**3 - parallel
         integer ispecies, jspecies, kspecies  ! species numbers
-        integer issh
 !       integer itemp                   ! used to find species values
         integer nFdata_cell_3c          !< indexing of interactions
 
@@ -191,13 +200,10 @@
 
         real dbc, dna                  ! distances between centers
         real dbcx, dnax, distance_bc
-        real dqint                          !< delta of charge in shell
         real rcutoff1, rcutoff2, rcutoff3   ! atom cutoffs
 
         real, dimension (P_ntheta) :: ctheta
         real, dimension (P_ntheta) :: ctheta_weights
-
-        real, allocatable :: dqorb (:)
 
         real, pointer :: qpl (:, :, :)
 
@@ -223,13 +229,6 @@
 ! Initialize the Legendre coefficients
         call gleg (ctheta, ctheta_weights, P_ntheta)
 
-! Initialize the charge transfer bit
-        allocate (dqorb (nspecies))
-        do ispecies = 1, nspecies
-          dqorb(ispecies) = 0.5d0
-          if (species(ispecies)%nssh .eq. 1) dqorb(ispecies) = 0.25d0
-        end do
-
 ! Loop over the different derivative types. We already did ideriv=0 case.
 ! Set ideriv_min = 1 and ideriv_max = 2 for one center case.
         ideriv_min = 1
@@ -253,43 +252,8 @@
 !               itemp   = itemp - (jspecies - 1)*(nspecies)
 !               ispecies = itemp
 
-              ! Set the values of Qneutral_ion to the original Qneutral
-              do issh = 1, species(ispecies)%nssh
-                species(ispecies)%shell(issh)%Qneutral_ion =                  &
-     &            species(ispecies)%shell(issh)%Qneutral
-              end do
-              do issh = 1, species(jspecies)%nssh
-                species(jspecies)%shell(issh)%Qneutral_ion =                  &
-     &            species(jspecies)%shell(issh)%Qneutral
-              end do
-              do issh = 1, species(kspecies)%nssh
-                species(kspecies)%shell(issh)%Qneutral_ion =                  &
-     &            species(kspecies)%shell(issh)%Qneutral
-              end do
-
-! For the once center case we only do +- dq changes in the density.
+! Each ideriv evaluates +- dq changes in the density.
               do ideriv = ideriv_min, ideriv_max
-
-                ! change the charge state to affect the density
-                if (kspecies_key(ideriv) .eq. 1) then
-                  dqint = dqorb(ispecies)/species(ispecies)%nssh
-                  do issh = 1, species(ispecies)%nssh
-                    species(ispecies)%shell(issh)%Qneutral_ion =              &
-     &                species(ispecies)%shell(issh)%Qneutral + jsign(ideriv)*dqint
-                  end do
-                else if (kspecies_key(ideriv) .eq. 2) then
-                  dqint = dqorb(jspecies)/species(jspecies)%nssh
-                  do issh = 1, species(jspecies)%nssh
-                    species(jspecies)%shell(issh)%Qneutral_ion =              &
-     &                species(jspecies)%shell(issh)%Qneutral + jsign(ideriv)*dqint
-                  end do
-                else
-                  dqint = dqorb(kspecies)/species(kspecies)%nssh
-                  do issh = 1, species(kspecies)%nssh
-                    species(kspecies)%shell(issh)%Qneutral_ion =              &
-     &                species(kspecies)%shell(issh)%Qneutral + jsign(ideriv)*dqint
-                  end do
-                end if
 
                 ! cut some lengthy notation with pointers
                 pFdata_bundle=>Fdata_bundle_3c(ispecies, jspecies, kspecies)
@@ -357,12 +321,14 @@
                   write (12,*) (pFdata_cell%mvalue_3c(index_3c),              &
      &                                                    index_3c = 1, nME3c_max)
                 end do
+              end do ! end loop over ideriv
 
-                write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ,&
-     &                               species(kspecies)%nZ
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ,&
+     &                             species(kspecies)%nZ
 
 ! Open all the output files.
-                iounit = 12
+              iounit = 12
+              do ideriv = ideriv_min, ideriv_max
                 do itheta = 1, P_ntheta
                   iounit = iounit + 1
                   write (filename, '("/", "xc3c_", i2.2, "_", i2.2, ".", i2.2,&
@@ -375,27 +341,28 @@
      &                  file = trim(Fdata_location)//trim(filename),          &
      &                  status = 'unknown')
                 end do
+              end do ! end loop over ideriv
 
 ! ----------------------------------------------------------------------------
 ! Begin the big loops over dbc and dna.
 ! ----------------------------------------------------------------------------
 ! Loop over all bondcharge distances.
-                do ibcba = 1, nbc_xc3c
-                  dbcx = float(ibcba - 1)*dbc/float(nbc_xc3c - 1)
+             do ibcba = 1, nbc_xc3c
+                dbcx = float(ibcba - 1)*dbc/float(nbc_xc3c - 1)
 
 ! for all bondcharges-- we set b=dbcx/2.
-                  distance_bc = dbcx/2.0d0
+                distance_bc = dbcx/2.0d0
 
 ! Loop over all neutral atom distances.
 ! The distance is measured from the bondcharge center (b=dbcx/2)
-                  do inaba = 1, nna_xc3c
-                    dnax = float(inaba - 1)*dna/float(nna_xc3c - 1)
-                    call evaluate_integral_3c (nFdata_cell_3c, ispecies,      &
-     &                                         jspecies, kspecies, ideriv_min,&
-     &                                         ideriv_max, ctheta,            &
-     &                                         ctheta_weights, dbcx, dnax,    &
-     &                                         nnr_xc3c, nntheta_xc3c, psiofr,&
-     &                                         phiint_xc3c, qpl)
+                do inaba = 1, nna_xc3c
+                  dnax = float(inaba - 1)*dna/float(nna_xc3c - 1)
+                  call evaluate_integral_3c (nFdata_cell_3c, ispecies,        &
+     &                                       jspecies, kspecies, ideriv_min,  &
+     &                                       ideriv_max, ctheta,              &
+     &                                       ctheta_weights, dbcx, dnax,      &
+     &                                       nnr_xc3c, nntheta_xc3c, psiofr,  &
+     &                                       phiint_xc3c, qpl)
 
 ! ----------------------------------------------------------------------------
 ! qpl's are the answer
@@ -405,27 +372,30 @@
 ! different non-zero matrix elements of a given combination are written out
 ! after the index loop.
 ! ----------------------------------------------------------------------------
-                    iounit = 12
+                  iounit = 12
+                  do ideriv = ideriv_min, ideriv_max
                     do itheta = 1, P_ntheta
                       iounit = iounit + 1
                       write (iounit,*)                                        &
      &                  (qpl(itheta,index_3c,ideriv), index_3c = 1, nME3c_max)
                     end do
-                  end do   ! end of the dna loop
-                end do  ! the end of the dbc loop
+                  end do  ! end loop over ideriv
+                end do  ! end of the dna loop
+              end do  ! the end of the dbc loop
 
-                ! close files
-                iounit = 12
+              ! close files
+              iounit = 12
+              do ideriv = ideriv_min, ideriv_max
                 do itheta = 1, P_ntheta
                   iounit = iounit + 1
                   close (unit = iounit)
                 end do
                 deallocate (qpl)
+              end do  ! end loop over ideriv
 
 !         end if ! MPI which node end if
 !       end do ! end loop over isuperloop
 
-              end do ! end loop over ideriv
             end do  ! end loop over kspecies
           end do  ! end loop over jspecies
         end do  ! end loop over ispecies
@@ -443,7 +413,6 @@
      &          1x, i4, 1x, f9.6, 1x, i4, 1x, f9.6)
 200     format (2x, ' Evaluating xc3c integrals for nZ = ', i3,              &
      &              ' and nZ = ', i3, ', potential on nZ = ', i3)
-
 
 ! End Subroutine
 ! ===========================================================================
@@ -494,7 +463,7 @@
 ! ===========================================================================
         integer index_3c                ! counter for matrix location - mu, nu
         integer iphi                    ! integration over theta
-        integer ideriv                  ! loop over shells
+        integer ideriv, issh            ! loop over derivatives and shells
         integer nME3c_max               ! number of matrix elements
 
         integer, allocatable :: mleft (:)  ! m quantum numbers
@@ -505,6 +474,8 @@
         real phi                        ! value of phi at point of integration
         real prod
         real vpot                       ! value of potential
+
+        real dqint                      ! charge transfer bit for +-dq
 
         real phifactor (-3:3)           ! phifactors for integration
         real, allocatable :: phimult (:)
@@ -568,6 +539,42 @@
           r3 = sqrt((xr - rna(1))**2 + (yr - rna(2))**2 + (zr - rna(3))**2)
 
           do ideriv = ideriv_min, ideriv_max
+
+            ! Set the values of Qneutral_ion to the original Qneutral
+            do issh = 1, species(ispecies)%nssh
+              species(ispecies)%shell(issh)%Qneutral_ion =                    &
+     &          species(ispecies)%shell(issh)%Qneutral
+            end do
+            do issh = 1, species(jspecies)%nssh
+              species(jspecies)%shell(issh)%Qneutral_ion =                    &
+     &          species(jspecies)%shell(issh)%Qneutral
+            end do
+            do issh = 1, species(kspecies)%nssh
+              species(kspecies)%shell(issh)%Qneutral_ion =                    &
+     &          species(kspecies)%shell(issh)%Qneutral
+            end do
+
+            ! Now change the charge state to affect the density
+            if (kspecies_key(ideriv) .eq. 1) then
+              dqint = dqorb(ispecies)/species(ispecies)%nssh
+              do issh = 1, species(ispecies)%nssh
+                species(ispecies)%shell(issh)%Qneutral_ion =                  &
+     &            species(ispecies)%shell(issh)%Qneutral + jsign(ideriv)*dqint
+              end do
+            else if (kspecies_key(ideriv) .eq. 2) then
+              dqint = dqorb(jspecies)/species(jspecies)%nssh
+              do issh = 1, species(jspecies)%nssh
+                species(jspecies)%shell(issh)%Qneutral_ion =                  &
+     &            species(jspecies)%shell(issh)%Qneutral + jsign(ideriv)*dqint
+              end do
+            else
+              dqint = dqorb(kspecies)/species(kspecies)%nssh
+              do issh = 1, species(kspecies)%nssh
+                species(kspecies)%shell(issh)%Qneutral_ion =                  &
+     &            species(kspecies)%shell(issh)%Qneutral + jsign(ideriv)*dqint
+              end do
+            end if
+
             vpot = dvxc_3c (itype, ispecies, jspecies, kspecies, r1, r2, r3)
 
             prod = vpot*phimult(iphi)

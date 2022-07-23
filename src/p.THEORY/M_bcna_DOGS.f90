@@ -335,12 +335,13 @@
 
               ! close files
               iounit = 12
-              do itheta = 1, P_ntheta
-                iounit = iounit + 1
-                close (unit = iounit)
-              end do
-              deallocate (qpl)
-
+              do isorp = ispmin, ispmax
+                do itheta = 1, P_ntheta
+                  iounit = iounit + 1
+                  close (unit = iounit)
+                end do
+                deallocate (qpl)
+              end do  ! end isporp loop
             end do  ! end loop over kspecies
           end do  ! end loop over jspecies
         end do  ! end loop over ispecies
