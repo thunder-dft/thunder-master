@@ -340,8 +340,8 @@
                   iounit = iounit + 1
                   close (unit = iounit)
                 end do
-                deallocate (qpl)
               end do  ! end isporp loop
+              deallocate (qpl)
             end do  ! end loop over kspecies
           end do  ! end loop over jspecies
         end do  ! end loop over ispecies

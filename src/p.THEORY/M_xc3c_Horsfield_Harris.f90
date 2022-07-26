@@ -357,11 +357,11 @@
                 iounit = iounit + 1
                 close (unit = iounit)
               end do
-              deallocate (qpl)
 
 !         end if ! MPI which node end if
 !       end do ! end loop over isuperloop
 
+              deallocate (qpl)
             end do  ! end loop over kspecies
           end do  ! end loop over jspecies
         end do  ! end loop over ispecies
