@@ -195,8 +195,8 @@
 ! ===========================================================================
         write (ilogfile,*)
         write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*) '           E X C H A N G E   C O R R E L A T I O N       '
-        write (ilogfile,*) '    T H R E E - C E N T E R    I N T E R A C T I O N S   '
+        write (ilogfile,*) '          E X C H A N G E   C O R R E L A T I O N        '
+        write (ilogfile,*) '                T H R E E - C E N T E R                  '
         write (ilogfile,*) '                 (X C 3 C) M A T R I X                   '
         write (ilogfile,*) '                I N T E R A C T I O N S                  '
         write (ilogfile,*) ' ******************************************************* '

@@ -35,8 +35,8 @@
 !      This is a module calculating the integrals of two centers for the
 ! the exchange-correlation interactions.
 !
-! We use a finite difference approach to change change the densities and then
-! find the correspndonding changes in the exchange-correlation potential.
+! We use a finite difference approach to change the densities and then
+! find the corresponding changes in the exchange-correlation potential.
 ! This a bit clumsy sometimes, and probably can use a rethinking to improve.
 ! However, it actually works quite well for many molecular systems.
 !
@@ -644,7 +644,7 @@
      &                      index_2c = 1, nME2c_max)
 
 ! Loop over grid
-              write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, ideriv
               do igrid = 1, ndd_uxc
                 d = d + drr
 
@@ -675,8 +675,8 @@
 ! Format Statements
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
-200     format (2x, ' Evaluating uxc integrals for ideriv = ', i3,          &
-     &              ' nZ = ', i3, ' and nZ = ', i3)
+200     format (2x, ' Evaluating uxc integrals for nZ = ', i3,                &
+     &              ' and nZ = ', i3, ', ideriv = ', i3)
 
 ! End Subroutine
 ! ===========================================================================
@@ -853,7 +853,7 @@
      &                      index_2c = 1, nME2c_max)
 
 ! Loop over grid
-              write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, ideriv
               do igrid = 1, ndd_vxc
                 d = d + drr
 
@@ -883,8 +883,8 @@
 ! Format Statements
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
-200     format (2x, ' Evaluating vxc ontop integrals for ideriv = ', i3,      &
-     &              ' nZ = ', i3, ' and nZ = ', i3)
+200     format (2x, ' Evaluating vxc ontop integrals for nZ = ', i3,          &
+     &              ' and nZ = ', i3, ', ideriv = ', ideriv)
 
 ! End Subroutine
 ! ===========================================================================
@@ -1060,7 +1060,7 @@
      &                      index_2c = 1, nME2c_max)
 
 ! Loop over grid
-              write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, ideriv
               do igrid = 1, ndd_vxc
                 d = d + drr
 
@@ -1090,8 +1090,8 @@
 ! Format Statements
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
-200     format (2x, ' Evaluating vxc atom integrals for ideriv = ', i3,       &
-     &              ' nZ = ', i3, ' and nZ = ', i3)
+200     format (2x, ' Evaluating vxc atom integrals for nZ = ', i3,           &
+     &              ' and nZ = ', i3, ', ideriv = ', i3)
 
 ! End Subroutine
 ! ===========================================================================
