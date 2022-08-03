@@ -28,6 +28,6 @@ ifneq (,$(findstring HKQAI,${MACHINE}))
 	LFLAGS = -Wl,--start-group $(MKLPATH)/libmkl_intel_lp64.a \
 		$(MKLPATH)/libmkl_core.a $(MKLPATH)/libmkl_sequential.a \
 		-Wl,--end-group -lpthread -lm
-	LFLAGS_FFT = -I$(FFTPATH) -L$(MKLPATH) $(MKLPATH)/libfftw3xf_intel.a \
-		$(MKLPATH)/libmkl_em64t.a -Bdynamic $(MKLPATH)/libguide.a
+#	LFLAGS_FFT = -I$(FFTPATH) -L$(MKLPATH) $(MKLPATH)/libfftw3xf_intel.a \
+#		$(MKLPATH)/libmkl_em64t.a -Bdynamic $(MKLPATH)/libguide.a
 endif

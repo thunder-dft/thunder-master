@@ -1,21 +1,24 @@
 ! copyright info:
-!                             @Copyright 2016
-!                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
-! Academy of Sciences of the Czech Republic - Pavel JelinekmNZxbnmb
-
 !
+!                             @Copyright 2022
+!                           Fireball Committee
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
+! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
+
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
-! West Virginia University - Khorgolkhuu Odbadrakh, Ning Ma and Hao Wang
+! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
 
@@ -42,9 +45,13 @@
 !                          transformed matrix in k space.
 ! ============================================================================
         module M_kspace
+
+! /SYSTEM
         use M_assemble_blocks
         use M_species
         use M_configuraciones
+
+! /SOLVESH
         use M_diagonalization
 
 ! Type declaration
@@ -223,10 +230,9 @@
             norb_nu = species(in2)%norb_max
             allocate(pH_neighbors%block(norb_mu, norb_nu))
 
-            pH_neighbors%block = pK_neighbors%blocko + pvna_neighbors%block  &
-        &                       + pvna_neighbors%blocko                      &
-        &                       + pvxc_neighbors%block - pSR_neighbors%block &
-        &                       + pLR_neighbors%block
+            pH_neighbors%block = pK_neighbors%block + pvna_neighbors%block     &
+        &                       + pvna_neighbors%blocko + pvxc_neighbors%block &
+        &                       - pSR_neighbors%block + pLR_neighbors%block
           end do
         end do
 
@@ -291,6 +297,9 @@
         real, dimension (3) :: r1, r2  !< positions for iatom, jatom
         real, dimension (3) :: sigma   !< direction along sigma bond
 
+        ! for writing out the vna block combining the atom and ontop terms
+        real, dimension (:, :), allocatable :: vna_block
+
         interface
           function distance (a, b)
             real distance
@@ -306,10 +315,10 @@
         type(T_assemble_neighbors), pointer :: pvna
 
         ! exchange-correlation interactions
-!       type(T_assemble_block), pointer :: prho_in_neighbors
-!       type(T_assemble_neighbors), pointer :: prho_in
-!       type(T_assemble_block), pointer :: prho_bond_neighbors
-!       type(T_assemble_neighbors), pointer :: prho_bond
+        type(T_assemble_block), pointer :: prho_in_neighbors
+        type(T_assemble_neighbors), pointer :: prho_in
+        type(T_assemble_block), pointer :: prho_bond_neighbors
+        type(T_assemble_neighbors), pointer :: prho_bond
 !       type(T_assemble_block), pointer :: pWrho_in_neighbors
 !       type(T_assemble_neighbors), pointer :: pWrho_in
 !       type(T_assemble_block), pointer :: pWrho_bond_neighbors
@@ -354,8 +363,8 @@
           pvna=>s%vna(iatom)
 
           ! vxc interactions
-!         prho_in=>s%rho_in(iatom)
-!         prho_bond=>s%rho_bond(iatom)
+          prho_in=>s%rho_in(iatom)
+          prho_bond=>s%rho_bond(iatom)
 !         pWrho_in=>s%rho_in_weighted(iatom)
 !         pWrho_bond=>s%rho_bond_weighted(iatom)
           pvxc=>s%vxc(iatom)
@@ -404,59 +413,60 @@
             norb_nu = species(in2)%norb_max
             do imu = 1, norb_mu
               write (logfile,104)                                            &
-     &         (pK_neighbors%blocko(imu,inu), inu = 1, norb_nu)
+     &         (pK_neighbors%block(imu,inu), inu = 1, norb_nu)
             end do
 
 ! Neutral atom matrix elements
             write (logfile,*)
             write (logfile,'(4x,A)') 'vna: Hartree interactions '
-            write (logfile,'(4x,A)') '------------------------- '
+            write (logfile,'(4x,A)') '-------------------------------- '
             ! cut some more lengthy notation
             pvna_neighbors=>pvna%neighbors(ineigh)
-            pvna_neighbors%block = pvna_neighbors%block + pvna_neighbors%blocko
+            norb_mu = species(in1)%norb_max
+            norb_nu = species(in2)%norb_max
+            allocate (vna_block (norb_mu, norb_nu))
+            vna_block = pvna_neighbors%block + pvna_neighbors%blocko
+            do imu = 1, norb_mu
+              write (logfile,104) (vna_block(imu,inu), inu = 1, norb_nu)
+            end do
+            deallocate (vna_block)
+
+! Exchange-correlation matrix elements - density
+            write (logfile,*)
+            write (logfile,'(4x,A)') 'rho: input density matrices (for vxc) '
+            write (logfile,'(4x,A)') '------------------------------------- '
+            ! cut some more lengthy notation
+            prho_in_neighbors=>prho_in%neighbors(ineigh)
             norb_mu = species(in1)%norb_max
             norb_nu = species(in2)%norb_max
             do imu = 1, norb_mu
               write (logfile,104)                                            &
-     &         (pvna_neighbors%block(imu,inu), inu = 1, norb_nu)
+     &         (prho_in_neighbors%block(imu,inu), inu = 1, norb_nu)
             end do
 
-! Exchange-correlation matrix elements - density
-!            write (logfile,*)
-!            write (logfile,'(4x,A)') 'rho: input density matrices (for vxc) '
-!            write (logfile,'(4x,A)') '------------------------------------- '
-!            ! cut some more lengthy notation
-!            prho_in_neighbors=>prho_in%neighbors(ineigh)
-!            norb_mu = species(in1)%norb_max
-!            norb_nu = species(in2)%norb_max
-!            do imu = 1, norb_mu
-!              write (logfile,104)                                            &
-!     &         (prho_in_neighbors%block(imu,inu), inu = 1, norb_nu)
-!            end do
-
 ! Exchange-correlation matrix elements - bond density
-!            write (logfile,*)
-!            write (logfile,'(4x,A)') 'rho: input (bond) density (for vxc)   '
-!            write (logfile,'(4x,A)') '------------------------------------- '
-!            ! cut some more lengthy notation
-!            prho_bond_neighbors=>prho_bond%neighbors(ineigh)
-!            norb_mu = species(in1)%norb_max
-!            norb_nu = species(in2)%norb_max
-!            do imu = 1, norb_mu
-!              write (logfile,104)                                            &
-!     &         (prho_bond_neighbors%block(imu,inu), inu = 1, norb_nu)
-!            end do
+            write (logfile,*)
+            write (logfile,'(4x,A)') 'rho: input (bond) density (for vxc)   '
+            write (logfile,'(4x,A)') '------------------------------------- '
+            ! cut some more lengthy notation
+            prho_bond_neighbors=>prho_bond%neighbors(ineigh)
+            norb_mu = species(in1)%norb_max
+            norb_nu = species(in2)%norb_max
+            do imu = 1, norb_mu
+              write (logfile,104)                                              &
+     &         (prho_bond_neighbors%block(imu,inu), inu = 1, norb_nu)
+            end do
 
 ! Exchange-correlation matrix elements - input weighted density
 !            write (logfile,*)
 !            write (logfile,'(4x,A)') 'rhoS: input density matrices (for vxc) '
 !            write (logfile,'(4x,A)') '------------------------------------- '
-!            ! cut some more lengthy notation
+            ! cut some more lengthy notation
 !            pWrho_in_neighbors=>prho_in%neighbors(ineigh)
 !            norb_mu = species(in1)%norb_max
 !            norb_nu = species(in2)%norb_max
 !            do imu = 1, norb_mu
-!              write (logfile,104)                                            &
+!              write (logfile,104)                                              &
 !     &         (pWrho_in_neighbors%block(imu,inu), inu = 1, norb_nu)
 !            end do
 
@@ -581,14 +591,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 135 Willey St.
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -665,6 +674,14 @@
             end do ! do inu
           end do ! do ineigh
         end do ! do iatom
+
+! TESTING - Set Smatrix to identity
+!       Smatrix = 0.0d0
+!       do jmu = 1, s%norbitals
+!         do jnu = 1, s%norbitals
+!           if (jmu .eq. jnu) Smatrix(jmu,jnu) = 1.0d0
+!         end do
+!       end do
 
 ! DIAGONALIZE THE OVERLAP MATRIX
         call diagonalize_S (s)
@@ -810,7 +827,7 @@
               do imu = 1, norb_mu
                 jmu = imu + s%iblock_slot(iatom)
                 Hmatrix(jmu,jnu) =                                           &
-     &           Hmatrix(jmu,jnu) + phase(dot)*pvnl_neighbors%block(imu,inu)
+      &           Hmatrix(jmu,jnu) + phase(dot)*pvnl_neighbors%block(imu,inu)
               end do ! do imu
             end do ! do inu
           end do ! do ineigh

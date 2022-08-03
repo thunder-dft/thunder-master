@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2013
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -44,20 +46,25 @@
 ! Broyden method (see Eyert).
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Department of Physics and Astronomy
-! Brigham Young University
-! N233 ESC P.O. Box 24658
-! Provo, UT 84602-4658
-! FAX (801) 422-2265
-! Office Telephone (801) 422-7444
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
+!
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
 ! ===========================================================================
         subroutine Qmixer (t, iscf_iteration, sigma)
-        use M_charges
+
+! /SYSTEM
         use M_configuraciones
+
+! /SCF
+        use M_charges
+
         implicit none
 
 ! Argument Declaration and Description
@@ -72,7 +79,7 @@
         real, intent (inout) :: sigma
 
 ! Local Parameters and Data Declaration
-! ===========================================================================
+! ============================================================================
         integer, parameter :: max_order = 6 ! order of iterated polynomial
 
 ! Local Variable Declaration and Description
@@ -151,7 +158,7 @@
         do iatom = 1, t%natoms
           in1 = t%atom(iatom)%imass
           do issh = 1, species(in1)%nssh
-            imix = imix +1
+            imix = imix + 1
             Qin = t%atom(iatom)%shell(issh)%Qin
             Qout = t%atom(iatom)%shell(issh)%Qout
             dqmax = max(abs(Qin - Qout), dqmax)
@@ -171,12 +178,12 @@
         allocate (Qinmixer (imix))
         allocate (Qoutmixer (imix))
 
-        if (.not. allocated (Fv))then
-          allocate (Fv (imix, max_scf_iterations))
-          allocate (Xv (imix, max_scf_iterations))
-          allocate (delF (imix, max_scf_iterations))
-          allocate (delX (imix, max_scf_iterations))
-          allocate (sigma_saved (max_scf_iterations))
+        if (.not. allocated (Fv)) then
+          allocate (Fv (imix, max_scf_iterations_set)); Fv = 0.0d0
+          allocate (Xv (imix, max_scf_iterations_set)); Xv = 0.0d0
+          allocate (delF (imix, max_scf_iterations_set)); delF = 0.0d0
+          allocate (delX (imix, max_scf_iterations_set)); delX = 0.0d0
+          allocate (sigma_saved (max_scf_iterations_set)); sigma_saved = 0.0d0
         end if
 
 ! Store all the charges into one dimensional arrays for easier manipulation.
@@ -201,6 +208,7 @@
 
 ! Initially - only perform simple extrapolation
         if (mix_order .eq. 1 .or. sigma .lt. scf_tolerance_set) then
+          write (logfile,*) ' Doing simple mixing! '
           Qinmixer(:) = Qinmixer(:) + beta_set*Fv(:,iscf_iteration)
           sigma_saved(iscf_iteration) = sigma
         else
@@ -246,12 +254,21 @@
             end do
 
 ! Solve for gammas Eq. 5.31, 7.4 (We move a-inverse to other side: a * gamma = <|>)
-            lwork = (mix_order - 1)**2
+            ! first call dsysv with lwork = -1
+            lwork = 1
             allocate (work(lwork))
-            allocate (ipiv(mix_order - 1))
-            info = 0
-            call dsysv('U', mix_order - 1, 1, amatrix, mix_order - 1,         &
+            allocate (ipiv(mix_order - 1)); ipiv = 0
+            call dsysv('U', mix_order - 1, 1, amatrix, mix_order - 1,          &
+     &                 ipiv, F_dot_delF, mix_order - 1, work, -1, info)
+
+            ! allocate according to result of first call
+            lwork = work(1)
+            deallocate (work)
+            allocate (work(lwork))
+            call dsysv('U', mix_order - 1, 1, amatrix, mix_order - 1,          &
      &                 ipiv, F_dot_delF, mix_order - 1, work, lwork, info)
+            do iloop = istep + 1, iscf_iteration - 1
+            end do
 
 ! If there is an error, then just use the simple mixing
             if (info .ne. 0) then
@@ -261,10 +278,10 @@
             end if
             deallocate (work, ipiv, amatrix)
           end do
-          istep = iscf_iteration - mix_order
 
 ! Generate new guess at charges Eq. 7.7  (F_dot_delF is now gamma)
           Qinmixer(:) = Qinmixer(:) + beta_set*Fv(:,iscf_iteration)  ! First-order term
+          istep = iscf_iteration - mix_order
           do iloop = istep + 1, iscf_iteration - 1
             Qinmixer(:) =                                                        &
      &        Qinmixer(:) - F_dot_delF(iloop)*(delX(:,iloop) + beta_set*delF(:,iloop))
@@ -282,6 +299,7 @@
           in1 = t%atom(iatom)%imass
           do issh = 1, species(in1)%nssh
             imix = imix + 1
+            t%atom(iatom)%shell(issh)%Qout = t%atom(iatom)%shell(issh)%Qin
             t%atom(iatom)%shell(issh)%Qin = Qinmixer(imix)
             ztotal_out = ztotal_out + t%atom(iatom)%shell(issh)%Qin
           end do

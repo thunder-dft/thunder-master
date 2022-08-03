@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -43,10 +45,16 @@
 !! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
         module M_assemble_2c
+
+! /GLOBAL
         use M_assemble_blocks
+
+! /SYSTEM
         use M_configuraciones
-        use M_Fdata_2c
         use M_rotations
+
+! /FDATA
+        use M_Fdata_2c
 
 ! Type Declaration
 ! ===========================================================================
@@ -65,14 +73,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -210,14 +217,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -294,8 +300,8 @@
 
 ! Allocate block size
             norb_nu = species(in2)%norb_max
-            allocate (pK_neighbors%blocko(norb_mu, norb_nu))
-            pK_neighbors%blocko = 0.0d0
+            allocate (pK_neighbors%block(norb_mu, norb_nu))
+            pK_neighbors%block = 0.0d0
 
 ! SET-UP STUFF
 ! ****************************************************************************
@@ -325,7 +331,7 @@
             call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,           &
      &                            norb_mu, norb_nu, tm)
             call rotate (in1, in3, eps, norb_mu, norb_nu, tm, tx)
-            pK_neighbors%blocko = tx
+            pK_neighbors%block = tx
             deallocate (tm, tx)
           end do ! end loop over neighbors
         end do ! end loop over atoms
@@ -353,14 +359,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -501,14 +506,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -684,7 +688,6 @@
      &                                norb_mu, norb_nu, bcnam)
                 call rotate (in1, in3, eps, norb_mu, norb_nu, bcnam, bcnax)
 
-                ! Note that we are smoothing here
                 pvna_neighbors%blocko = pvna_neighbors%blocko + dQ*bcnax*P_eq2
               end do ! isorp
 
@@ -785,7 +788,7 @@
 
 ! Neutral atom case
             isorp = 0
-            call getMEs_Fdata_2c (in1, in2, interaction, isorp, z, norb_mu,  &
+            call getMEs_Fdata_2c (in1, in2, interaction, isorp, z, norb_mu,    &
      &                            norb_nu, bcnam)
             call rotate (in1, in3, eps, norb_mu, norb_nu, bcnam, bcnax)
             pvna_neighbors%block = pvna_neighbors%block + bcnax*P_eq2
@@ -793,13 +796,14 @@
 ! Charged atom cases
             do isorp = 1, species(in2)%nssh
               dQ = s%atom(jatom)%shell(isorp)%dQ
-
-              call getMEs_Fdata_2c (in1, in2, interaction, isorp, z, norb_mu,&
+              call getMEs_Fdata_2c (in1, in2, interaction, isorp, z, norb_mu,  &
      &                              norb_nu, bcnam)
               call rotate (in1, in3, eps, norb_mu, norb_nu, bcnam, bcnax)
 
-              pvna_neighbors%block = pvna_neighbors%block                    &
-      &        + (smooth*bcnax + (1.0d0 - smooth)*emnpl)*dQ*P_eq2
+              ! Note that we are smooting here.
+              pvna_neighbors%block = pvna_neighbors%block + dQ*bcnax*P_eq2
+!             pvna_neighbors%block = pvna_neighbors%block                      &
+!    &          + P_eq2*dQ*((1.0d0 - smooth)*emnpl + smooth*bcnax)
             end do ! isorp
 
             deallocate (bcnam)
@@ -832,14 +836,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Subroutine Declaration
@@ -865,7 +868,7 @@
         do iatom = 1, s%natoms
           do ineigh = 1, s%neighbors(iatom)%neighn
             deallocate (s%overlap(iatom)%neighbors(ineigh)%block)
-            deallocate (s%kinetic(iatom)%neighbors(ineigh)%blocko)
+            deallocate (s%kinetic(iatom)%neighbors(ineigh)%block)
             deallocate (s%dipole_z(iatom)%neighbors(ineigh)%block)
             deallocate (s%vna(iatom)%neighbors(ineigh)%block)
           end do

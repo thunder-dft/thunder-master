@@ -556,7 +556,6 @@
         integer, dimension (3) :: nr
 
         real density
-        real distance
         real Qneutral              ! neutral charge on atom
         real qtot
         real r1pin                 ! distance from centers to integration point
@@ -700,7 +699,7 @@
               m1 = species(in1)%orbital(imu)%m
               Qneutral = t%atom(iatom)%shell(n1)%Qneutral/(2.0d0*l1 + 1.0d0)
               density = density + Qneutral*(psiofr(r1pin, r1max, in1, n1)*Ylm (r1p, l1, m1))**2
-              vnaG(index2) = vnaG(index2) + vnaofr(distance, in1, n1)
+              vnaG(index2) = vnaG(index2) + vnaofr(r1pin, in1, n1)
             end do ! end loop over shells
             rhoG0(index2) = density + rhoG0(index2)
           end do ! end loop over mesh

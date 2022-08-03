@@ -44,11 +44,18 @@
 ! Module Declaration
 ! ===========================================================================
         module M_vxc_Harris
+
+! /GLOBAL
+        use M_precision
+
+! /SYSTEM
         use M_atom_functions
         use M_atomPP_functions
         use M_atomPP_ion_functions
         use M_species
         use M_integrals_2c
+
+! /XC_FUNCTIONALS
         use M_xc_1c
         use M_xc_2c
 
@@ -100,13 +107,12 @@
 ! ===========================================================================
 ! Code written by:
 ! James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Subroutine Declaration
@@ -163,7 +169,8 @@
 ! Subroutine Description
 ! ===========================================================================
 !       This routine calls the subroutines required to calculate the vna_ontop
-! (both left/right cases) and atom cases.
+! (both left/right cases) and atom cases. Also, the over-counting correction
+! to the exchange-correlation energy is calculated here.
 ! ===========================================================================
 ! Subroutine Declaration
 ! ===========================================================================
@@ -180,29 +187,26 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer logfile                     !< writing to which unit
+! None
 
 ! Procedure
 ! ===========================================================================
-! Initialize logfile
-        logfile = 21
+        write (ilogfile,*)
+        write (ilogfile,*) ' ******************************************************* '
+        write (ilogfile,*) '        E X C H A N G E   C O R R E L A T I O N          '
+        write (ilogfile,*) '                  I N T E R A C T I O N S                '
+        write (ilogfile,*) ' ******************************************************* '
+        write (ilogfile,*)
 
-        write (logfile,*)
-        write (logfile,*) ' ******************************************************* '
-        write (logfile,*) '        E X C H A N G E   C O R R E L A T I O N          '
-        write (logfile,*) '                  I N T E R A C T I O N S                '
-        write (logfile,*) ' ******************************************************* '
-        write (logfile,*)
-
-        write (logfile,*) ' Calling one-center case. '
+        write (ilogfile,*) ' Calling one-center case. '
         call vxc_1c
 
-        write (logfile,*)
-        write (logfile,*) ' Building the two center density on grid '
+        write (ilogfile,*)
+        write (ilogfile,*) ' Building the two center density on grid '
         call rho_2c_store
 
-        write (logfile,*)
-        write (logfile,*) ' Calling two-center vxc_ontop case. '
+        write (ilogfile,*)
+        write (ilogfile,*) ' Calling two-center vxc_ontop case. '
         call vxc_ontop_Harris
 
 ! Deallocate Arrays
@@ -237,13 +241,12 @@
 ! ====================================================================
 ! Code written by:
 ! James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ====================================================================
 !
 ! Program Declaration
@@ -352,138 +355,6 @@
 
 
 ! ===========================================================================
-! rho_1c_ion
-! ===========================================================================
-! Subroutine Description
-! ===========================================================================
-! This is the density for the ion.
-!
-! This routine calculates and stores the combined density of a single species
-! as a function of r, z and d. This is important because later the gradients
-! with respect to these variables are calculated.
-!
-! On output: rho:      The density as a function of species type,
-!                      r, z and d.  Output is placed in common block
-!                      density located in wavefunctions.inc
-!            rhop:     derivative with respect to rho
-!            rhopp:    second derivative with respect to rho
-!
-! ====================================================================
-! Code written by:
-! James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
-!
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
-! ====================================================================
-!
-! Program Declaration
-! ====================================================================
-        subroutine rho_1c_ion (ispecies, r, dr, rho, rhop, rhopp)
-        implicit none
-
-! Argument Declaration and Description
-! ===========================================================================
-! Input
-        integer, intent (in) :: ispecies  !< the species number for the density
-
-        real, intent (in) :: r            !< the radial coordinate
-        real, intent (in) :: dr           !< the grid spacing
-
-! Output
-        ! density value and derivatives
-        real, intent (out) :: rho, rhop, rhopp
-
-! Parameters and Data Declaration
-! ===========================================================================
-! None
-
-! Variable Declaration and Description
-! ===========================================================================
-        integer issh                        ! index for looping over shells
-        integer iexc                        ! which type of exchange-correlation
-
-        real density                        ! the one-center density
-        real density_pdr                    ! one-center density at r + dr
-        real density_mdr                    ! one-center density at r - dr
-        real density_p2dr                   ! one-center density at r + 2dr
-        real xnocc                          ! the occupation charge
-        real rin                            ! rho in for psiofr
-
-! Local Parameters and Data Declaration
-! ====================================================================
-! None
-
-! Allocate Arrays
-! ===========================================================================
-! None
-
-! Procedure
-! ===========================================================================
-! Set iexc
-        iexc = species_PP(ispecies)%iexc
-
-! Here the density is computed for r, r+dr and r-dr
-        density = 0.0d0
-        do issh = 1, species(ispecies)%nssh
-          xnocc = species(ispecies)%shell(issh)%Qneutral_ion
-          density = density + xnocc*psiofr_ion(r, ispecies, issh)**2
-        end do
-        rho = density/(4.0d0*4.0d0*atan(1.0d0))
-
-! **************************************************************************
-! Now calculate the derivatives
-! Only calculate the derivatives if doing GGA exchange-correlation.
-        rhop = 0.0d0
-        rhopp = 0.0d0
-        if (iexc .eq. 4 .or. iexc .eq. 5 .or. iexc .eq. 6 .or.               &
-     &      iexc .eq. 9 .or. iexc .eq. 10) then
-
-          density_pdr = 0.0d0
-          density_mdr = 0.0d0
-          do issh = 1, species(ispecies)%nssh
-            xnocc = species(ispecies)%shell(issh)%Qneutral
-            density_pdr = density_pdr + xnocc*psiofr_ion(r + dr,ispecies,issh)**2
-            density_mdr = density_mdr + xnocc*psiofr_ion(r - dr,ispecies,issh)**2
-          end do
-
-! Here the first and second derivatives of the density is computed.
-          if ((r - dr) .gt. 1.0d-5) then
-            rhop = (density_pdr - density_mdr)/(2.0d0*dr)
-            rhopp = (density_pdr - 2.0d0*density + density_mdr)/dr**2
-          else
-
-! At the endpoint do a forward difference. First, we need the point at r+2dr.
-            density_p2dr = 0.0d0
-            do issh = 1, species(ispecies)%nssh
-              xnocc = species(ispecies)%shell(issh)%Qneutral
-              rin = r + 2.0d0*dr
-              density_p2dr =                                                 &
-     &          density_p2dr + xnocc*psiofr_ion(rin, ispecies, issh)**2
-            end do
-
-            rhop = (density_pdr - density)/(dr*(4.0d0*4.0d0*atan(1.0d0)))
-            rhopp = (density_p2dr - 2.0d0*density_pdr                        &
-     &                            + density)/(dr**2*(4.0d0*4.0d0*atan(1.0d0)))
-          end if
-        end if
-
-! Deallocate Arrays
-! ===========================================================================
-! None
-
-! Format Statements
-! ============================================================================
-! None
-
-        return
-        end subroutine rho_1c_ion
-
-
-! ===========================================================================
 ! vxc_1c
 ! ===========================================================================
 ! Subroutine Description
@@ -525,7 +396,6 @@
         integer issh, jssh
         integer index_1c, nME1c_max         !< basically the number of non-zero
         integer isorp, ideriv               !< the number of different types
-        integer logfile                     !< writing to which unit
         integer nFdata_cell_1c              !< indexing of interactions
 
         real d                              !< distance between the two centers
@@ -541,9 +411,6 @@
 
 ! Procedure
 ! ============================================================================
-! Initialize logfile
-        logfile = 21
-
 ! Assign values to the unrequired variables for this specific interaction.
         ideriv = 999
 
@@ -562,7 +429,7 @@
           allocate (pFdata_cell%fofx(nME1c_max))
 
           ! Open ouput file for this species pair
-          write (filename, '("/xc_1c", ".", i2.2, ".dat")')                 &
+          write (filename, '("/vxc_1c", ".", i2.2, ".dat")')                &
      &      species(ispecies)%nZ
           open (unit = 11, file = trim(Fdata_location)//trim(filename),     &
      &          status = 'unknown')
@@ -575,36 +442,36 @@
           rhomax = rcutoff1
 
 ! Loop over grid
-          write (logfile,100) species(ispecies)%nZ
+          write (ilogfile,100) species(ispecies)%nZ
           d = 0.0d0
 
           ! Set integration limits
           zmin = -rcutoff1
           zmax = rcutoff1
-          call evaluate_integral_2c (nFdata_cell_1c, ispecies, ispecies,    &
-     &                                isorp, ideriv, rcutoff1, rcutoff1, d,  &
-     &                                nz_vxc, nrho_vxc, rint_exc_1c,         &
-     &                                phifactor, zmin, zmax, rhomin, rhomax, &
+          call evaluate_integral_2c (nFdata_cell_1c, ispecies, ispecies,      &
+     &                                isorp, ideriv, rcutoff1, rcutoff1, d,   &
+     &                                nz_vxc, nrho_vxc, rint_exc_1c,          &
+     &                                phifactor, zmin, zmax, rhomin, rhomax,  &
      &                                pFdata_cell%fofx)
 
           ! Write out details.
           index_1c = 1
           do issh = 1, species(ispecies)%nssh
-            write (11,*) (pFdata_cell%fofx(jssh),                           &
+            write (11,*) (pFdata_cell%fofx(jssh),                             &
      &                    jssh = index_1c, index_1c + species(ispecies)%nssh - 1)
             index_1c = index_1c + species(ispecies)%nssh
           end do
 
-          call evaluate_integral_2c (nFdata_cell_1c, ispecies, ispecies,    &
-     &                               isorp, ideriv, rcutoff1, rcutoff1, d,   &
-     &                               nz_vxc, nrho_vxc, rint_vxc_1c,          &
-     &                               phifactor, zmin, zmax, rhomin, rhomax,  &
+          call evaluate_integral_2c (nFdata_cell_1c, ispecies, ispecies,      &
+     &                               isorp, ideriv, rcutoff1, rcutoff1, d,    &
+     &                               nz_vxc, nrho_vxc, rint_vxc_1c,           &
+     &                               phifactor, zmin, zmax, rhomin, rhomax,   &
      &                               pFdata_cell%fofx)
 
           ! Write out details.
           index_1c = 1
           do issh = 1, species(ispecies)%nssh
-            write (11,*) (pFdata_cell%fofx(jssh),                           &
+            write (11,*) (pFdata_cell%fofx(jssh),                             &
      &                    jssh = index_1c, index_1c + species(ispecies)%nssh - 1)
             index_1c = index_1c + species(ispecies)%nssh
           end do
@@ -838,7 +705,7 @@
 
         exc = 0.0d0
         call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,      &
-     &                      density_pp, exc, vxc, dnuxc, dnuxcs, dexc)
+     &                     density_pp, exc, vxc, dnuxc, dnuxcs, dexc)
 
 ! Answers are in Hartrees convert to eV.
         dexc_1c = P_hartree*exc
@@ -1130,7 +997,6 @@
         integer iexc                        ! which type of exchange-correlation
         integer igrid                       !< counter for grid points
         integer iz, irho                    !< counter for grid points
-        integer logfile                     !< writing to which unit
         integer nnz, nnrho                  !< number of intergration points
 
         real d                              !< distance between the two centers
@@ -1160,9 +1026,6 @@
 
 ! Procedure
 ! ===========================================================================
-! Initialize logfile
-        logfile = 21
-
 ! Set iexc
         ispecies = 1
         iexc = species_PP(ispecies)%iexc
@@ -1185,7 +1048,7 @@
             rhomax = max(rcutoff1, rcutoff2)
 
 ! Loop over grid
-            write (logfile,100) species(ispecies)%nZ, species(jspecies)%nZ
+            write (ilogfile,100) species(ispecies)%nZ, species(jspecies)%nZ
             allocate (prho_bundle%rho_2c_store(ndd_vxc))
             do igrid = 1, ndd_vxc
               prho_2c => prho_bundle%rho_2c_store(igrid)
@@ -1400,7 +1263,6 @@
         integer igrid                       !< number of grid points
         integer index_2c, nME2c_max         !< basically the number of non-zero
         integer isorp, ideriv               !< the number of different types
-        integer logfile                     !< writing to which unit
         integer nFdata_cell_2c              !< indexing of interactions
 
         real dmax                           !< max distance between two centers
@@ -1421,9 +1283,6 @@
 
 ! Procedure
 ! ============================================================================
-! Initialize logfile
-        logfile = 21
-
 ! Assign values to the unrequired variables for this specific interaction.
         ideriv = 999
 
@@ -1484,7 +1343,7 @@
      &                    index_2c = 1, nME2c_max)
 
 ! Loop over grid
-            write (logfile,200) species(ispecies)%nZ, species(jspecies)%nZ
+            write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
             do igrid = 1, ndd_vxc
               d = d + drr
 

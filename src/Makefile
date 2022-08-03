@@ -24,42 +24,9 @@
 # by the Government is subject to restrictions as set forth in subdivision
 # { (b) (3) (ii) } of the Rights in Technical Data and Computer Software
 # clause at 52.227-7013. 
-SHELL = /bin/bash
-
-# Choose the COMPILER
-COMPILER = ifort
-#COMPILER = gfortran
-
-# Choose the Linear Algebra libraries
-LINALG = LAPACK
-#LINALG = MKL
-
-# Do you use DEBUG or Optimization Mode? (DEBUG/OPT)
-#MODE = OPT
-MODE = DEBUG
-
-# Turn on omp or mpi (enter TRUE .or. FALSE)?
-OPENMP = FALSE
-MPI = FALSE
-
-# Choose the MACHINE file
-#MACHINE = GENERIC
-MACHINE = HKQAI
-
-# Choose HARRIS or DOGS
-#THEORY = HARRIS
-THEORY = DOGS
-#THEORY = KS
-
-# Choose the METHOD - GAMMA, KPOINTS, or MDET (which is also GAMMA)
-#METHOD = GAMMA
-METHOD = KPOINTS
-#METHOD = MDET
-#METHOD = KS
-
-# Choose the XC functional
-XC = LDA
-#XC = BLYP
+#
+# Choose the options in the OPTIONS file
+include include/OPTIONS
 
 # Note: These are the machines files used by the Lewis Research Group. You need 
 # to create a MACHINES file specific to your architecture.  You can use one of
@@ -67,12 +34,15 @@ XC = LDA
 include MACHINES/GENERIC
 include MACHINES/HKQAI
 
-######################################################################
+##############################################################################
 ###
-### BEGIN LISTING OBJECTS:
+### BEGIN LISTING OBJECTS
 ###
-######################################################################
-DIRS = a.GLOBAL b.FUNCTIONS c.SYSTEM d.FUNCTIONS_EXTRA e.FDATA f.MPI g.XC_FUNCTIONALS h.DASSEMBLERS i.GRID h.SOLVESH j.ASSEMBLERS k.CREATE k.DASSEMBLERS l.SCF m.MD n.NAMD o.OUTPUT p.THEORY u.UTIL v.BEGIN x.DRIVERS
+##############################################################################
+# ****************************************************************************
+# BEGIN                    GENERICALLY COMPILED ROUTINES
+# ****************************************************************************
+DIRS = a.GLOBAL b.FUNCTIONS c.SYSTEM e.FDATA f.MPI g.XC_FUNCTIONALS h.DASSEMBLERS i.GRID h.SOLVESH j.ASSEMBLERS k.DASSEMBLERS l.SCF m.MD n.NAMD o.OUTPUT p.THEORY u.UTIL v.BEGIN x.DRIVERS
 
 # Objects from a.GLOBAL
 GLOBAL = M_precision.o M_assemble_blocks.o M_welcome.o
@@ -87,7 +57,6 @@ SYSTEM_CREATE = M_species.o M_atom_functions.o M_integrals_2c.o M_integrals_3c.o
 SYSTEM_LIGHTNING = M_species.o M_kpoints.o M_configuraciones_McWEDA.o M_atom_functions.o M_neighbors.o M_neighbors_PP.o M_rotations.o M_grid.o rotate_PP.o
 SYSTEM = M_species.o M_kpoints.o M_configuraciones_McWEDA.o M_neighbors.o M_neighbors_PP.o M_atom_functions.o M_rotations.o M_integrals_2c.o M_grid.o M_Drotations.o M_Drotations_PP.o M_build_forces.o rotate_PP.o
 
-#BEGIN = orthogonalize_psi.o M_psi.o M_rcatms_Coulomb.o M_rcatms_Coulomb_DMOL_excited.o M_rcatms_DMOL_excited.o M_rcatms.o M_vnn.o
 BEGIN = M_psi.o M_rcatms_Coulomb.o M_rcatms_Coulomb_DMOL_excited.o M_rcatms_DMOL_excited.o M_rcatms.o M_vnn.o
 BEGIN_LOOPRC = M_psi.o M_rcatms_Coulomb.o M_rcatms.o M_looprc.o
 
@@ -102,49 +71,107 @@ SOLVESH = M_diagonalization_Lowdin.o M_kspace_Lowdin.o M_density_matrix.o
 
 # LDA is default - we change later if we want something other than LDA
 XC_FUNCTIONALS = M_xc_option3_1c.o M_xc_option3_2c.o
-CREATE = M_Goverlap.o M_rhoS_2c_McWEDA_Harris.o M_rho_3c_McWEDA_Harris.o M_rhoS_3c_McWEDA_Harris.o M_vna_Harris.o M_vna_DOGS.o M_vnl_KB.o M_bcna_3c_Harris.o M_bcna_3c_DOGS.o M_rho_2c_McWEDA_Harris.o M_overlap.o M_kinetic.o M_vxc_McWEDA_Harris.o M_Coulomb.o M_dipole_z.o M_vxc_McWEDA_DOGS.o
 
-# ****************************** HARRIS ******************************
-ifneq (,$(findstring HARRIS, ${THEORY}))
+# McWEDA is default - we change later if we want to do Horsfield
+CREATE = M_overlap.o M_Goverlap.o M_kinetic.o M_Coulomb.o M_dipole_z.o M_vna_Harris.o M_vna_DOGS.o M_vnl_KB.o M_rho_2c_McWEDA_Harris.o M_rhoS_2c_McWEDA_Harris.o M_rho_3c_McWEDA_Harris.o M_rhoS_3c_McWEDA_Harris.o M_vxc_McWEDA_Harris.o M_vxc_McWEDA_DOGS.o M_bcna_Harris.o M_bcna_DOGS.o
+# ****************************************************************************
+# END                     GENERICALLY COMPILED ROUTINES
+# ****************************************************************************
+
+# ****************************************************************************
+# BEGIN                      MCWEDA COMPILED ROUTINES
+# 
+# Note that McWEDA is the default for compiling. 
+# Set THEORY = HORSFIELD if you want to compile the Horsfield subroutines. 
+# ****************************************************************************
+# ****************************************************************************
+# Here we choose how to do the SCF
+# No SCF - choose HARRIS in include/OPTIONS
+# with SCF - choose DOGS in include/OPTIONS
+# SCF on density - choose KS in include/OPTIONS
+# ****************************************************************************
+# ********************************* HARRIS ***********************************
+ifneq (,$(findstring HARRIS, ${SCF}))
 ASSEMBLERS = M_assemble_2c_Harris.o M_assemble_3c_Harris.o M_assemble_ewald_Harris.o M_assemble_rho_McWEDA_Harris.o M_assemble_usr_McWEDA_Harris.o M_assemble_vxc_McWEDA_Harris.o M_assemble_PP_2c.o M_assemble_PP_3c.o
-DASSEMBLERS = M_Dassemble_rho_McWEDA_Harris.o M_Dassemble_2c_Harris.o M_Dassemble_PP_2c.o M_Dassemble_ewald_Harris.o M_Dassemble_usr_McWEDA_Harris.o M_Dassemble_3c_Harris.o M_Dassemble_vxc_McWEDA_Harris.o M_Dassemble_vxc_3c_McWEDA_Harris.o
+DASSEMBLERS = M_Dassemble_rho_McWEDA_Harris.o M_Dassemble_2c_Harris.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o M_Dassemble_ewald_Harris.o M_Dassemble_usr_McWEDA_Harris.o M_Dassemble_3c_Harris.o M_Dassemble_vxc_McWEDA_Harris.o M_Dassemble_vxc_3c_McWEDA_Harris.o
 FDATA = M_Fdata_1c_McWEDA_Harris.o M_Fdata_2c.o M_Fdata_3c.o
 SCF = M_charges_Lowdin.o Qmixer_Anderson_Harris.o
 endif
 
-# ****************************** DOGS ********************************
-ifneq (,$(findstring DOGS, ${THEORY}))
-ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_ewald_DOGS.o M_assemble_rho_McWEDA_DOGS.o M_assemble_usr_McWEDA_DOGS.o M_assemble_vxc_McWEDA_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o
-DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_rho_McWEDA_DOGS.o M_Dassemble_ewald_DOGS.o M_Dassemble_vxc_McWEDA_Harris.o M_Dassemble_usr_McWEDA_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_vxc_3c_McWEDA_Harris.o
+# **************************i******** DOGS ***********************************
+ifneq (,$(findstring DOGS, ${SCF}))
+ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_DOGS.o M_assemble_usr_McWEDA_DOGS.o M_assemble_ewald_Harris.o
+DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o M_Dassemble_rho_McWEDA_DOGS.o M_Dassemble_vxc_McWEDA_DOGS.o M_Dassemble_vxc_3c_McWEDA_DOGS.o M_Dassemble_usr_McWEDA_DOGS.o M_Dassemble_ewald_Harris.o
 FDATA = M_Fdata_1c_McWEDA_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
 SCF = M_charges_Lowdin.o Qmixer_Anderson_DOGS.o
 endif
 
-# ****************************** KS ********************************
-ifneq (,$(findstring KS, ${THEORY}))
-ASSEMBLERS = lda_ceperley_alder.o M_assemble_2c_grid.o M_assemble_3c_Harris.o M_assemble_ewald_DOGS.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_grid.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_usr_grid.o
+# ************************************ KS ************************************
+ifneq (,$(findstring KS, ${SCF}))
+ASSEMBLERS = M_assemble_2c_grid.o M_assemble_3c_Harris.o M_assemble_ewald_DOGS.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_grid.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_usr_grid.o
 FDATA = M_Fdata_1c_McWEDA_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
-SCF = M_charges_Lowdin.o Qmixer_Anderson_grid.o
+SCF = M_charges_Mulliken.o Qmixer_Anderson_grid.o
+endif
+# ****************************************************************************
+# END                         MCWEDA COMPILED ROUTINES
+# ****************************************************************************
+
+ifneq (,$(findstring HORSFIELD, ${THEORY}))
+# ****************************************************************************
+# BEGIN                      HORSFIELD COMPILED ROUTINES
+# 
+# Note that McWEDA is the default for compiling. 
+# Set THEORY = HORSFIELD if you want to compile the Horsfield subroutines. 
+# ****************************************************************************
+CREATE = M_overlap.o M_Goverlap.o M_kinetic.o M_Coulomb.o M_dipole_z.o M_vna_Harris.o M_vna_DOGS.o M_vnl_KB.o M_vxc_Horsfield_Harris.o M_vxc_Horsfield_DOGS.o M_bcna_Harris.o M_bcna_DOGS.o M_xc3c_Horsfield_Harris.o M_xc3c_Horsfield_DOGS.o
+# ********************************* HARRIS ***********************************
+ifneq (,$(findstring HARRIS, ${SCF}))
+ASSEMBLERS = M_assemble_2c_Harris.o M_assemble_3c_Harris.o M_assemble_ewald_Harris.o M_assemble_usr_Horsfield_Harris.o M_assemble_vxc_Horsfield_Harris.o M_assemble_PP_2c.o M_assemble_PP_3c.o
+DASSEMBLERS = M_Dassemble_2c_Harris.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o M_Dassemble_ewald_Harris.o M_Dassemble_usr_Horsfield_Harris.o M_Dassemble_3c_Harris.o M_Dassemble_vxc_Horsfield_Harris.o M_Dassemble_vxc_3c_Horsfield_Harris.o
+FDATA = M_Fdata_1c_Horsfield_Harris.o M_Fdata_2c.o M_Fdata_3c.o
+SCF = M_charges_Lowdin.o Qmixer_Anderson_Harris.o
 endif
 
-# *********************** GAMMA, KPOINTS, MDET, or KS ********************
-ifneq (,$(findstring GAMMA, ${METHOD}))
+# **************************i******** DOGS ***********************************
+ifneq (,$(findstring DOGS, ${SCF}))
+#ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_DOGS.o M_assemble_usr_McWEDA_DOGS.o M_assemble_ewald_Harris.o
+#DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o M_Dassemble_rho_McWEDA_DOGS.o M_Dassemble_vxc_McWEDA_DOGS.o M_Dassemble_vxc_3c_McWEDA_DOGS.o M_Dassemble_usr_McWEDA_DOGS.o M_Dassemble_ewald_Harris.o
+#FDATA = M_Fdata_1c_McWEDA_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
+#SCF = M_charges_Lowdin.o Qmixer_Anderson_DOGS.o
+endif
+
+# ************************************ KS ************************************
+ifneq (,$(findstring KS, ${SCF}))
+#ASSEMBLERS = M_assemble_2c_grid.o M_assemble_3c_Harris.o M_assemble_ewald_DOGS.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_grid.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_usr_grid.o
+#FDATA = M_Fdata_1c_McWEDA_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
+#SCF = M_charges_Mulliken.o Qmixer_Anderson_grid.o
+endif
+# ****************************************************************************
+# END                         HORSFIELD COMPILED ROUTINES
+# ****************************************************************************
+endif
+
+# ****************************************************************************
+# BEGIN                   DIAGONALIZATION COMPILED ROUTINES
+# ****************************************************************************
+# ************************* GAMMA, KPOINTS, MDET, or KS **********************
+ifneq (,$(findstring GAMMA, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix.o
 endif
-ifneq (,$(findstring KPOINTS, ${METHOD}))
+ifneq (,$(findstring KPOINTS, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_kpoints.o M_kspace_Lowdin.o M_density_matrix.o
 UTIL = absorption_gamma.o dos_kpoints.o M_isosurfaces.o 
 endif
-ifneq (,$(findstring MDET, ${METHOD}))
+ifneq (,$(findstring MDET, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix_MDET.o
 SYSTEM = M_species.o M_kpoints_MDET.o M_configuraciones_McWEDA.o M_neighbors.o M_neighbors_PP.o M_atom_functions.o
 endif
-ifneq (,$(findstring KS, ${METHOD}))
+ifneq (,$(findstring KS, ${DIAGONALIZATION}))
 GRID = M_project_grid.o M_fft_grid.o writeout_xsf.o
-SOLVESH_GRID = M_diagonalization_kpoints.o M_kspace.o M_density_matrix_grid.o M_project_grid.o M_fft_grid.o
+SOLVESH = M_diagonalization_kpoints.o M_kspace_grid.o M_density_matrix_grid.o M_project_grid.o M_fft_grid.o
 endif
 
-# ****************************** XC ********************************
+# ********************************** XC **************************************
 ifneq (,$(findstring BLYP, ${XC}))
 XC_FUNCTIONALS = M_xc_option9_1c.o M_xc_option9_2c.o
 endif
@@ -155,22 +182,28 @@ OBJECTS_CREATE = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_CREATE) $(FUNCTIONS_CREATE) $(X
 OBJECTS_LIGHTNING = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
 OBJECTS_FIREBALL = $(GLOBAL) $(FUNCTIONS) $(SYSTEM)  $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(OUTPUT) $(UTIL)
 OBJECTS_MDET = $(GLOBAL) $(FUNCTIONS) $(SYSTEM)  $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(NAMD) $(OUTPUT)
-OBJECTS_LIGHTNING_GRID = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH_GRID) $(GRID) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
-
-######################################################################
+OBJECTS_LIGHTNING_GRID = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(GRID) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
+##############################################################################
 ###
 ### END LISTING OBJECTS
 ###
-######################################################################
-# ****************************** LINKING ******************************
+##############################################################################
+
+# ********************************* LINKING **********************************
 begin-looprc.x : $(OBJECTS_LOOPRC) begin-looprc.o
 	$(F90) -o begin-looprc.x $(FFLAGS) $(OBJECTS_LOOPRC) begin-looprc.o $(LFLAGS)
 
 begin.x : $(OBJECTS_BEGIN) begin.o
 	$(F90) -o begin.x $(FFLAGS) $(OBJECTS_BEGIN) begin.o $(LFLAGS)
 
-create.x : $(OBJECTS_CREATE) create.o
-	$(F90) -o create.x $(FFLAGS) $(OBJECTS_CREATE) create.o $(LFLAGS)
+ifneq (,$(findstring McWEDA, ${THEORY}))
+create.x : $(OBJECTS_CREATE) create_McWEDA.o
+	$(F90) -o create.x $(FFLAGS) $(OBJECTS_CREATE) create_McWEDA.o $(LFLAGS)
+endif
+ifneq (,$(findstring HORSFIELD, ${THEORY}))
+create.x : $(OBJECTS_CREATE) create_Horsfield.o
+	$(F90) -o create.x $(FFLAGS) $(OBJECTS_CREATE) create_Horsfield.o $(LFLAGS)
+endif
 
 lightning.x: $(OBJECTS_LIGHTNING) lightning.o
 	$(F90) -o lightning.x $(FFLAGS) $(OMP) $(OBJECTS_LIGHTNING) lightning.o $(LFLAGS)
@@ -243,11 +276,15 @@ a_cross_b.o : b.FUNCTIONS/a_cross_b.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 clebsch_gordan.o : b.FUNCTIONS/clebsch_gordan.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+cl.o : b.FUNCTIONS/cl.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 clm.o : b.FUNCTIONS/clm.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 distance.o : b.FUNCTIONS/distance.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 erf0.o : b.FUNCTIONS/erf0.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+epsilon.o : b.FUNCTIONS/epsilon.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 Depsilon_2c.o : b.FUNCTIONS/Depsilon_2c.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
@@ -303,8 +340,6 @@ M_rotations.o : c.SYSTEM/M_rotations.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 make_cells.o : c.SYSTEM/make_cells.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_grid.o : c.SYSTEM/M_grid.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Drotations.o : c.SYSTEM/M_Drotations.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Drotations_PP.o : c.SYSTEM/M_Drotations_PP.f90
@@ -312,16 +347,6 @@ M_Drotations_PP.o : c.SYSTEM/M_Drotations_PP.f90
 M_build_forces.o : c.SYSTEM/M_build_forces.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 rotate_PP.o : c.SYSTEM/rotate_PP.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-
-# *****************************************************************************
-# d.FUNCTIONS_EXTRA
-# *****************************************************************************
-cl.o : d.FUNCTIONS_EXTRA/cl.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-epsilon.o : d.FUNCTIONS_EXTRA/epsilon.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-mpairnay.o : d.FUNCTIONS_EXTRA/mpairnay.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 
 # *****************************************************************************
@@ -367,11 +392,13 @@ M_xc_option9_2c.o : g.XC_FUNCTIONALS/M_xc_option9_2c.f90
 # *****************************************************************************
 M_density_matrix.o : h.SOLVESH/M_density_matrix.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_density_matrix_grid.o : h.SOLVESH/M_density_matrix_grid.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_density_matrix_MDET.o : h.SOLVESH/M_density_matrix_MDET.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_kspace_Lowdin.o : h.SOLVESH/M_kspace_Lowdin.f90
+M_kspace_grid.o : h.SOLVESH/M_kspace_grid.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_kspace.o : h.SOLVESH/M_kspace.f90
+M_kspace_Lowdin.o : h.SOLVESH/M_kspace_Lowdin.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_diagonalization_Lowdin_gamma.o : h.SOLVESH/M_diagonalization_Lowdin_gamma.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
@@ -383,20 +410,18 @@ M_diagonalization_kpoints.o : h.SOLVESH/M_diagonalization_kpoints.f90
 # *****************************************************************************
 # i.GRID
 # *****************************************************************************
+M_grid.o : i.GRID/M_grid.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_project_grid.o : i.GRID/M_project_grid.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_fft_grid.o : i.GRID/M_fft_grid.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_density_matrix_grid.o : i.GRID/M_density_matrix_grid.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_assemble_2c_grid.o : i.GRID/M_assemble_2c_grid.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_assemble_usr_grid.o : i.GRID/M_assemble_usr_grid.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 
 # *****************************************************************************
 # j.ASSEMBLERS
 # *****************************************************************************
+M_assemble_2c_grid.o : j.ASSEMBLERS/M_assemble_2c_grid.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_assemble_2c_Harris.o : j.ASSEMBLERS/M_assemble_2c_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_assemble_2c_DOGS.o : j.ASSEMBLERS/M_assemble_2c_DOGS.f90
@@ -412,6 +437,8 @@ M_assemble_ewald_DOGS.o : j.ASSEMBLERS/M_assemble_ewald_DOGS.f90
 M_assemble_rho_McWEDA_Harris.o : j.ASSEMBLERS/M_assemble_rho_McWEDA_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_assemble_rho_McWEDA_DOGS.o : j.ASSEMBLERS/M_assemble_rho_McWEDA_DOGS.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_assemble_usr_grid.o : j.ASSEMBLERS/M_assemble_usr_grid.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_assemble_usr_McWEDA_Harris.o : j.ASSEMBLERS/M_assemble_usr_McWEDA_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
@@ -439,6 +466,8 @@ M_Dassemble_2c_DOGS.o : k.DASSEMBLERS/M_Dassemble_2c_DOGS.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Dassemble_PP_2c.o : k.DASSEMBLERS/M_Dassemble_PP_2c.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_Dassemble_PP_3c.o : k.DASSEMBLERS/M_Dassemble_PP_3c.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Dassemble_3c_Harris.o : k.DASSEMBLERS/M_Dassemble_3c_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Dassemble_3c_DOGS.o : k.DASSEMBLERS/M_Dassemble_3c_DOGS.f90
@@ -449,7 +478,11 @@ M_Dassemble_rho_McWEDA_Harris.o : k.DASSEMBLERS/M_Dassemble_rho_McWEDA_Harris.f9
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Dassemble_vxc_McWEDA_Harris.o : k.DASSEMBLERS/M_Dassemble_vxc_McWEDA_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_Dassemble_vxc_McWEDA_DOGS.o : k.DASSEMBLERS/M_Dassemble_vxc_McWEDA_DOGS.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Dassemble_vxc_3c_McWEDA_Harris.o : k.DASSEMBLERS/M_Dassemble_vxc_3c_McWEDA_Harris.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_Dassemble_vxc_3c_McWEDA_DOGS.o : k.DASSEMBLERS/M_Dassemble_vxc_3c_McWEDA_DOGS.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Dassemble_usr_McWEDA_DOGS.o : k.DASSEMBLERS/M_Dassemble_usr_McWEDA_DOGS.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
@@ -462,6 +495,8 @@ M_Dassemble_ewald_Harris.o : k.DASSEMBLERS/M_Dassemble_ewald_Harris.f90
 # l.SCF
 # *****************************************************************************
 M_charges_Lowdin.o : l.SCF/M_charges_Lowdin.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_charges_Mulliken.o : l.SCF/M_charges_Mulliken.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 Qmixer_Anderson_Harris.o : l.SCF/Qmixer_Anderson_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
@@ -499,41 +534,45 @@ writeout_xyz.o : o.OUTPUT/writeout_xyz.f90
 # *****************************************************************************
 # p.THEORY
 # *****************************************************************************
-M_overlap.o : p.THEORY/M_overlap.f90
+M_bcna_Harris.o : p.THEORY/M_bcna_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_kinetic.o : p.THEORY/M_kinetic.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_vxc_McWEDA_Harris.o :  p.THEORY/M_vxc_McWEDA_Harris.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_vxc_McWEDA_DOGS.o : p.THEORY/M_vxc_McWEDA_DOGS.f90
+M_bcna_DOGS.o : p.THEORY/M_bcna_DOGS.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Coulomb.o : p.THEORY/M_Coulomb.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_dipole_z.o : p.THEORY/M_dipole_z.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-
-# *****************************************************************************
-# k.CREATE
-# *****************************************************************************
-M_bcna_3c_Harris.o : k.CREATE/M_bcna_3c_Harris.f90
+M_kinetic.o : p.THEORY/M_kinetic.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_bcna_3c_DOGS.o : k.CREATE/M_bcna_3c_DOGS.f90
+M_overlap.o : p.THEORY/M_overlap.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_vna_Harris.o : k.CREATE/M_vna_Harris.f90
+M_Goverlap.o : p.THEORY/M_Goverlap.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_vna_DOGS.o : k.CREATE/M_vna_DOGS.f90
+M_rho_2c_McWEDA_Harris.o : p.THEORY/M_rho_2c_McWEDA_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_rho_2c_McWEDA_Harris.o : k.CREATE/M_rho_2c_McWEDA_Harris.f90
+M_rhoS_2c_McWEDA_Harris.o : p.THEORY/M_rhoS_2c_McWEDA_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_rhoS_2c_McWEDA_Harris.o : k.CREATE/M_rhoS_2c_McWEDA_Harris.f90
+M_rho_3c_McWEDA_Harris.o : p.THEORY/M_rho_3c_McWEDA_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_rho_3c_McWEDA_Harris.o : k.CREATE/M_rho_3c_McWEDA_Harris.f90
+M_rhoS_3c_McWEDA_Harris.o : p.THEORY/M_rhoS_3c_McWEDA_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_rhoS_3c_McWEDA_Harris.o : k.CREATE/M_rhoS_3c_McWEDA_Harris.f90
+M_vna_Harris.o : p.THEORY/M_vna_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_Goverlap.o : k.CREATE/M_Goverlap.f90
+M_vna_DOGS.o : p.THEORY/M_vna_DOGS.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_vnl_KB.o : k.CREATE/M_vnl_KB.f90
+M_vnl_KB.o : p.THEORY/M_vnl_KB.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_vxc_Horsfield_Harris.o :  p.THEORY/M_vxc_Horsfield_Harris.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^		
+M_vxc_Horsfield_DOGS.o :  p.THEORY/M_vxc_Horsfield_DOGS.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^		
+M_vxc_McWEDA_Harris.o :  p.THEORY/M_vxc_McWEDA_Harris.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_vxc_McWEDA_DOGS.o : p.THEORY/M_vxc_McWEDA_DOGS.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_xc3c_Horsfield_Harris.o : p.THEORY/M_xc3c_Horsfield_Harris.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_xc3c_Horsfield_DOGS.o : p.THEORY/M_xc3c_Horsfield_DOGS.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 
 # *****************************************************************************
@@ -573,7 +612,9 @@ begin-looprc.o : x.DRIVERS/begin-looprc.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 begin.o : x.DRIVERS/begin.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-create.o : x.DRIVERS/create.f90
+create_Horsfield.o : x.DRIVERS/create_Horsfield.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^ 
+create_McWEDA.o : x.DRIVERS/create_McWEDA.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^ 
 fireball.o : x.DRIVERS/fireball.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^

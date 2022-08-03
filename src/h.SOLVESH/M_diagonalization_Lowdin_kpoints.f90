@@ -1,24 +1,26 @@
 ! copyright info:
-!                             @Copyright 2013
-!                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
-! Academy of Sciences of the Czech Republic - Pavel JelinekmNZxbnmb
-
 !
+!                             @Copyright 2022
+!                           Fireball Committee
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
+! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
+
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
-! West Virginia University - Khorgolkhuu Odbadrakh
+! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -39,8 +41,16 @@
 !       diagonalize_H_Lowdin - perform Lowdin transformation of Hamiltonian
 !                              and then diagonalize the transformed Hamiltonian
 !
-! ============================================================================
-! Module declaration
+! Code written by:
+! James P. Lewis
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
+!
+! Phone: +852 6612 9539 (mobile)
+! ===========================================================================
+! Module Declaration
 ! ============================================================================
         module M_diagonalization
 
@@ -55,7 +65,6 @@
 
 ! define matrices
         double complex, allocatable :: Smatrix (:, :)
-        double complex, allocatable, save :: S12matrix (:, :)
         double complex, allocatable :: Hmatrix (:, :)
 
 ! define parameter for linear dependence criteria
@@ -75,18 +84,6 @@
 !       This subroutine initializes real dummy matrices used in kspace.
 ! The dimensions of these dummy matrices must be initialized to
 ! norbitals by norbitals.
-!
-! ===========================================================================
-! Code written by:
-! @author Kh. Odbadrakh
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
-!
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
-! ===========================================================================
 !
 ! Program Declaration
 ! ===========================================================================
@@ -146,18 +143,6 @@
 !>       This is diagonalization subroutine for real matrix using blas
 ! libraries....
 !
-! ===========================================================================
-! Code written by:
-!> @author Kh. Odbadrakh
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
-!
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
-! ===========================================================================
-!
 ! Program Declaration
 ! ===========================================================================
         subroutine diagonalize_S (s)
@@ -186,6 +171,7 @@
 ! ===========================================================================
         lwork = 1
         allocate (work(lwork))
+
         lrwork= 3*s%norbitals - 2
         allocate (rwork(lrwork))
 
@@ -275,19 +261,6 @@
 !> This subroutine performs Lowdin transformation on the Hamiltonian
 !! matix H in k space: (S^-1/2)*H*(S^-1/2) and then diagonalizes it, and
 !! stores the eigenvalues in the structure kpoints(ikpoint)%eigen(:)
-
-
-! ===========================================================================
-! Code written by:
-!> @author Kh. Odbadrakh
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
-!
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
-! ===========================================================================
 !
 ! Program Declaration
 ! ===========================================================================
@@ -321,32 +294,18 @@
 
         character (len = 25) :: slogfile
 
-        ! checks to see if structure has changed
-!       type(T_structure), pointer, save :: current
-
         type(T_kpoint), pointer :: pkpoint   !< point to current kpoint
 
 ! Allocate Arrays
 ! ===========================================================================
         lwork = 1
         allocate (work(lwork))
+
         lrwork = 3*s%norbitals - 2
         allocate (rwork(lrwork))
 
 ! Procedure
 ! ===========================================================================
-! Check to see if the structure has changed
-!       if (.not. associated (current)) then
-!         current => s
-!       else if (.not. associated(current, target=s) .and. allocated (S12matrix)) then
-!         deallocate (S12matrix)
-!         current => s
-!       end if
-
-!       if (iscf_iteration .eq. 1) then
-!         allocate (S12matrix (s%norbitals, s%norbitals)); S12matrix = 0.0d0
-!       end if
-
 ! Initialize some constants
         s%norbitals_new = size(eigen,1)
 
@@ -450,17 +409,6 @@
 ! Function Description
 ! ===========================================================================
 !>       Returns the phase of k*r.
-!
-! ===========================================================================
-! Code written by:
-!> @author James P. Lewis
-! Department of Physics and Astronomy
-! Brigham Young University
-! N233 ESC P.O. Box 24658
-! Provo, UT 84602-4658
-! FAX (801) 422-2265
-! Office Telephone (801) 422-7444
-! ===========================================================================
 !
 ! Program Declaration
 ! ===========================================================================

@@ -120,7 +120,7 @@
         rho = rhx*(P_abohr**3)
 
 ! Find rho^(1/3)
-        rho_third = rho**(1.0e0/3.0e0)
+        rho_third = rho**(1.0d0/3.0d0)
 
 ! Effective radius
         rs = 0.62035049d0/rho_third

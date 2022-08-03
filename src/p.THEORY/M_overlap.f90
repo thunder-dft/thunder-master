@@ -58,6 +58,11 @@
 ! Module Declaration
 ! ===========================================================================
         module M_overlap
+
+! /GLOBAL
+        use M_precision
+
+! /SYSTEM
         use M_species
         use M_integrals_2c
 
@@ -178,7 +183,6 @@
         integer igrid                       !< number of grid points
         integer index_2c, nME2c_max         !< basically the number of non-zero
         integer isorp, ideriv               !< the number of different types
-        integer logfile                     !< writing to which unit
         integer nFdata_cell_2c              !< indexing of interactions
 
         real dmax                           !< max distance between two centers
@@ -199,13 +203,10 @@
 
 ! Procedure
 ! ============================================================================
-! Initialize logfile
-        logfile = 21
-
-        write (logfile,*)
-        write (logfile,*) ' ******************************************************* '
-        write (logfile,*) '          O V E R L A P   I N T E R A C T I O N S        '
-        write (logfile,*) ' ******************************************************* '
+        write (ilogfile,*)
+        write (ilogfile,*) ' ******************************************************* '
+        write (ilogfile,*) '          O V E R L A P   I N T E R A C T I O N S        '
+        write (ilogfile,*) ' ******************************************************* '
 
 ! Assign values to the unrequired variables for this specific interaction.
         isorp = 0
@@ -227,11 +228,11 @@
             allocate (pFdata_cell%fofx(nME2c_max))
 
             ! Open output file for this species pair
-            write (filename, '("/overlap.",i2.2,".",i2.2,".dat")')           &
+            write (filename, '("/overlap.",i2.2,".",i2.2,".dat")')            &
      &             species(ispecies)%nZ, species(jspecies)%nZ
             inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
             if (skip) cycle
-            open (unit = 11, file = trim(Fdata_location)//trim(filename),    &
+            open (unit = 11, file = trim(Fdata_location)//trim(filename),     &
      &            status = 'unknown')
 
             ! Set up grid loop control constants
@@ -245,28 +246,28 @@
             rhomax = min(rcutoff1, rcutoff2)
 
             ! open directory file
-            write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')             &
+            write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')              &
      &        species(ispecies)%nZ, species(jspecies)%nZ
-            open (unit = 13, file = trim(Fdata_location)//trim(interactions),&
+            open (unit = 13, file = trim(Fdata_location)//trim(interactions), &
      &            status = 'unknown', position = 'append')
-            write (13,100) pFdata_bundle%nFdata_cell_2c, P_overlap, isorp,   &
+            write (13,100) pFdata_bundle%nFdata_cell_2c, P_overlap, isorp,    &
      &                     filename(2:30), pFdata_cell%nME, ndd_overlap, dmax
             close (unit = 13)
 
             ! Open mu, nu, mvalue file and write out values.
-            write (filename, '("/",i2.2, "_munu_2c.",i2.2,".",i2.2,".dat")') &
+            write (filename, '("/",i2.2, "_munu_2c.",i2.2,".",i2.2,".dat")')  &
      &             P_overlap, species(ispecies)%nZ, species(jspecies)%nZ
-            open (unit = 12, file = trim(Fdata_location)//trim(filename),    &
+            open (unit = 12, file = trim(Fdata_location)//trim(filename),     &
      &            status = 'unknown', position = 'append')
 
             ! write the mapping - stored in mu, nu, and mvalue
             write (12,*) (pFdata_cell%mu_2c(index_2c), index_2c = 1, nME2c_max)
             write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
-            write (12,*) (pFdata_cell%mvalue_2c(index_2c),                   &
+            write (12,*) (pFdata_cell%mvalue_2c(index_2c),                    &
      &                    index_2c = 1, nME2c_max)
 
 ! Loop over grid
-            write (logfile,200) species(ispecies)%nZ, species(jspecies)%nZ
+            write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
             do igrid = 1, ndd_overlap
               d = d + drr
 
@@ -274,13 +275,13 @@
               zmin = max(-rcutoff1, d - rcutoff2)
               zmax = min(rcutoff1, d + rcutoff2)
 
-              call evaluate_integral_2c (nFdata_cell_2c, ispecies, jspecies, &
-     &                                   isorp, ideriv, rcutoff1, rcutoff2,  &
-     &                                   d, nz_overlap, nrho_overlap,   &
-     &                                   rint_overlap, phifactor, zmin, zmax,&
+              call evaluate_integral_2c (nFdata_cell_2c, ispecies, jspecies,  &
+     &                                   isorp, ideriv, rcutoff1, rcutoff2,   &
+     &                                   d, nz_overlap, nrho_overlap,         &
+     &                                   rint_overlap, phifactor, zmin, zmax, &
      &                                   rhomin, rhomax, pFdata_cell%fofx)
               ! Write out details.
-              write (11,*) (pFdata_cell%fofx(index_2c),                      &
+              write (11,*) (pFdata_cell%fofx(index_2c),                       &
      &                                       index_2c = 1, nME2c_max)
             end do ! igrid
             write (11,*)
@@ -294,7 +295,7 @@
 ! Format Statements
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
-200     format (2x, ' Evaluating overlap integrals for nZ = ', i3,           &
+200     format (2x, ' Evaluating overlap integrals for nZ = ', i3,            &
      &              ' and nZ = ', i3)
 
 
@@ -321,8 +322,8 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        function rint_overlap (itype, ispecies, jspecies, isorp, d, rho,   &
-     &                           z1, z2, ideriv, index_2c)
+        function rint_overlap (itype, ispecies, jspecies, isorp, d, rho,      &
+     &                         z1, z2, ideriv, index_2c)
         implicit none
 
         real rint_overlap

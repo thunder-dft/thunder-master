@@ -55,9 +55,12 @@
 !
 ! ===========================================================================
         subroutine dos (t)
+
+! /SYSTEM
         use M_configuraciones
         use M_species
         use M_kpoints
+
         implicit none
 
         include '../include/constants.h'
@@ -72,29 +75,28 @@
 
 ! Local Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, jatom            !< counter over atoms
-        integer igrid                   !< counter of energy grid points
-        integer ikpoint                 !< loop over ikpoints
-        integer in1, in2                !< species numbers
-        integer imu                     !< counter of orbitals
-        integer mmu, nnu                !< orbital number in large nxn matrix
-        integer norb_mu, norb_nu        !< number atomic orbitals
+        integer iatom, jatom               !< counter over atoms
+        integer igrid                      !< counter of energy grid points
+        integer ikpoint                    !< loop over ikpoints
+        integer inpfile                    !< reading from which unit
+        integer in1, in2                   !< species numbers
+        integer imu                        !< counter of orbitals
+        integer logfile                    !< writing to which unit
+        integer mmu, nnu                   !< orbital number in large nxn matrix
+        integer norb_mu, norb_nu           !< number atomic orbitals
 
 ! integers for matrix inversion
-        integer info                    !< error information
-        integer lwork                   !< size of the working arrays
+        integer info                       !< error information
+        integer lwork                      !< size of the working arrays
         integer, allocatable :: ipiv (:)
 
         integer natom_initial, natom_final !< atom starting and stopping
-        integer nenergy_grid            !< size of the energy grid
+        integer nenergy_grid               !< size of the energy grid
 
-        real dos_atom                    !< total density of state for atom
-        real dos_total                   !< total density of states for all
-        real energy_min, energy_max      !< intial and final energy point
-        real energy_step                 !< energy stepsize
-        real eta                         !< gaussian broadening
-
-        real pi                          !< parameter pi
+        real dos_atom                      !< total density of state for atom
+        real energy_min, energy_max        !< intial and final energy point
+        real energy_step                   !< energy stepsize
+        real eta                           !< gaussian broadening
 
 ! stuff for phase factor
         real dot
@@ -113,20 +115,12 @@
 
 ! density of states for each orbital
         real, allocatable :: dos_orbital (:)
+        real, allocatable :: dos_total (:)  !< total density of states for all
 
         complex energy                      !< value of energy for igrid
 
         ! final result
         complex, allocatable :: green (:, :, :)
-
-        interface
-          function block_slot (natoms)
-            integer, pointer :: block_slot (:)
-            integer, intent(in) :: natoms
-          end function block_slot
-        end interface
-
-        integer, pointer :: pblock_slot(:)
 
         character (len = 30) :: filename
         character (len = 25) :: slogfile
@@ -138,28 +132,40 @@
         lwork = 1
         allocate (work(lwork))
 
-        allocate (greenk (t%norbitals, t%norbitals))
         allocate (Hk (t%norbitals, t%norbitals))
+        allocate (greenk (t%norbitals, t%norbitals))
 
 ! Procedure
 ! ===========================================================================
+! Initialize logfile
+        logfile = t%logfile
+        inpfile = t%inpfile
+
 ! Calculate the electronic density of states.
+        write (logfile,*)
         write (logfile,*) ' Calculating the electronic density of states. '
+
+! Write the dos files - make the output directory
+        slogfile = t%basisfile(:len(trim(t%basisfile))-4)
+        slogfile = trim(slogfile)//'.dos'
+        call system ('mkdir '//trim(slogfile)//'')
 
 ! Determine if the dos.input files exists - if not, then exit.
         slogfile = t%basisfile(:len(trim(t%basisfile))-4)
         slogfile = trim(slogfile)//'.dos.inp'
         inquire (file = slogfile, exist = read_dos)
+
         if (read_dos) then
+
 ! Read from input file - gives dos options
-          write (logfile,*)
           write (logfile,*) ' Reading from dos.inp file! '
-          open (unit = 11, file = slogfile, status = 'old')
-          read (11,*) nenergy_grid    ! energy grid
-          read (11,*) natom_initial, natom_final
-          read (11,*) energy_min, energy_max
-          read (11,*) eta  ! gaussian broadening
-          close (11)
+          open (unit = inpfile, file = slogfile, status = 'old')
+          read (inpfile,*) nenergy_grid    ! energy grid
+          read (inpfile,*) natom_initial, natom_final
+          if (natom_final .gt. s%natoms) stop ' natom_final cannot be greater than natoms! '
+          read (inpfile,*) energy_min, energy_max
+          read (inpfile,*) eta  ! gaussian broadening
+          close (inpfile)
         else
           write (logfile, *) ' DOS input file non-existent! '
           return
@@ -169,20 +175,17 @@
 ! Allocate green (energy_grid)
         allocate (green (t%norbitals, t%norbitals, nenergy_grid))
 
-! Initialize
-        pblock_slot=>block_slot(t%natoms)
-
 ! Set the minimum energy point.
         energy = energy_min*a1 + eta*ai
 
 ! Read in the Hamiltonian (Lowdin transformed) for this kpoint
         slogfile = t%basisfile(:len(trim(t%basisfile))-4)
         slogfile = trim(slogfile)//'.Hk'
-        open (unit = 12, file = slogfile, form = 'unformatted')
+        open (unit = inpfile, file = slogfile, form = 'unformatted')
 
 ! Loop over kpoints
         do ikpoint = 1, t%nkpoints
-          read (12) Hk
+          read (inpfile) Hk
 
 ! Loop over energy grid
           do igrid = 1, nenergy_grid
@@ -192,13 +195,13 @@
             do iatom = 1, t%natoms
               in1 = t%atom(iatom)%imass
               norb_mu = species(in1)%norb_max
-              mmu = pblock_slot(iatom)
+              mmu = t%iblock_slot(iatom)
 
 ! Loop over atoms again
               do jatom = 1, t%natoms
                 in2 = t%atom(jatom)%imass
                 norb_nu = species(in2)%norb_max
-                nnu = pblock_slot(jatom)
+                nnu = t%iblock_slot(jatom)
 
                 allocate (identity (norb_mu, norb_nu)); identity = 0.0d0
                 do imu = 1, norb_mu
@@ -236,12 +239,12 @@
             do iatom = natom_initial, natom_final
               in1 = t%atom(iatom)%imass
               norb_mu = species(in1)%norb_max
-              mmu = pblock_slot(iatom)
+              mmu = t%iblock_slot(iatom)
 
               do jatom = natom_initial, natom_final
                 in2 = t%atom(jatom)%imass
                 norb_mu = species(in2)%norb_max
-                nnu = pblock_slot(jatom)
+                nnu = t%iblock_slot(jatom)
 
 ! Find the phase which is based on k*r
                 vec = t%atom(jatom)%ratom - t%atom(iatom)%ratom
@@ -260,61 +263,56 @@
 
           end do ! end loop over energy grid
         end do ! end loop over kpoints
-        close (unit = 12)
+        close (unit = inpfile)
 
 ! ===========================================================================
 ! ---------------------------------------------------------------------------
 !               W R I T E O U T    D O S
 ! ---------------------------------------------------------------------------
 ! ===========================================================================
-! Initialize pi
-        pi = 4.0d0*atan(1.0d0)
-
-! Open the dos files
-! Read in the Hamiltonian (Lowdin transformed) for this kpoint
         slogfile = t%basisfile(:len(trim(t%basisfile))-4)
         slogfile = trim(slogfile)//'.dos'
-        call system ('mkdir '//trim(slogfile)//'')
-
-        open (unit = 23, file = trim(slogfile)//'/total.dat',                &
-     &         status = 'unknown', position = 'append')
-
-! Set the minimum energy point.
-        energy = energy_min
 
 ! Loop over energy grid
+        energy = energy_min
+        allocate (dos_total (nenergy_grid)); dos_total = 0.0d0
         do igrid = 1, nenergy_grid
-          dos_total = 0.0d0
           do iatom = natom_initial, natom_final
             in1 = t%atom(iatom)%imass
             norb_mu = species(in1)%norb_max
-            mmu = pblock_slot(iatom)
+            mmu = t%iblock_slot(iatom)
 
-            write (filename, '("/",i2.2,".",i2.2,".dat")') iatom, species(in1)%nZ
-            open (unit = 24, file = trim(slogfile)//trim(filename),         &
-     &              status = 'unknown', position = 'append')
+            write (filename, '("/",i4.4,".",i3.3,".dat")') iatom, species(in1)%nZ
+            open (unit = inpfile, file = trim(slogfile)//trim(filename),     &
+     &            status = 'unknown', position = 'append')
 
             allocate (dos_orbital (norb_mu)); dos_orbital = 0.0d0
-            allocate (charge_orbital (norb_mu)); charge_orbital = 0.0d0
             do imu = 1, norb_mu
               dos_orbital(imu) = -1.0d0/pi*imag(green(mmu + imu, mmu + imu, igrid))
             end do ! end loop over orbitals on iatom
             dos_atom = sum (dos_orbital)
-            dos_total = dos_total + dos_atom
+            dos_total(igrid) = dos_total(igrid) + dos_atom
 
-            write (24,*) real(energy), dos_orbital(1:norb_mu), dos_total
+            write (inpfile,100) real(energy), dos_orbital(1:norb_mu), dos_total(igrid)
             deallocate (dos_orbital)
-            close (unit = 24)
+            close (unit = inpfile)
           end do ! end loop over iatom
-
-          ! write to total dos file
-          write (23,*) real(energy), dos_total
 
           ! step in direction of energy
           energy = energy + energy_step
-
         end do ! end loop over energy grid
-        close (unit = 23)
+
+! Write out the total dos on the grid
+        slogfile = t%basisfile(:len(trim(t%basisfile))-4)
+        slogfile = trim(slogfile)//'.dos'
+        open (unit = inpfile, file = trim(slogfile)//'/total.dat', status = 'unknown')
+        energy = energy_min
+        do igrid = 1, nenergy_grid
+          ! write to total dos file
+          write (inpfile,*) real(energy), dos_total(igrid)
+          energy = energy + energy_step
+        end do ! end loop over energy grid
+        close (unit = inpfile)
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -324,7 +322,7 @@
 
 ! Format Statements
 ! ===========================================================================
-! None
+100     format (2x, 8f18.8)
 
 ! End Subroutine
 ! ===========================================================================

@@ -21,7 +21,6 @@
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -38,18 +37,19 @@
 ! ===========================================================================
 ! Code written by:
 ! James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 ! Module Declaration
 ! ===========================================================================
         module M_xc_1c
-          use M_precision
+
+! /GLOBAL
+        use M_precision
 
 ! Type Declaration
 ! ===========================================================================
@@ -192,7 +192,7 @@
 ! Determine exchange-correlation potentials
 
 ! C Lee-Yang-Parr
-		if (iexc .eq. 9) then
+        if (iexc .eq. 9) then
 
 ! X Becke gga by default
           ix = 2
@@ -207,8 +207,9 @@
 
 ! If the improper iexc option was entered then the program will stop.
         else
-          write (*,*) ' In get_potxc_1c - '
-          write (*,*) ' stop: xc option not implemented', iexc
+          write (*,*) ' In get_potxc_1c.f90 - '
+          write (*,*) ' You must recomplile create.x for iexc = 3 '
+          write (*,*) ' Set XC = LDA in include/OPTIONS and recompile. '
           stop
         end if
 

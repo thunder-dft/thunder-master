@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2013
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
-! Ohio University - Dave Drabold
 ! University of Texas at Austin - Alex Demkov
+! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -34,13 +36,12 @@
 ! ===========================================================================
 ! Code written by:
 ! James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -120,8 +121,8 @@
 
 ! Writing out the energy pieces
         write (t%logfile, *)
-        write (t%logfile, '(A)') 'Total Energy'
-        write (t%logfile, '(A)') '------------'
+        write (t%logfile, '(A)') ' Total Energy '
+        write (t%logfile, '(A)') ' ------------ '
         write (t%logfile, *)
         write (t%logfile, 102) ebs
         write (t%logfile, 103) uii_uee
@@ -201,10 +202,11 @@
                   comp_EBS = comp_EBS + pH_neighbors%block(imu,inu)*pRho_neighbors%block(imu,inu)
 
                   ! kinetic energy
-                  comp_KE = comp_KE + pK_neighbors%block(imu,inu)*pRho_neighbors%blocko(imu,inu)
+                  comp_KE = comp_KE + pK_neighbors%block(imu,inu)*pRho_neighbors%block(imu,inu)
 
                   ! Hartree energy
                   comp_VNA = comp_VNA + pvna_neighbors%block(imu,inu)*pRho_neighbors%block(imu,inu)
+                  comp_VNA = comp_VNA + pvna_neighbors%blocko(imu,inu)*pRho_neighbors%block(imu,inu)
 
                   ! exchange-correlation energy
                   comp_VXC = comp_VXC + pvxc_neighbors%block(imu,inu)*pRho_neighbors%block(imu,inu)

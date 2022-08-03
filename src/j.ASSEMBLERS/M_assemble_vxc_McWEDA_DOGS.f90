@@ -63,13 +63,21 @@
 ! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
         module M_assemble_vxc
+
+! /GLOBAL
         use M_assemble_blocks
+
+! /SYSTEM
         use M_configuraciones
+        use M_rotations
+
+! /FDATA
         use M_Fdata_1c
         use M_Fdata_2c
         use M_Fdata_3c
+
+! /ASSEMBLERS
         use M_assemble_rho_McWEDA
-        use M_rotations
 
 ! Type Declaration
 ! ===========================================================================
@@ -180,8 +188,8 @@
 
 ! equation (16) PRB 71, 235101 (2005)
 ! vxc = vxc_bond + vxc_SN - vxc_SN_bond
-            pvxc_neighbors%block = vxc_SN(iatom)%neighbors(ineigh)%block       &
-     &                            + vxc_bond(iatom)%neighbors(ineigh)%block    &
+            pvxc_neighbors%block = vxc_bond(iatom)%neighbors(ineigh)%block     &
+     &                            + vxc_SN(iatom)%neighbors(ineigh)%block      &
      &                            - vxc_SN_bond(iatom)%neighbors(ineigh)%block
           end do
         end do
@@ -403,6 +411,8 @@
           pvxc_SN=>vxc_SN(iatom); pvxc_SN_neighbors=>pvxc_SN%neighbors(matom)
           pvxc_SN_bond=>vxc_SN_bond(iatom)
           pvxc_SN_bond_neighbors=>pvxc_SN_bond%neighbors(matom)
+
+          ! Allocate arrays
           allocate (pvxc_SN_neighbors%block(norb_mu, norb_mu))
           allocate (pvxc_SN_bond_neighbors%block(norb_mu, norb_mu))
           pvxc_SN_neighbors%block = 0.0d0
@@ -424,15 +434,15 @@
             n1 = n1 + l1 + 1
 
 ! Call lda-function for rho_in
-            prho_in_shell =                                                  &
+            prho_in_shell =                                                    &
      &        s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,issh)
-              call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,       &
+              call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,         &
      &                                 dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
 
-            prho_bond_shell =                                                &
+            prho_bond_shell =                                                  &
      &        s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,issh)
-              call lda_ceperley_alder (prho_bond_shell, exc_bond,            &
-     &                                     muxc_bond, dexc_bond, d2exc_bond, &
+              call lda_ceperley_alder (prho_bond_shell, exc_bond,              &
+     &                                     muxc_bond, dexc_bond, d2exc_bond,   &
      &                                     dmuxc_bond, d2muxc_bond)
 
 ! Calculate vxc_SN and vxc_SN_bond for (mu,nu)-block
@@ -443,11 +453,12 @@
               prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,imu)
 
 ! calculate GSN for rho_in
-              pvxc_SN_neighbors%block(imu,imu) = muxc_in                     &
-     &          + dmuxc_in*(prho_in - prho_in_shell)
+              pvxc_SN_neighbors%block(imu,imu) =                               &
+     &          muxc_in + dmuxc_in*(prho_in - prho_in_shell)
 
-              pvxc_SN_bond_neighbors%block(imu,imu) = muxc_bond              &
-     &          + dmuxc_bond*(prho_bond - prho_bond_shell)
+! calculate GSN for rho_bond ("atomic" correction)
+              pvxc_SN_bond_neighbors%block(imu,imu) =                          &
+     &          muxc_bond + dmuxc_bond*(prho_bond - prho_bond_shell)
             end do
 
 ! Loop over shells ineigh
@@ -483,6 +494,8 @@
 
 ! calculate GSN for rho_in
                     pvxc_SN_neighbors%block(imu,inu) = dmuxc_in*prho_in
+
+! calculate GSN for rho_bond ("atomic" correction)
                     pvxc_SN_bond_neighbors%block(imu,inu) = dmuxc_bond*prho_bond
                   end if ! imu .eq. inu
                 end do !do m2 = -l2, l2
@@ -558,7 +571,7 @@
         integer norb_mu, norb_nu         !< size of the block for the pair
 
         real z                           !< distance between r1 and r2
-        real dQ
+        real dQ                          !< charge in orbital
 
         real, dimension (3, 3) :: eps    !< the epsilon matrix
         real, dimension (3) :: r1, r2    !< positions of iatom and jatom
@@ -570,7 +583,7 @@
         interface
           function distance (a, b)
             real distance
-            real, intent(in), dimension (3) :: a, b
+            real, intent (in), dimension (3) :: a, b
           end function distance
         end interface
 
@@ -592,10 +605,9 @@
           ! cut some lengthy notation
           pvxc_bond=>vxc_bond(iatom)
 
+! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
           allocate (pvxc_bond%neighbors(num_neigh))
-
-! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
@@ -634,23 +646,21 @@
 ! We calculate here the "on-site" term: mu and nu are in the same atom "i"
 !    vxc_bond (mu,nu) = < mu | V_xc (rho_i) | nu >
 
-! Transform from l-block to mu-block and get the matrix element from the data files
-! Fdata_1c (onecenter:uncentro)
-
-! This loop defining dQ (maybe could be placed outside this subroutine)
+! Transform from l-block to mu-block and get the matrix element from the data
+! files - from Fdata_1c (onecenter:uncentro)
               do inu = 1, norb_nu
                 jssh = species(in1)%orbital(inu)%issh
                 do imu = 1, norb_mu
                   issh = species(in1)%orbital(imu)%issh
-                  if (species(in1)%orbital(imu)%l                            &
-     &                .eq. species(in1)%orbital(inu)%l .and.                 &
-     &                species(in1)%orbital(imu)%m                            &
+                  if (species(in1)%orbital(imu)%l                              &
+     &                .eq. species(in1)%orbital(inu)%l .and.                   &
+     &                species(in1)%orbital(imu)%m                              &
      &                .eq. species(in1)%orbital(inu)%m) then
                     pvxc_bond_neighbors%block(imu,inu) = vxc_1c(in1)%V(issh,jssh)
                     do kssh = 1, species(in1)%nssh
                       dQ = s%atom(iatom)%shell(kssh)%dQ
-                      pvxc_bond_neighbors%block(imu,inu) =                   &
-     &                  pvxc_bond_neighbors%block(imu,inu)                   &
+                      pvxc_bond_neighbors%block(imu,inu) =                     &
+     &                  pvxc_bond_neighbors%block(imu,inu)                     &
      &                    + vxc_1c(in1)%dV(issh,jssh,kssh)*dQ
                     end do
                   end if
@@ -672,7 +682,7 @@
 
 ! Neutral atom case
               isorp = 0
-              call getMEs_Fdata_2c (in1, in3, interaction, isorp, z,         &
+              call getMEs_Fdata_2c (in1, in3, interaction, isorp, z,           &
      &                              norb_mu, norb_nu, bcxcm)
               call rotate (in1, in3, eps, norb_mu, norb_nu, bcxcm, bcxcx)
               pvxc_bond_neighbors%block = bcxcx
@@ -681,7 +691,7 @@
               interaction = P_dnuxc_ontopL
               in3 = in2
               do isorp = 1, species(in1)%nssh
-                call getMEs_Fdata_2c (in1, in3, interaction, isorp, z,       &
+                call getMEs_Fdata_2c (in1, in3, interaction, isorp, z,         &
      &                                norb_mu, norb_nu, bcxcm)
                 call rotate (in1, in3, eps, norb_mu, norb_nu, bcxcm, bcxcx)
                 dQ = s%atom(iatom)%shell(isorp)%dQ
@@ -691,7 +701,7 @@
               interaction = P_dnuxc_ontopR
               in3 = in2
               do isorp = 1, species(in2)%nssh
-                call getMEs_Fdata_2c (in1, in3, interaction, isorp, z,       &
+                call getMEs_Fdata_2c (in1, in3, interaction, isorp, z,         &
      &                                norb_mu, norb_nu, bcxcm)
                 call rotate (in1, in3, eps, norb_mu, norb_nu, bcxcm, bcxcx)
                 dQ = s%atom(jatom)%shell(isorp)%dQ

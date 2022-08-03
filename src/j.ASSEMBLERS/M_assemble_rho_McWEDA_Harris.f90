@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -50,11 +52,17 @@
 !! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
          module M_assemble_rho_McWEDA
+
+! /GLOBAL
          use M_assemble_blocks
+
+! /SYSTEM
          use M_configuraciones
+         use M_rotations
+
+! /FDATA
          use M_Fdata_2c
          use M_Fdata_3c
-         use M_rotations
 
 ! Type Declaration
 ! ===========================================================================
@@ -100,7 +108,7 @@
         integer iatom, ineigh           !< counter over atoms and neighbors
         integer in1, in2, in3           !< species numbers
         integer jatom                   !< neighbor of iatom
-        integer interaction, isubtype   !< which interaction and subtype
+        integer interaction, isorp      !< which interaction and subtype
         integer num_neigh               !< number of neighbors
         integer matom                   !< matom is the self-interaction atom
         integer mbeta                   !< the cell containing neighbor of iatom
@@ -203,14 +211,14 @@
 
               allocate (bcxcm (norb_mu, norb_nu))
               allocate (bcxcx (norb_mu, norb_nu))
-              do isubtype = 1, species(in1)%nssh
-                Qneutral = species(in1)%shell(isubtype)%Qneutral
-                call getMEs_Fdata_2c (in1, in3, interaction, isubtype, z,    &
+              do isorp = 1, species(in1)%nssh
+                Qneutral = species(in1)%shell(isorp)%Qneutral
+                call getMEs_Fdata_2c (in1, in3, interaction, isorp, z,        &
      &                              norb_mu, norb_nu, bcxcm)
                 call rotate (in1, in3, eps, norb_mu, norb_nu, bcxcm, bcxcx)
-                prho_in_neighbors%block =                                    &
+                prho_in_neighbors%block =                                     &
      &            prho_in_neighbors%block + bcxcx*Qneutral
-                prho_bond_neighbors%block =                                  &
+                prho_bond_neighbors%block =                                   &
      &            prho_bond_neighbors%block + bcxcx*Qneutral
               end do
 
@@ -218,9 +226,9 @@
 ! - right (iatom): <mu|(rho_mu + rho_nu)|nu> -> (right) <mu|(rho_nu)|nu>
               interaction = P_rho_ontopR
               in3 = in2
-              do isubtype = 1, species(in2)%nssh
-                Qneutral = species(in2)%shell(isubtype)%Qneutral
-                call getMEs_Fdata_2c (in1, in2, interaction, isubtype, z,    &
+              do isorp = 1, species(in2)%nssh
+                Qneutral = species(in2)%shell(isorp)%Qneutral
+                call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
      &                              norb_mu, norb_nu, bcxcm)
                 call rotate (in1, in3, eps, norb_mu, norb_nu, bcxcm, bcxcx)
                 prho_in_neighbors%block =                                    &
@@ -281,14 +289,14 @@
               norb_nu = species(in3)%norb_max
               allocate (bcxcm (norb_mu, norb_nu))
               allocate (bcxcx (norb_mu, norb_nu))
-              do isubtype = 1, species(in2)%nssh
-                Qneutral = species(in2)%shell(isubtype)%Qneutral
-                call getMEs_Fdata_2c (in1, in2, interaction, isubtype, z,    &
-     &                            norb_mu, norb_nu, bcxcm)
+              do isorp = 1, species(in2)%nssh
+                Qneutral = species(in2)%shell(isorp)%Qneutral
+                call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,        &
+     &                                norb_mu, norb_nu, bcxcm)
                 call rotate (in1, in3, eps, norb_mu, norb_nu, bcxcm, bcxcx)
-                prho_in_neighbors%block =                                    &
+                prho_in_neighbors%block =                                     &
      &            prho_in_neighbors%block + bcxcx*Qneutral
-                prho_bond_neighbors%block =                                  &
+                prho_bond_neighbors%block =                                   &
      &            prho_bond_neighbors%block + bcxcx*Qneutral
               end do
               deallocate (bcxcm)
@@ -306,12 +314,12 @@
               norb_nu = species(in3)%norb_max
               allocate (bcxcm (norb_mu, norb_nu))
               allocate (bcxcx (norb_mu, norb_nu))
-              do isubtype = 1, species(in2)%nssh
-                Qneutral = species(in2)%shell(isubtype)%Qneutral
-                call getMEs_Fdata_2c (in1, in2, interaction, isubtype, z,    &
+              do isorp = 1, species(in2)%nssh
+                Qneutral = species(in2)%shell(isorp)%Qneutral
+                call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,        &
      &                                norb_mu, norb_nu, bcxcm)
                 call rotate (in1, in3, eps, norb_mu, norb_nu, bcxcm, bcxcx)
-                prho_in_neighbors%block =                                    &
+                prho_in_neighbors%block =                                     &
      &            prho_in_neighbors%block + bcxcx*Qneutral
               end do
               deallocate (bcxcm)
@@ -372,7 +380,7 @@
         integer ibeta, jbeta             !< cells for three atoms
         integer ineigh, mneigh           !< counter over neighbors
         integer in1, in2, in3            !< species numbers
-        integer interaction, isubtype    ! which interaction and subtype
+        integer interaction, isorp       !< which interaction and subtype
 
         integer norb_mu, norb_nu         !< size of the block for the pair
 
@@ -463,16 +471,16 @@
 ! Allocate block arrays
               allocate (bcxcm(norb_mu, norb_nu))
               allocate (bcxcx(norb_mu, norb_nu))
-              do isubtype = 1, species(in3)%nssh
-                Qneutral = species(in3)%shell(isubtype)%Qneutral
-                call getMEs_Fdata_3c (in1, in2, in3, interaction, isubtype, x,&
+              do isorp = 1, species(in3)%nssh
+                Qneutral = species(in3)%shell(isorp)%Qneutral
+                call getMEs_Fdata_3c (in1, in2, in3, interaction, isorp, x,   &
      &                                z, norb_mu, norb_nu, cost, bcxcm)
 
                 ! Rotate into crystal coordinates
                 call rotate (in1, in2, eps, norb_mu, norb_nu, bcxcm, bcxcx)
 
                 ! Add this piece into the total
-                s%rho_in(iatom)%neighbors(mneigh)%block =                    &
+                s%rho_in(iatom)%neighbors(mneigh)%block =                     &
      &            s%rho_in(iatom)%neighbors(mneigh)%block + bcxcx*Qneutral
               end do
               deallocate (bcxcm)
@@ -534,7 +542,7 @@
         integer iatom, ineigh            !< counter over atoms and neighbors
         integer in1, in2, in3            !< species numbers
         integer jatom                    !< neighbor of iatom
-        integer interaction, isubtype    !< which interaction and subtype
+        integer interaction, isorp       !< which interaction and subtype
         integer num_neigh                !< number of neighbors
         integer matom                    !< matom is the self-interaction atom
         integer mbeta                    !< cell containing neighbor of iatom
@@ -621,11 +629,13 @@
 ! left (iatom): <mu|(rho_mu + rho_nu)|nu> -> (left) <mu|(rho_mu)|nu>
               interaction = P_rhoS_ontopL
               in3 = in2
+
+! Allocate block size
               allocate (bcxcm (nssh_i, nssh_j))
 
-              do isubtype = 1, species(in1)%nssh
-                Qneutral = species(in1)%shell(isubtype)%Qneutral
-                call getMEs_Fdata_2c (in1, in3, interaction, isubtype, z,    &
+              do isorp = 1, species(in1)%nssh
+                Qneutral = species(in1)%shell(isorp)%Qneutral
+                call getMEs_Fdata_2c (in1, in3, interaction, isorp, z,       &
      &                                nssh_i, nssh_j, bcxcm)
 
                 pWrho_in_neighbors%block =                                   &
@@ -638,9 +648,9 @@
 ! right (iatom): <mu|(rho_mu + rho_nu)|nu> -> (right) <mu|(rho_nu)|nu>
               interaction = P_rhoS_ontopR
               in3 = in2
-              do isubtype = 1, species(in2)%nssh
-                Qneutral = species(in2)%shell(isubtype)%Qneutral
-                call getMEs_Fdata_2c (in1, in2, interaction, isubtype, z,    &
+              do isorp = 1, species(in2)%nssh
+                Qneutral = species(in2)%shell(isorp)%Qneutral
+                call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
      &                                nssh_i, nssh_j, bcxcm)
 
                 pWrho_in_neighbors%block =                                   &
@@ -674,27 +684,29 @@
 
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
-            ! cut some more lengthy notation
-
-            pWrho_bond_neighbors=>prho_bond_weighted%neighbors(matom)
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
 
+            ! cut some more lengthy notation
+            pWrho_bond_neighbors=>prho_bond_weighted%neighbors(matom)
+
 ! Calculate the distance between the two centers.
             z = distance (r1, r2)
 
             if (iatom .eq. jatom .and. mbeta .eq. 0) then
+
 ! one center case
               interaction = P_rhoS_atom
               in3 = in1
 
 ! Allocate block size
               allocate (bcxcm (nssh_i, nssh_i))
-              do isubtype = 1, species(in2)%nssh
-                Qneutral = species(in2)%shell(isubtype)%Qneutral
-                call getMEs_Fdata_2c (in1, in2, interaction, isubtype, z,    &
+
+              do isorp = 1, species(in2)%nssh
+                Qneutral = species(in2)%shell(isorp)%Qneutral
+                call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
      &                                nssh_i, nssh_i, bcxcm)
 
                 pWrho_in_neighbors%block =                                   &
@@ -712,10 +724,12 @@
 
 ! Allocate block size
               allocate (bcxcm (nssh_i, nssh_i))
-              do isubtype = 1, species(in2)%nssh
-                Qneutral = species(in2)%shell(isubtype)%Qneutral
-                call getMEs_Fdata_2c (in1, in2, interaction, isubtype, z,    &
+
+              do isorp = 1, species(in2)%nssh
+                Qneutral = species(in2)%shell(isorp)%Qneutral
+                call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,    &
      &                                nssh_i, nssh_i, bcxcm)
+
                 pWrho_in_neighbors%block =                                   &
      &            pWrho_in_neighbors%block + bcxcm*Qneutral
               end do
@@ -777,9 +791,8 @@
         integer ibeta, jbeta             !< cells for three atoms
         integer ineigh, mneigh           !< counter over neighbors
         integer in1, in2, in3
-        integer interaction, isubtype    ! which interaction and subtype
-
-        integer norb_mu, norb_nu         !< size of the block for the pair
+        integer interaction, isorp       !< which interaction and subtype
+        integer nssh_i, nssh_j           !< size of the block for the pair
 
         real z                           !< distances between r1 and r2
         real x, cost                     !< dnabc and angle
@@ -801,6 +814,7 @@
 
 ! Allocate Arrays
 ! ===========================================================================
+! None
 
 ! Procedure
 ! ===========================================================================
@@ -817,13 +831,13 @@
               ibeta = s%neighbors(ialpha)%iatom_common_b(ineigh)
               r1 = s%atom(iatom)%ratom + s%xl(ibeta)%a
               in1 = s%atom(iatom)%imass
-              norb_mu = species(in1)%nssh
+              nssh_i = species(in1)%nssh
 
               jatom = s%neighbors(ialpha)%jatom_common_j(ineigh)
               jbeta = s%neighbors(ialpha)%jatom_common_b(ineigh)
               r2 = s%atom(jatom)%ratom + s%xl(jbeta)%a
               in2 = s%atom(jatom)%imass
-              norb_nu = species(in2)%nssh
+              nssh_j = species(in2)%nssh
 
 ! SET-UP STUFF
 ! ****************************************************************************
@@ -863,12 +877,12 @@
               interaction = P_rhoS_3c
 
 ! Allocate block arrays
-              allocate (bcxcm(norb_mu, norb_nu))
+              allocate (bcxcm(nssh_i, nssh_j))
 
-              do isubtype = 1, species(in3)%nssh
-                Qneutral = species(in3)%shell(isubtype)%Qneutral
-                call getMEs_Fdata_3c (in1, in2, in3, interaction, isubtype, x,&
-     &                                z, norb_mu, norb_nu, cost, bcxcm)
+              do isorp = 1, species(in3)%nssh
+                Qneutral = species(in3)%shell(isorp)%Qneutral
+                call getMEs_Fdata_3c (in1, in2, in3, interaction, isorp, x,  &
+     &                                z, nssh_i, nssh_j, cost, bcxcm)
 
                 ! Add this piece into the total
                 s%rho_in_weighted(iatom)%neighbors(mneigh)%block =           &

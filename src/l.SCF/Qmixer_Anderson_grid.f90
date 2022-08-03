@@ -56,10 +56,18 @@
 ! Program Declaration
 ! ===========================================================================
 		subroutine Qmixer (t, iscf_iteration, sigma)
-        use M_charges
-        use M_density_matrix
-        use M_grid
+
+! /SYSTEM
         use M_configuraciones
+
+! /GRID
+        use M_grid
+
+! /SCF
+        use M_charges
+
+! /SOLVESH
+        use M_density_matrix
 
         implicit none
 
@@ -92,7 +100,7 @@
 
         integer norb_mu, norb_nu         !< size of the block for the pair
         integer num_neigh                !< number of neighbors
-        integer inu,imu
+        integer imu, inu
 
         real zcheck, ztotal_out
 
@@ -183,11 +191,11 @@
         allocate (Qoutmixer (imix))
 
         if (.not. allocated (Fv))then
-          allocate (Fv (imix, max_scf_iterations))
-          allocate (Xv (imix, max_scf_iterations))
-          allocate (delF (imix, max_scf_iterations))
-          allocate (delX (imix, max_scf_iterations))
-          allocate (sigma_saved (max_scf_iterations))
+          allocate (Fv (imix, max_scf_iterations_set))
+          allocate (Xv (imix, max_scf_iterations_set))
+          allocate (delF (imix, max_scf_iterations_set))
+          allocate (delX (imix, max_scf_iterations_set))
+          allocate (sigma_saved (max_scf_iterations_set))
         end if
 
 ! Store all the charges into one dimensional arrays for easier manipulation.
@@ -229,7 +237,7 @@
         if (mix_order .eq. 1 .or. sigma .lt. scf_tolerance_set) then
           Qinmixer(:) = Qinmixer(:) +  beta_set*Fv(:,iscf_iteration)
           sigma_saved(iscf_iteration) = sigma
-        else
+        else 
 
 ! Evaluate new terms
           sigma_saved(iscf_iteration) = sigma
@@ -350,7 +358,7 @@
         end do ! end loop over atoms
 
         t%ztot = 0.0d0
-        do iatom = 1, s%natoms
+        do iatom = 1, t%natoms
           in1 = t%atom(iatom)%imass
           do issh = 1, species(in1)%nssh
             t%ztot = t%ztot + species(in1)%shell(issh)%Qneutral
@@ -384,7 +392,7 @@
         end do ! atoms
 
 ! Renormalize and set denmat_old - write the density matrix to a file
-        slogfile = s%basisfile(:len(trim(s%basisfile))-4)
+        slogfile = t%basisfile(:len(trim(t%basisfile))-4)
         slogfile = trim(slogfile)//'.rho'
         open (unit = inpfile, file = slogfile, status = 'unknown', form = 'unformatted')
         do iatom = 1, t%natoms

@@ -45,10 +45,16 @@
 ! Module Declaration
 ! ===========================================================================
         module M_vxc_DOGS
+
+! /GLOBAL
         use M_precision
+
+! /SYSTEM
         use M_atom_functions
         use M_species
         use M_integrals_2c
+
+! /CREATE
         use M_vnl
         use M_xc_1c
         use M_xc_2c
@@ -158,32 +164,29 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer logfile                     !< writing to which unit
+! None
 
 ! Procedure
 ! ===========================================================================
-! Initialize logfile
-        logfile = 21
+        write (ilogfile,*)
+        write (ilogfile,*) ' ******************************************************* '
+        write (ilogfile,*) '        E X C H A N G E   C O R R E L A T I O N          '
+        write (ilogfile,*) '        C H A R G E D   I N T E R A C T I O N S          '
+        write (ilogfile,*) ' ******************************************************* '
+        write (ilogfile,*)
 
-        write (logfile,*)
-        write (logfile,*) ' ******************************************************* '
-        write (logfile,*) '        E X C H A N G E   C O R R E L A T I O N          '
-        write (logfile,*) '        C H A R G E D   I N T E R A C T I O N S          '
-        write (logfile,*) ' ******************************************************* '
-        write (logfile,*)
-
-        write (logfile,*) ' Calling one-center case. '
+        write (ilogfile,*) ' Calling one-center case. '
         call nuxc_1c
 
-        write (logfile,*)
+        write (ilogfile,*)
         call exc_1c
 
-        write (logfile,*)
-        write (logfile,*) ' Calling two-center dnuxc_ontopL case. '
+        write (ilogfile,*)
+        write (ilogfile,*) ' Calling two-center dnuxc_ontopL case. '
         call dnuxc_ontopL
 
-        write (logfile,*)
-        write (logfile,*) ' Calling two-center dnuxc_ontopR case. '
+        write (ilogfile,*)
+        write (ilogfile,*) ' Calling two-center dnuxc_ontopR case. '
         call dnuxc_ontopR
 
 ! Deallocate Arrays
@@ -244,7 +247,6 @@
         integer issh, jssh
         integer index_1c, nME1c_max         !< basically the number of non-zero
         integer isorp, ideriv               !< the number of different types
-        integer logfile                     !< writing to which unit
         integer nFdata_cell_1c              !< indexing of interactions
 
         real d                              !< distance between the two centers
@@ -260,9 +262,6 @@
 
 ! Procedure
 ! ============================================================================
-! Initialize logfile
-        logfile = 21
-
 ! Assign values to the unrequired variables for this specific interaction.
         ideriv = 999
 
@@ -279,7 +278,7 @@
           open (unit = 11, file = trim(Fdata_location)//trim(filename),      &
      &          status = 'unknown')
 
-          write (logfile,100) species(ispecies)%nZ
+          write (ilogfile,100) species(ispecies)%nZ
 
           do isorp = 1, species(ispecies)%nssh
             call make_munuS (nFdata_cell_1c, ispecies, ispecies)
@@ -602,7 +601,6 @@
         integer issh, jssh
         integer index_1c, nME1c_max         !< basically the number of non-zero
         integer isorp, ideriv               !< the number of different types
-        integer logfile                     !< writing to which unit
         integer nFdata_cell_1c              !< indexing of interactions
 
         real d                              !< distance between the two centers
@@ -618,9 +616,6 @@
 
 ! Procedure
 ! ============================================================================
-! Initialize logfile
-        logfile = 21
-
 ! Assign values to the unrequired variables for this specific interaction.
         ideriv = 999
 
@@ -637,7 +632,7 @@
           open (unit = 11, file = trim(Fdata_location)//trim(filename),      &
      &          status = 'unknown')
 
-          write (logfile,100) species(ispecies)%nZ
+          write (ilogfile,100) species(ispecies)%nZ
 
           do isorp = 1, species(ispecies)%nssh
             call make_munuS (nFdata_cell_1c, ispecies, ispecies)
@@ -959,7 +954,6 @@
         integer igrid                       !< number of grid points
         integer index_2c, nME2c_max         !< basically the number of non-zero
         integer isorp, ideriv               !< the number of different types
-        integer logfile                     !< writing to which unit
         integer nFdata_cell_2c              !< indexing of interactions
 
         real dmax                           !< max distance between two centers
@@ -980,9 +974,6 @@
 
 ! Procedure
 ! ============================================================================
-! Initialize logfile
-        logfile = 21
-
 ! Assign values to the unrequired variables for this specific interaction.
         ideriv = 999
         if (.false.) ideriv = jspecies
@@ -1044,7 +1035,7 @@
      &                      index_2c = 1, nME2c_max)
 
 ! Loop over grid
-              write (logfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
               d = -drr
               do igrid = 1, ndd_vxc
                 d = d + drr
@@ -1257,7 +1248,6 @@
         integer igrid                       !< number of grid points
         integer index_2c, nME2c_max         !< basically the number of non-zero
         integer isorp, ideriv               !< the number of different types
-        integer logfile                     !< writing to which unit
         integer nFdata_cell_2c              !< indexing of interactions
 
         real dmax                           !< max distance between two centers
@@ -1278,9 +1268,6 @@
 
 ! Procedure
 ! ============================================================================
-! Initialize logfile
-        logfile = 21
-
 ! Assign values to the unrequired variables for this specific interaction.
         ideriv = 999
 
@@ -1341,7 +1328,7 @@
      &                      index_2c = 1, nME2c_max)
 
 ! Loop over grid
-              write (logfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
               d = -drr
               do igrid = 1, ndd_vxc
                 d = d + drr

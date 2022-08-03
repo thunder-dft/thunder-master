@@ -55,8 +55,11 @@
 !
 ! ===========================================================================
         subroutine dos (t)
+
+! /SYSTEM
         use M_species
         use M_configuraciones
+
         implicit none
 
         include '../include/constants.h'
@@ -71,19 +74,18 @@
 
 ! Local Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, jatom              !< counter over atoms
-        integer igrid                     !< counter of energy grid points
-        integer ikpoint                   !< loop over ikpoints
-        integer inpfile                   !< reading from which unit
-        integer in1, in2                  !< species numbers
-        integer imu                       !< counter of orbitals
-        integer logfile                   !< writing to which unit
-        integer mmu, nnu                  !< orbital number in large nxn matrix
-        integer norb_mu, norb_nu          !< number atomic orbitals
+        integer iatom, jatom               !< counter over atoms
+        integer igrid                      !< counter of energy grid points
+        integer inpfile                    !< reading from which unit
+        integer in1, in2                   !< species numbers
+        integer imu                        !< counter of orbitals
+        integer logfile                    !< writing to which unit
+        integer mmu, nnu                   !< orbital number in large nxn matrix
+        integer norb_mu, norb_nu           !< number atomic orbitals
 
 ! integers for matrix inversion
-        integer info                      !< error information
-        integer lwork                     !< size of the working arrays
+        integer info                       !< error information
+        integer lwork                      !< size of the working arrays
         integer, allocatable :: ipiv (:)
 
         integer natom_initial, natom_final !< atom starting and stopping
@@ -122,6 +124,7 @@
         lwork = 1
         allocate (work(lwork))
 
+        allocate (Hk (t%norbitals, t%norbitals))
         allocate (greenk (t%norbitals, t%norbitals))
 
 ! Procedure
@@ -131,7 +134,7 @@
         inpfile = t%inpfile
 
 ! Calculate the electronic density of states.
-        write (logfile,*) 
+        write (logfile,*)
         write (logfile,*) ' Calculating the electronic density of states. '
 
 ! Write the dos files - make the output directory
@@ -143,7 +146,9 @@
         slogfile = t%basisfile(:len(trim(t%basisfile))-4)
         slogfile = trim(slogfile)//'.dos.inp'
         inquire (file = slogfile, exist = read_dos)
+
         if (read_dos) then
+
 ! Read from input file - gives dos options
           write (logfile,*) ' Reading from dos.inp file! '
           open (unit = inpfile, file = slogfile, status = 'old')
@@ -169,82 +174,77 @@
         slogfile = t%basisfile(:len(trim(t%basisfile))-4)
         slogfile = trim(slogfile)//'.Hk'
         open (unit = inpfile, file = slogfile, form = 'unformatted')
-
-! Loop over kpoints
-        do ikpoint = 1, t%nkpoints
-          allocate (Hk (t%norbitals, t%norbitals))
-          read (inpfile) Hk
+        read (inpfile) Hk
 
 ! Loop over energy grid
-          do igrid = 1, nenergy_grid
-            greenk = 0.0d0
+        do igrid = 1, nenergy_grid
+          greenk = 0.0d0
 
 ! Loop over atoms
-            do iatom = 1, t%natoms
-              in1 = t%atom(iatom)%imass
-              norb_mu = species(in1)%norb_max
-              mmu = t%iblock_slot(iatom)
+          do iatom = 1, t%natoms
+            in1 = t%atom(iatom)%imass
+            norb_mu = species(in1)%norb_max
+            mmu = t%iblock_slot(iatom)
 
 ! Loop over atoms again
-              do jatom = 1, t%natoms
-                in2 = t%atom(jatom)%imass
-                norb_nu = species(in2)%norb_max
-                nnu = t%iblock_slot(jatom)
+            do jatom = 1, t%natoms
+              in2 = t%atom(jatom)%imass
+              norb_nu = species(in2)%norb_max
+              nnu = t%iblock_slot(jatom)
 
-                allocate (identity (norb_mu, norb_nu)); identity = 0.0d0
-                do imu = 1, norb_mu
-                  identity (imu, imu) = 1.0d0
-                end do
+              allocate (identity (norb_mu, norb_nu)); identity = 0.0d0
+              do imu = 1, norb_mu
+                identity (imu, imu) = 1.0d0
+              end do
 
-                if (iatom .eq. jatom) then
-                  greenk(mmu + 1:mmu + norb_mu, nnu + 1: nnu + norb_nu) =      &
-     &              energy*identity(1:norb_mu,1:norb_nu)                       &
-     &               - Hk(mmu + 1:mmu + norb_mu, nnu + 1:nnu + norb_nu)
-                else
-                  greenk(mmu + 1:mmu + norb_mu, nnu + 1:nnu + norb_nu) =       &
-     &               - Hk(mmu + 1:mmu + norb_mu, nnu + 1:nnu + norb_nu)
-                end if
-                deallocate (identity)
-              end do ! end loop over jatom
-            end do ! end loop over iatom
+              if (iatom .eq. jatom) then
+                greenk(mmu + 1:mmu + norb_mu, nnu + 1: nnu + norb_nu) =        &
+     &            energy*identity(1:norb_mu,1:norb_nu)                         &
+     &             - Hk(mmu + 1:mmu + norb_mu, nnu + 1:nnu + norb_nu)
+              else
+                greenk(mmu + 1:mmu + norb_mu, nnu + 1:nnu + norb_nu) =         &
+     &             - Hk(mmu + 1:mmu + norb_mu, nnu + 1:nnu + norb_nu)
+              end if
+              deallocate (identity)
+            end do ! end loop over jatom
+          end do ! end loop over iatom
 
 ! Invert the matrix, green, send the result to green
-            ! perform LU decomposition of the matrix
-            allocate (ipiv (t%norbitals))
-            call zgetrf (t%norbitals, t%norbitals, greenk, t%norbitals, ipiv, info)
+          ! perform LU decomposition of the matrix
+          allocate (ipiv (t%norbitals))
+          call zgetrf (t%norbitals, t%norbitals, greenk, t%norbitals, ipiv, info)
 
-            ! find optimal length of work
-            call zgetri (t%norbitals, greenk, t%norbitals, ipiv, work, -1, info)
-            lwork = work(1)
-            deallocate (work)
-            allocate (work (lwork))
+          ! find optimal length of work
+          call zgetri (t%norbitals, greenk, t%norbitals, ipiv, work, -1, info)
+          lwork = work(1)
+          deallocate (work)
+          allocate (work (lwork))
 
-            ! now perform actual inversion
-            call zgetri (t%norbitals, greenk, t%norbitals, ipiv, work, lwork, info)
-            deallocate (ipiv)
-  
+          ! now perform actual inversion
+          call zgetri (t%norbitals, greenk, t%norbitals, ipiv, work, lwork, info)
+          deallocate (ipiv)
+
 ! Loop over atoms
-            do iatom = natom_initial, natom_final
-              in1 = t%atom(iatom)%imass
-              norb_mu = species(in1)%norb_max
-              mmu = t%iblock_slot(iatom)
-  
-              do jatom = natom_initial, natom_final
-                in2 = t%atom(jatom)%imass
-                norb_mu = species(in2)%norb_max
-                nnu = t%iblock_slot(jatom)
+          do iatom = natom_initial, natom_final
+            in1 = t%atom(iatom)%imass
+            norb_mu = species(in1)%norb_max
+            mmu = t%iblock_slot(iatom)
 
-                green(mmu + 1:mmu + norb_mu, nnu + 1: nnu + norb_nu, igrid) = &
-      &           green(mmu + 1:mmu + norb_mu, nnu + 1: nnu + norb_nu, igrid) &
-      &              + greenk(mmu + 1:mmu + norb_mu, nnu + 1: nnu + norb_nu)
-              end do ! end loop over jatom
-            end do ! end loop over iatom
+            do jatom = natom_initial, natom_final
+              in2 = t%atom(jatom)%imass
+              norb_mu = species(in2)%norb_max
+              nnu = t%iblock_slot(jatom)
 
-            ! step in direction of energy
-            energy = energy + energy_step*a1
+              green(mmu + 1:mmu + norb_mu, nnu + 1: nnu + norb_nu, igrid) =    &
+      &         green(mmu + 1:mmu + norb_mu, nnu + 1: nnu + norb_nu, igrid)    &
+      &            + greenk(mmu + 1:mmu + norb_mu, nnu + 1: nnu + norb_nu)
+            end do ! end loop over jatom
+          end do ! end loop over iatom
 
-          end do ! end loop over energy grid
-        end do ! end loop over kpoints
+          ! step in direction of energy
+          energy = energy + energy_step*a1
+
+        end do ! end loop over energy grid
         close (unit = inpfile)
 
 ! ===========================================================================
@@ -252,15 +252,13 @@
 !               W R I T E O U T    D O S
 ! ---------------------------------------------------------------------------
 ! ===========================================================================
-
         slogfile = t%basisfile(:len(trim(t%basisfile))-4)
         slogfile = trim(slogfile)//'.dos'
 
 ! Loop over energy grid
         energy = energy_min
-        allocate (dos_total (nenergy_grid))
+        allocate (dos_total (nenergy_grid)); dos_total = 0.0d0
         do igrid = 1, nenergy_grid
-          dos_total(igrid) = 0.0d0
           do iatom = natom_initial, natom_final
             in1 = t%atom(iatom)%imass
             norb_mu = species(in1)%norb_max
@@ -301,6 +299,7 @@
 ! Deallocate Arrays
 ! ===========================================================================
         deallocate (work)
+        deallocate (Hk)
         deallocate (green, greenk)
 
 ! Format Statements

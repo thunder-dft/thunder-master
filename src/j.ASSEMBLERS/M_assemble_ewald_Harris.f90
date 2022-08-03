@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -42,8 +44,12 @@
 !! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
         module M_assemble_ewald
+
+! /SYSTEM
         use M_assemble_blocks
         use M_configuraciones
+
+! / FDATA
         use M_Fdata_2c
 
 ! Type Declaration
@@ -67,14 +73,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -92,7 +97,7 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, ineigh, matom    !< counter over atoms and neighbors
+        integer iatom, ineigh           !< counter over atoms and neighbors
         integer in1, in2                !< species numbers
         integer jatom                   !< neighbor of iatom
         integer num_neigh               !< number of neighbors
@@ -105,37 +110,28 @@
 ! Allocate Arrays
 ! ===========================================================================
         allocate (s%ewaldsr (s%natoms))
-
-! Procedure
-! ===========================================================================
-! First loop over the atoms in the central cell and allocate.
         do iatom = 1, s%natoms
-          ! cut some lengthy notation
           pewaldsr=>s%ewaldsr(iatom)
-          in1 = s%atom(iatom)%imass
-          norb_mu = species(in1)%norb_max
           num_neigh = s%neighbors(iatom)%neighn
           allocate (pewaldsr%neighbors(num_neigh))
+          in1 = s%atom(iatom)%imass
+          norb_mu = species(in1)%norb_max
 
 ! Loop over the neighbors of each iatom.
-          do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
-            ! cut some more lengthy notation
+          do ineigh = 1, num_neigh   !  <==== loop over i's neighbors
             pSR_neighbors=>pewaldsr%neighbors(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             in2 = s%atom(jatom)%imass
 
 ! Allocate block size
             norb_nu = species(in2)%norb_max
-            allocate (pSR_neighbors%blocko(norb_mu, norb_nu))
-            pSR_neighbors%blocko = 0.0d0
-          end do ! end loop over neighbors
-          matom = s%neigh_self(iatom)
+            allocate (pSR_neighbors%block(norb_mu, norb_nu))
+            pSR_neighbors%block = 0.0d0
+          end do
+        end do
 
-          ! cut some lengthy notation
-          pSR_neighbors=>pewaldsr%neighbors(matom)
-          allocate (pSR_neighbors%block(norb_mu, norb_mu))
-          pSR_neighbors%block = 0.0d0
-        end do ! end loop over atoms
+! Procedure
+! ===========================================================================
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -160,14 +156,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -186,7 +181,7 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, ineigh, matom    !< counter over atoms and neighbors
+        integer iatom, ineigh           !< counter over atoms and neighbors
         integer in1, in2                !< species numbers
         integer jatom                   !< neighbor of iatom
         integer num_neigh               !< number of neighbors
@@ -220,15 +215,9 @@
 
 ! Allocate block size
             norb_nu = species(in2)%norb_max
-            allocate (pLR_neighbors%blocko(norb_mu, norb_nu))
-            pLR_neighbors%blocko = 0.0d0
+            allocate (pLR_neighbors%block(norb_mu, norb_nu))
+            pLR_neighbors%block = 0.0d0
           end do ! end loop over neighbors
-          matom = s%neigh_self(iatom)
-
-          ! cut some lengthy notation
-          pLR_neighbors=>pewaldlr%neighbors(matom)
-          allocate (pLR_neighbors%block(norb_mu, norb_mu))
-          pLR_neighbors%block = 0.0d0
         end do ! end loop over atoms
 
 ! Deallocate Arrays
@@ -254,14 +243,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Subroutine Declaration

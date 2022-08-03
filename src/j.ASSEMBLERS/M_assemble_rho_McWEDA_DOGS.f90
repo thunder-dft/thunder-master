@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2008
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -45,11 +47,17 @@
 !! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
          module M_assemble_rho_McWEDA
+
+! /GLOBAL
          use M_assemble_blocks
+
+! /SYSTEM
          use M_configuraciones
+         use M_rotations
+
+! /FDATA
          use M_Fdata_2c
          use M_Fdata_3c
-         use M_rotations
 
 ! Type Declaration
 ! ===========================================================================
@@ -133,25 +141,27 @@
 ! ===========================================================================
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
-          ! cut some lengthy notation
-          prho_in=>s%rho_in(iatom)
-          prho_bond=>s%rho_bond(iatom)
           r1 = s%atom(iatom)%ratom
           in1 = s%atom(iatom)%imass
           norb_mu = species(in1)%norb_max
+
+          ! cut some lengthy notation
+          prho_in=>s%rho_in(iatom)
+          prho_bond=>s%rho_bond(iatom)
+
+! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
           allocate (prho_in%neighbors(num_neigh))
           allocate (prho_bond%neighbors(num_neigh))
-
-! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
-            ! cut some more lengthy notation
-            prho_in_neighbors=>prho_in%neighbors(ineigh)
-            prho_bond_neighbors=>prho_bond%neighbors(ineigh)
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
+
+            ! cut some more lengthy notation
+            prho_in_neighbors=>prho_in%neighbors(ineigh)
+            prho_bond_neighbors=>prho_bond%neighbors(ineigh)
 
 ! Allocate block size
             norb_nu = species(in2)%norb_max
@@ -210,10 +220,10 @@
 
 ! For the rho_in_ontopR case, the potential is in the second atom
 ! - right (iatom): <mu|(rho_mu + rho_nu)|nu> -> (right) <mu|(rho_nu)|nu>
+              interaction = P_rho_ontopR
+              in3 = in2
               do isorp = 1, species(in2)%nssh
                 Qin = s%atom(jatom)%shell(isorp)%Qin
-                interaction = P_rho_ontopR
-                in3 = in2
                 call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
      &                                norb_mu, norb_nu, bcxcm)
                 call rotate (in1, in3, eps, norb_mu, norb_nu, bcxcm, bcxcx)
@@ -234,20 +244,18 @@
 ! First, do rho_in_atom case. Here we compute <i | v(j) | i> matrix elements.
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
-          ! cut some lengthy notation
-          prho_in=>s%rho_in(iatom)
-          prho_bond=>s%rho_bond(iatom)
           matom = s%neigh_self(iatom)
           r1 = s%atom(iatom)%ratom
           in1 = s%atom(iatom)%imass
           norb_mu = species(in1)%norb_max
           num_neigh = s%neighbors(iatom)%neighn
 
+          ! cut some lengthy notation
+          prho_in=>s%rho_in(iatom); prho_in_neighbors=>prho_in%neighbors(matom)
+          prho_bond=>s%rho_bond(iatom); prho_bond_neighbors=>prho_bond%neighbors(matom)
+
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
-            ! cut some more lengthy notation
-            prho_in_neighbors=>prho_in%neighbors(matom)
-            prho_bond_neighbors=>prho_bond%neighbors(matom)
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
@@ -277,7 +285,6 @@
               norb_nu = species(in3)%norb_max
               allocate (bcxcm (norb_mu, norb_nu))
               allocate (bcxcx (norb_mu, norb_nu))
-
               do isorp = 1, species(in2)%nssh
                 Qin = s%atom(jatom)%shell(isorp)%Qin
                 call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
@@ -402,6 +409,7 @@
         do ialpha = 1, s%natoms
           in3 = s%atom(ialpha)%imass
           r3 = s%atom(ialpha)%ratom
+
           ! loop over the common neigbor pairs of ialp
           do ineigh = 1, s%neighbors(ialpha)%ncommon
             mneigh = s%neighbors(ialpha)%neigh_common(ineigh)
@@ -459,7 +467,6 @@
 ! Allocate block size
               allocate (bcxcm(norb_mu, norb_nu))
               allocate (bcxcx(norb_mu, norb_nu))
-
               do isorp = 1, species(in3)%nssh
                 Qin = s%atom(ialpha)%shell(isorp)%Qin
                 call getMEs_Fdata_3c (in1, in2, in3, interaction, isorp, x,  &
@@ -491,129 +498,6 @@
         return
         end subroutine assemble_rho_3c
 
-
-! ===========================================================================
-! assemble_S_weighted.f90
-! ===========================================================================
-! Subroutine Description
-! ===========================================================================
-!>       This routine assembles overlap_weighted (average weighted overlap)
-!! which is used to calculate the average densities
-!! (denominators in Eqs. (19), (22) and (25): PRB 71, 235101 (2005))
-!
-! ===========================================================================
-! Code written by:
-!> @author Daniel G. Trabada
-!! @author Jose Ortega (JOM)
-! Departamento de Fisica Teorica de la Materia Condensada
-! Universidad Autonoma de Madrid
-! ===========================================================================
-!
-! Program Declaration
-! ===========================================================================
-        subroutine assemble_S_weighted (s)
-        implicit none
-
-        include '../include/interactions_2c.h'
-
-! Argument Declaration and Description
-! ===========================================================================
-        type(T_structure), target :: s           !< the structure to be used.
-
-! Parameters and Data Declaration
-! ===========================================================================
-! None
-
-! Variable Declaration and Description
-! ===========================================================================
-        integer iatom, ineigh            !< counter over atoms and neighbors
-        integer in1, in2, in3            !< species numbers
-        integer jatom                    !< neighbor of iatom
-        integer interaction, isorp       !< which interaction and subtype
-        integer num_neigh                !< number of neighbors
-        integer mbeta                    !< cell containing neighbor of iatom
-
-        integer nssh_i, nssh_j           !< size of the block for the pair
-
-        real z                           !< distance between r1 and r2
-
-        real, dimension (3) :: r1, r2    !< positions of iatom and jatom
-
-        real, allocatable, dimension (:, :) :: bcxcm
-
-        interface
-          function distance (a, b)
-            real distance
-            real, intent(in), dimension (3) :: a, b
-          end function distance
-        end interface
-
-        type(T_assemble_block), pointer :: pS_neighbors
-        type(T_assemble_neighbors), pointer :: poverlap_weighted
-
-! Allocate Arrays
-! ===========================================================================
-        allocate (s%overlap_weighted(s%natoms))
-
-! Procedure
-! ===========================================================================
-! Loop over the atoms in the central cell.
-        do iatom = 1, s%natoms
-          ! cut some lengthy notation
-          poverlap_weighted=>s%overlap_weighted(iatom)
-          r1 = s%atom(iatom)%ratom
-          in1 = s%atom(iatom)%imass
-          nssh_i = species(in1)%nssh
-          num_neigh = s%neighbors(iatom)%neighn
-          allocate (poverlap_weighted%neighbors(num_neigh))
-
-! Loop over the neighbors of each iatom.
-          do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
-            ! cut some more lengthy notation
-            pS_neighbors=>poverlap_weighted%neighbors(ineigh)
-            mbeta = s%neighbors(iatom)%neigh_b(ineigh)
-            jatom = s%neighbors(iatom)%neigh_j(ineigh)
-            r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
-            in2 = s%atom(jatom)%imass
-
-! Allocate the block size
-            nssh_j = species(in2)%nssh
-            allocate (pS_neighbors%block(nssh_i, nssh_j))
-            pS_neighbors%block = 0.0d0
-
-! SET-UP STUFF
-! ****************************************************************************
-! Find r21 = vector pointing from r1 to r2, the two ends of the bondcharge.
-! This gives us the distance dbc (or y value in the 2D grid).
-            z = distance (r1, r2)
-
-! Get the matrix from the data files - which is the matrix in molecular
-! coordinates (stored in sm). No rotation requiered for this case
-! (weights are spherical, see definition Eq. (18) McWEDA paper)
-            isorp = 0
-            interaction = P_overlapS
-            in3 = in2
-
-            allocate (bcxcm (nssh_i, nssh_j))
-            call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,           &
-     &                            nssh_i, nssh_j, bcxcm)
-            pS_neighbors%block = bcxcm
-            deallocate (bcxcm)
-          end do ! end loop over neighbors
-        end do ! end loop over atoms
-
-! Deallocate Arrays
-! ===========================================================================
-! None
-
-! Format Statements
-! ===========================================================================
-! None
-
-! End Subroutine
-! ===========================================================================
-        return
-        end subroutine assemble_S_weighted
 
 ! ===========================================================================
 ! assemble_rho_weighted_2c.f90
@@ -691,25 +575,27 @@
 ! ===========================================================================
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
-          ! cut some lengthy notation
-          prho_in_weighted=>s%rho_in_weighted(iatom)
-          prho_bond_weighted=>s%rho_bond_weighted(iatom)
           r1 = s%atom(iatom)%ratom
           in1 = s%atom(iatom)%imass
           nssh_i = species(in1)%nssh
+
+          ! cut some lengthy notation
+          prho_in_weighted=>s%rho_in_weighted(iatom)
+          prho_bond_weighted=>s%rho_bond_weighted(iatom)
+
+! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
           allocate (prho_in_weighted%neighbors(num_neigh))
           allocate (prho_bond_weighted%neighbors(num_neigh))
-
-! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
-            ! cut some more lengthy notation
-            pWrho_in_neighbors=>prho_in_weighted%neighbors(ineigh)
-            pWrho_bond_neighbors=>prho_bond_weighted%neighbors(ineigh)
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
+
+            ! cut some more lengthy notation
+            pWrho_in_neighbors=>prho_in_weighted%neighbors(ineigh)
+            pWrho_bond_neighbors=>prho_bond_weighted%neighbors(ineigh)
 
 ! Allocate block size
             nssh_j = species(in2)%nssh
@@ -760,10 +646,8 @@
 ! right (iatom): <mu|(rho_mu + rho_nu)|nu> -> (right) <mu|(rho_nu)|nu>
               interaction = P_rhoS_ontopR
               in3 = in2
-
               do isorp = 1, species(in2)%nssh
                 Qin = s%atom(jatom)%shell(isorp)%Qin
-
                 call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
      &                                nssh_i, nssh_j, bcxcm)
 
@@ -785,24 +669,26 @@
 ! Here we compute <i|v(j)|i> matrix elements.
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
-          ! cut some lengthy notation
-          prho_in_weighted=>s%rho_in_weighted(iatom)
-          prho_bond_weighted=>s%rho_bond_weighted(iatom)
           matom = s%neigh_self(iatom)
           r1 = s%atom(iatom)%ratom
           in1 = s%atom(iatom)%imass
           nssh_i = species(in1)%nssh
           num_neigh = s%neighbors(iatom)%neighn
 
+          ! cut some lengthy notation
+          prho_in_weighted=>s%rho_in_weighted(iatom)
+          pWrho_in_neighbors=>prho_in_weighted%neighbors(matom)
+          prho_bond_weighted=>s%rho_bond_weighted(iatom)
+
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
-            ! cut some more lengthy notation
-            pWrho_in_neighbors=>prho_in_weighted%neighbors(matom)
-            pWrho_bond_neighbors=>prho_bond_weighted%neighbors(matom)
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
+
+            ! cut some more lengthy notation
+            pWrho_bond_neighbors=>prho_bond_weighted%neighbors(matom)
 
 ! Calculate the distance between the two centers.
             z = distance (r1, r2)
@@ -841,6 +727,7 @@
                 Qin = s%atom(jatom)%shell(isorp)%Qin
                 call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
      &                                nssh_i, nssh_i, bcxcm)
+
                 pWrho_in_neighbors%block =                                   &
      &            pWrho_in_neighbors%block + bcxcm*Qin
               end do
@@ -923,6 +810,7 @@
 
 ! Allocate Arrays
 ! ===========================================================================
+! None
 
 ! Procedure
 ! ===========================================================================
@@ -930,6 +818,7 @@
         do ialpha = 1, s%natoms
           in3 = s%atom(ialpha)%imass
           r3 = s%atom(ialpha)%ratom
+
           ! loop over the common neigbor pairs of ialp
           do ineigh = 1, s%neighbors(ialpha)%ncommon
             mneigh = s%neighbors(ialpha)%neigh_common(ineigh)
@@ -1077,6 +966,7 @@
         end do
         deallocate (s%rho_in)
         deallocate (s%rho_bond)
+
 ! Deallocate Arrays
 ! ===========================================================================
 ! None

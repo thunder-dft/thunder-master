@@ -1,21 +1,24 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
-! West Virginia University - Khorgolkhuu Odbadrakh
+! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
 !
@@ -37,10 +40,16 @@
 !
 ! ===========================================================================
         module M_assemble_PP_3c
+
+! /GLOBAL
         use M_assemble_blocks
+
+! /SYSTEM
         use M_configuraciones
-        use M_Fdata_3c
         use M_rotations
+
+! /FDATA
+        use M_Fdata_3c
 
 ! Type Declaration
 ! ===========================================================================
@@ -143,7 +152,7 @@
 
 ! For the non-local potential pieces call find the coefficients corresponding
 ! to indna.
-          !memory is allocated inside function
+          ! memory is allocated inside function
           cl_value => cl(indna)
 
 ! Loop over the neighbors of each ialp.
@@ -193,15 +202,15 @@
               do inu = 1, norb_nu
                 do imu = 1, norb_mu
                   do ncc = 1, species(indna)%norb_PP_max
-                    bcnlx(imu,inu) = bcnlx(imu,inu)                          &
-     &               + cl_value(ncc)*psvnl1_neighbors%block(imu,ncc)         &
-     &                              *psvnl2_neighbors%block(inu,ncc)
+                    bcnlx(imu,inu) = bcnlx(imu,inu)                            &
+     &                + cl_value(ncc)*psvnl1_neighbors%block(imu,ncc)          &
+     &                               *psvnl2_neighbors%block(inu,ncc)
                   end do ! do ncc
                 end do ! do imu
               end do ! do inu
 
 ! Add this piece for iatom, jatom, and katom into the total (bcnlx ===> vnl)
-!             pvnl_neighbors%block = pvnl_neighbors%block + bcnlx
+              pvnl_neighbors%block = pvnl_neighbors%block + bcnlx
 
 ! Deallocate Arrays
               deallocate (bcnlx)

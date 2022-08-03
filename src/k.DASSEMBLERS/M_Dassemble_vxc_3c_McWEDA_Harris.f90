@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -50,13 +52,19 @@
 !! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
          module M_Dassemble_vxc_3c
+
+! /GLOBAL
          use M_assemble_blocks
+
+! /SYSTEM
          use M_configuraciones
+         use M_rotations
+         use M_Drotations
+
+! /FDATA
          use M_Fdata_2c
          use M_Fdata_3c
-         use M_rotations
-         use M_Drotations 
-        
+
 ! Type Declaration
 ! ===========================================================================
 ! None
@@ -75,14 +83,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -107,8 +114,7 @@
         integer ibeta, jbeta             !< cells for three atoms
         integer ineigh, mneigh           !< counter over neighbors
         integer in1, in2, in3            !< species numbers
-        integer isubtype                 !< which subtype
-        integer interaction, isorp       !< which interaction and subtype
+        integer isorp                    !< which subtype
         integer iindex
         integer nssh_i, nssh_j           !< size of the block for the pair
         integer issh, jssh               !< counter over shells
@@ -123,13 +129,11 @@
         real muxc_in                       !< xc potential_
         real d2muxc_in                     !< 2nd derivative of xc
         
-        real vxc_mag                     !< magnitud like term
         real Qneutral                    !< charge
         real z                           !< distances between r1 and r2
         real x, cost                     !< dnabc and angle
 
         real, dimension (3, 3) :: eps     !< the epsilon matrix
-        real, dimension (3, 3, 3) :: deps !< derivative of epsilon matrix
         real, dimension (3) :: r1, r2, r3, r12, r21   !< positions
         real, dimension (3) :: sighat     !< unit vector along r2 - r1
         real, dimension (3) :: rhat       !< unit vector along bc - r3
@@ -311,15 +315,15 @@
 
 ! Here we calculate the rho part that is dependent of the crystal coordinates, 
 ! which means that it is not the shell part (average over the shell) 
-              do isubtype = 1, species(in3)%nssh
-                Qneutral = species(in3)%shell(isubtype)%Qneutral
+              do isorp = 1, species(in3)%nssh
+                Qneutral = species(in3)%shell(isorp)%Qneutral
                 
                 bcxcm = 0.0d0; dpbcxcm = 0.0d0;
                 dxbcxcm = 0.0d0; dybcxcm = 0.0d0;
                 vdxcMa = 0.0d0; vdxcMb = 0.0d0;
                 vdxcXa = 0.0d0; vdxcXb = 0.0d0; vdxcXc = 0.0d0
-                call getDMEs_Fdata_3c (in1, in2, in3, P_rho_3c, isubtype, x, &
-     &                                 z, norb_mu, norb_nu, cost, rhat,      &
+                call getDMEs_Fdata_3c (in1, in2, in3, P_rho_3c, isorp, x,     &
+     &                                 z, norb_mu, norb_nu, cost, rhat,       &
      &                                 sighat, bcxcm, dpbcxcm, dxbcxcm, dybcxcm)
              
                 ! Rotate into crystal coordinates
@@ -337,7 +341,7 @@
 
                 pFdata_bundle => Fdata_bundle_3c(in1, in2, in3)
                 pFdata_cell =>                                               &
-     &            pFdata_bundle%Fdata_cell_3c(pFdata_bundle%index_3c(P_rho_3c,isubtype,1))
+     &            pFdata_bundle%Fdata_cell_3c(pFdata_bundle%index_3c(P_rho_3c,isorp,1))
 
                 do iindex = 1, pFdata_cell%nME
                   imu = pFdata_cell%mu_3c(iindex)
@@ -379,15 +383,13 @@
                 call Drotate (in1, in2, eps, depsB, norb_mu, norb_nu, bcxcm, &
      &                        vdxcMb, vdxcXb)
 
-! Make things force-like and determine f3naXc, whcih is found from Newtons Laws:
-                vdxcXa(:,:,:) = - vdxcXa(:,:,:)
-                vdxcXb(:,:,:) = - vdxcXb(:,:,:)
-                vdxcXc(:,:,:) = - vdxcXa(:,:,:) - vdxcXb(:,:,:)
+! Determine vdxcXc from Newton's Laws:
+                vdxcXc  = - vdxcXa - vdxcXb
 
                 rhoxa = rhoxa + vdxcXa*Qneutral
                 rhoxb = rhoxb + vdxcXb*Qneutral
                 rhoxc = rhoxc + vdxcXc*Qneutral
-              end do ! isubtype = 1, species(in3)%nssh
+              end do ! isorp = 1, species(in3)%nssh
               deallocate (bcxcm, bcxcx, dpbcxcm, dxbcxcm, dybcxcm)
               deallocate (vdxcMa, vdxcMb, vdxcXa, vdxcXb, vdxcXc)
 
@@ -407,12 +409,12 @@
               allocate (vdxcXb(3, nssh_i, nssh_j)); vdxcXb = 0.0d0
               allocate (vdxcXc(3, nssh_i, nssh_j)); vdxcXc = 0.0d0
               
-              do isubtype = 1, species(in3)%nssh
-                Qneutral = species(in3)%shell(isubtype)%Qneutral
+              do isorp = 1, species(in3)%nssh
+                Qneutral = species(in3)%shell(isorp)%Qneutral
                                 
                 bcxcm = 0.0d0; dpbcxcm = 0.0d0
                 dxbcxcm = 0.0d0; dybcxcm = 0.0d0
-                call getDMEs_Fdata_3c (in1, in2, in3, P_rhoS_3c, isubtype, x,&
+                call getDMEs_Fdata_3c (in1, in2, in3, P_rhoS_3c, isorp, x,   &
      &                                 z, nssh_i, nssh_j, cost, rhat, sighat,&
      &                                 bcxcm, dpbcxcm, dxbcxcm, dybcxcm)
 
@@ -425,13 +427,16 @@
                      vdxcMb(:,issh,jssh) = - sighat(:)*dybcxcm(issh,jssh)    &
      &                                      + bmt(:)*dpbcxcm(issh,jssh)      &
      &                                      - vdxcMa(:,issh,jssh)/2.0d0
-                     vdxcMc(:,issh,jssh) = - vdxcMa(:,issh,jssh) - vdxcMb(:,issh,jssh)
                    end do ! jssh
                 end do ! issh
+
+! Determine vdxcMc from Newton's Laws:
+                vdxcMc = - vdxcMa - vdxcMb
+
                 rhoma_shell = rhoma_shell + vdxcMa*Qneutral
                 rhomb_shell = rhomb_shell + vdxcMb*Qneutral
                 rhomc_shell = rhomc_shell + vdxcMc*Qneutral
-              end do ! isubtype = 1, species(in3)%nssh
+              end do ! isorp = 1, species(in3)%nssh
               deallocate (bcxcm, bcxcx, dpbcxcm, dxbcxcm, dybcxcm)
               deallocate (vdxcMa, vdxcMb, vdxcMc, vdxcXa, vdxcXb, vdxcXc)
               
@@ -449,7 +454,7 @@
                    l2 = species(in2)%shell(jssh)%lssh
                    n2 = n2 + l2 + 1
                    call lda_ceperley_alder (prhoS_in_neighbors%block(issh,jssh), exc_in, muxc_in,  &
-     &                                   dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
+     &                                      dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
                        
                    rhop_a = rhoma_shell(:,issh,jssh)                    
                    rhop_b = rhomb_shell(:,issh,jssh)                     
@@ -462,34 +467,30 @@
 ! loop over orbitals in the ineigh-shell (inu)
                      do m2 = -l2, l2
                        inu = n2 + m2
-                       mxca(:,imu,inu) = mxca(:,imu,inu)                     &
-             &          - rhop_a*d2muxc_in*(prho_in_neighbors%block(imu,inu) &
-             &          - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu)) &
-             &          - dmuxc_in*rhoxa(:,imu,inu)
+                       mxca(:,imu,inu) = dmuxc_in*rhoxa(:,imu,inu)             &
+             &          + rhop_a*d2muxc_in*(prho_in_neighbors%block(imu,inu)   &
+             &                              - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu))
              
-                       mxcb(:,imu,inu) = mxcb(:,imu,inu)                     &
-             &          - rhop_b*d2muxc_in*(prho_in_neighbors%block(imu,inu) &
-             &          - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu)) &
-             &          - dmuxc_in*rhoxb(:,imu,inu)
-             
-                       mxcc(:,imu,inu) = mxcc(:,imu,inu)                     &
-             &          - rhop_c*d2muxc_in*(prho_in_neighbors%block(imu,inu) &
-             &          - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu)) &
-             &          - dmuxc_in*rhoxc(:,imu,inu)
+                       mxcb(:,imu,inu) = dmuxc_in*rhoxb(:,imu,inu)             &
+             &          + rhop_b*d2muxc_in*(prho_in_neighbors%block(imu,inu)   &
+             &                              - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu))
                      end do !** m2 = -l2, l2
                    end do !** m1 = -l1, l1
                    n2 = n2 + l2
                 end do ! jssh = 1, species(in2)%nssh
                 n1 = n1 + l1
               end do ! issh = 1, species(in1)%nss
-              
-              do inu =1, norb_nu
-                do imu =1, norb_mu
-                  pfalpha%f3xca = pfalpha%f3xca + pRho_neighbors%block(imu,inu)*mxca(:,imu,inu)
-                  pfi%f3xcb = pfi%f3xcb + pRho_neighbors%block(imu,inu)*mxcb(:,imu,inu)
-                  pfj%f3xcc = pfj%f3xcc + pRho_neighbors%block(imu,inu)*mxcc(:,imu,inu)
-                end do !imu , norb_mu
-              end do !inu =1, norb_nu
+
+! Determine mxcc from Newton's Laws:
+              mxcc = - mxca - mxcb
+
+              do inu = 1, norb_nu
+                do imu = 1, norb_mu
+                  pfalpha%f3xca = pfalpha%f3xca - pRho_neighbors%block(imu,inu)*mxca(:,imu,inu)
+                  pfi%f3xcb = pfi%f3xcb - pRho_neighbors%block(imu,inu)*mxcb(:,imu,inu)
+                  pfj%f3xcc = pfj%f3xcc - pRho_neighbors%block(imu,inu)*mxcc(:,imu,inu)
+                end do ! imu , norb_mu
+              end do ! inu = 1, norb_nu
             end if ! if (mneigh .ne. 0)
             deallocate (rhoxa, rhoxb, rhoxc)
             deallocate (mxca, mxcb, mxcc)

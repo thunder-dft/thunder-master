@@ -50,6 +50,11 @@
 ! Module Declaration
 ! ============================================================================
         module M_dipole_z
+
+! /GLOBAL
+        use M_precision
+
+! /SYSTEM
         use M_atom_functions
         use M_species
         use M_integrals_2c
@@ -170,7 +175,6 @@
         integer igrid                       !< number of grid points
         integer index_2c, nME2c_max         !< basically the number of non-zero
         integer isorp, ideriv               !< the number of different types
-        integer logfile                     !< writing to which unit
         integer nFdata_cell_2c              !< indexing of interactions
 
         real dmax                           !< max distance between two centers
@@ -190,13 +194,10 @@
 
 ! Procedure
 ! ============================================================================
-! Initialize logfile
-        logfile = 21
-
-        write (logfile,*)
-        write (logfile,*) ' ******************************************************* '
-        write (logfile,*) '        D I P O L E ( Z )   I N T E R A C T I O N S      '
-        write (logfile,*) ' ******************************************************* '
+        write (ilogfile,*)
+        write (ilogfile,*) ' ******************************************************* '
+        write (ilogfile,*) '        D I P O L E ( Z )   I N T E R A C T I O N S      '
+        write (ilogfile,*) ' ******************************************************* '
 
 ! Assign values to the unrequired variables for this specific interaction.
         isorp = 0
@@ -255,7 +256,7 @@
      &                    index_2c = 1, nME2c_max)
 
 ! Loop over grid
-            write (logfile,200) species(ispecies)%nZ, species(jspecies)%nZ
+            write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
             do igrid = 1, ndd_dipole_z
               d = d + drr
 

@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2013
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -35,13 +37,12 @@
 ! ===========================================================================
 ! Code written by:
 ! James P. Lewis
-! Box 6315, 135 Willey St.
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Module Declaration
@@ -72,14 +73,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
         subroutine calculate_charges (s)
         implicit none
@@ -101,14 +101,10 @@
         integer iorbital                   !< counter over orbitals
         integer imu                        !< another counting to find spot
         integer in1                        !< species number for iatom
-        integer inpfile                    !< reading from which unit
         integer issh, jssh                 !< counter over shells
-        integer nssh                       !< number of shells
         integer mmu                        !< spot in the array - block_slot
 
         real aux1, aux2, aux3              !< temporary multipliers
-
-        character (len = 25) :: slogfile
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -116,13 +112,9 @@
 
 ! Procedure
 ! ===========================================================================
-! Initialize logfile
-        inpfile = s%inpfile
-
 ! Loop over the atoms.
         do iatom = 1, s%natoms
           in1 = s%atom(iatom)%imass
-          s%atom(iatom)%Q = 0.0d0
           do issh = 1, species(in1)%nssh
             s%atom(iatom)%shell(issh)%Qout = 0.0d0
           end do
@@ -143,7 +135,6 @@
                     aux3 = aux2*cabs(s%kpoints(ikpoint)%c_Lowdin(mmu,iorbital))**2
                     s%atom(iatom)%shell(issh)%Qout =                           &
      &                s%atom(iatom)%shell(issh)%Qout + aux3
-                    s%atom(iatom)%Q = s%atom(iatom)%Q + aux3
                   end do
                 end do
               end if
@@ -152,17 +143,6 @@
 
 ! End loop over atoms
         end do
-
-! Writout the charges to a .CHARGES file
-        slogfile = s%basisfile(:len(trim(s%basisfile))-4)
-        slogfile = trim(slogfile)//'.CHARGES'
-        open (unit = inpfile, file = slogfile, status = 'unknown')
-        do iatom = 1, s%natoms
-          in1 = s%atom(iatom)%imass
-          nssh = species(in1)%nssh
-          write (inpfile,*) (s%atom(iatom)%shell(issh)%Qin, issh = 1, nssh)
-        end do
-        close (unit = inpfile)
 
 ! Format Statements
 ! ===========================================================================
@@ -185,13 +165,12 @@
 ! ===========================================================================
 ! Code written by:
 ! James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
         subroutine writeout_charges (s)
         implicit none
@@ -208,8 +187,12 @@
 ! ===========================================================================
         integer iatom                       !< counter over the atoms
         integer in1                         !< species number for iatom
+        integer inpfile                     !< reading from which unit
         integer issh                        !< counter over shells
+        integer nssh                        !< number of shells
         integer logfile                     !< writing to which unit
+
+        character (len = 25) :: slogfile
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -218,6 +201,7 @@
 ! Procedure
 ! ===========================================================================
 ! Initialize logfile
+        inpfile = s%inpfile
         logfile = s%logfile
 
         write (logfile,*)
@@ -237,10 +221,26 @@
         write (logfile,500)
         do iatom = 1, s%natoms
           in1 = s%atom(iatom)%imass
+          s%atom(iatom)%Q = 0.0d0
+          nssh = species(in1)%nssh
+          do issh = 1, nssh
+            s%atom(iatom)%Q = s%atom(iatom)%Q + s%atom(iatom)%shell(issh)%Qout
+          end do
           write (logfile,503) iatom, species(in1)%symbol, s%atom(iatom)%Q
         end do
         write (logfile,500)
         write (logfile,*) '  '
+
+! Writout the charges to a .CHARGES file
+        slogfile = s%basisfile(:len(trim(s%basisfile))-4)
+        slogfile = trim(slogfile)//'.CHARGES'
+        open (unit = inpfile, file = slogfile, status = 'unknown')
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          nssh = species(in1)%nssh
+          write (inpfile,*) (s%atom(iatom)%shell(issh)%Qin, issh = 1, nssh)
+        end do
+        close (unit = inpfile)
 
 ! Format Statements
 ! ===========================================================================
@@ -266,14 +266,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
         subroutine calculate_populations (s)
         implicit none
@@ -431,14 +430,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Subroutine Declaration

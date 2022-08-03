@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -44,10 +46,17 @@
 ! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
         module M_assemble_2c
+
+! /GLOBAL
         use M_assemble_blocks
+
+! /SYSTEM
         use M_configuraciones
-        use M_Fdata_2c
         use M_rotations
+
+ ! /FDATA
+        use M_Fdata_2c
+
 
 ! Type Declaration
 ! ===========================================================================
@@ -293,8 +302,8 @@
 
 ! Allocate block size
             norb_nu = species(in2)%norb_max
-            allocate (pK_neighbors%blocko(norb_mu, norb_nu))
-            pK_neighbors%blocko = 0.0d0
+            allocate (pK_neighbors%block(norb_mu, norb_nu))
+            pK_neighbors%block = 0.0d0
 
 ! SET-UP STUFF
 ! ****************************************************************************
@@ -325,7 +334,7 @@
      &                            norb_mu, norb_nu, tm)
             call rotate (in1, in3, eps, norb_mu, norb_nu, tm, tx)
 
-            pK_neighbors%blocko = tx
+            pK_neighbors%block = tx
             deallocate (tm, tx)
           end do ! end loop over neighbors
         end do ! end loop over atoms
@@ -682,7 +691,7 @@
         do iatom = 1, s%natoms
           do ineigh=1, s%neighbors(iatom)%neighn
             deallocate (s%overlap(iatom)%neighbors(ineigh)%block)
-            deallocate (s%kinetic(iatom)%neighbors(ineigh)%blocko)
+            deallocate (s%kinetic(iatom)%neighbors(ineigh)%block)
             deallocate (s%vna(iatom)%neighbors(ineigh)%block)
             deallocate (s%vna(iatom)%neighbors(ineigh)%blocko)
           end do

@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2012
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -34,14 +36,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Module Declaration
@@ -81,14 +82,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 135 Willey St.
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
         subroutine set_constraints (s)
         implicit none
@@ -154,7 +154,6 @@
           call random_number (vscale)
           do iatom = 1, s%natoms
             in1 = s%atom(iatom)%imass
-            s%atom(iatom)%vatom = 0.0d0
             do ix = 1, 3
               vscale = sqrt(-2.0d0*log(vscale))
               s%atom(iatom)%vatom(ix) = vscale*sqrt(P_fovermp*T_initial/   &
@@ -174,6 +173,7 @@
           s%rcm = s%rcm + species(in1)%xmass*s%atom(iatom)%ratom
         end do
         s%rcm = s%rcm/xmass_total
+        if (ishiftO .eq. 1) s%rcm = s%rcm - shifter
         write (logfile,100) s%rcm
         s%rcm_old = s%rcm
 
@@ -181,33 +181,44 @@
 ! ----------------
 ! Shift new ratom so they are measured from the center of mass.
 ! in this way, rcmmol = 0.
+        write (logfile,*)
         if (iconstraint_rcm .eq. 1) then
           write (logfile,*) ' Constraining the positions about the center-of-mass. '
           do iatom = 1, s%natoms
             s%atom(iatom)%ratom = s%atom(iatom)%ratom - s%rcm
           end do
-        end if
-
-! Constraint #4
-! ----------------
-        if (iconstraint_L .eq. 1) then
-          write (logfile,*) ' Constraining angular momentum. '
-          call zero_ang_mom (s)
+        else
+          write (logfile,*) ' No constraining the positions about the center-of-mass. '
         end if
 
 ! Constraint #2
 ! -----------------
 ! Now adjust the velocities to get velocity of vcm = 0
         if (iconstraint_vcm .eq. 1) then
+          write (logfile,*)
           write (logfile,*) ' Constraining the velocities about the center-of-mass. '
           s%vcm = 0.0d0
           do iatom = 1, s%natoms
+            in1 = s%atom(iatom)%imass
             s%vcm = s%vcm + species(in1)%xmass*s%atom(iatom)%vatom
           end do
           s%vcm = s%vcm/xmass_total
+          write (logfile,101) s%vcm
+
           do iatom = 1, s%natoms
             s%atom(iatom)%vatom = s%atom(iatom)%vatom - s%vcm
           end do
+
+          ! recalculate vcm
+          s%vcm = 0.0d0
+          do iatom = 1, s%natoms
+            in1 = s%atom(iatom)%imass
+            s%vcm = s%vcm + species(in1)%xmass*s%atom(iatom)%vatom
+          end do
+          s%vcm = s%vcm/xmass_total
+          write (logfile,102) s%vcm
+        else
+          write (logfile,*) ' No constraining the velocities about the center-of-mass. '
         end if
 
 ! Constraint #3
@@ -215,19 +226,22 @@
 ! Finally rescale the velocities to get the average temp = temperature_want
 ! tkinetic = average kinetic energy per particle in ev.
         if (iconstraint_KE .eq. 1) then
-          write (logfile,*) ' Rescaling the velocities based on desired temperature. '
+          write (logfile,*)
+          write (logfile,*) ' Rescaling the velocities based on T_intial. '
           tkinetic = 0.0d0
           do iatom = 1, s%natoms
             in1 = s%atom(iatom)%imass
             tkinetic = tkinetic                                              &
-     &        + 0.5d0*species(in1)%xmass/P_fovermp                           &
-     &               *(s%atom(iatom)%vatom(1)**2 + s%atom(iatom)%vatom(2)**2 &
-     &                                           + s%atom(iatom)%vatom(3)**2)
+     &        + (0.5d0/P_fovermp)*species(in1)%xmass                         &
+     &         *(s%atom(iatom)%vatom(1)**2 + s%atom(iatom)%vatom(2)**2       &
+     &                                     + s%atom(iatom)%vatom(3)**2)
           end do
-          tkinetic = tkinetic/(s%natoms - s%nfragments)
+          tkinetic = tkinetic/s%natoms
+          T_instantaneous = (2.0d0/3.0d0)*tkinetic*P_kconvert
 
 ! The temperature we now have (3/2 kb * T_instantaneous = tkinetic )
-          T_instantaneous = (2.0d0/3.0d0)*tkinetic*P_kconvert
+          write (logfile,*) ' T_initial = ', T_initial
+          write (logfile,*) ' T_instantaneous, before rescaling = ', T_instantaneous
           if (T_instantaneous .gt. 0.0d0) then
             vscale = sqrt(T_initial/T_instantaneous)
           else
@@ -236,6 +250,31 @@
           do iatom = 1, s%natoms
             s%atom(iatom)%vatom = s%atom(iatom)%vatom*vscale
           end do
+
+          ! check final temperature
+          tkinetic = 0.0d0
+          do iatom = 1, s%natoms
+            in1 = s%atom(iatom)%imass
+            tkinetic = tkinetic                                              &
+     &        + (0.5d0/P_fovermp)*species(in1)%xmass                         &
+     &         *(s%atom(iatom)%vatom(1)**2 + s%atom(iatom)%vatom(2)**2       &
+     &                                     + s%atom(iatom)%vatom(3)**2)
+          end do
+          tkinetic = tkinetic/s%natoms
+          T_instantaneous = (2.0d0/3.0d0)*tkinetic*P_kconvert
+          write (logfile,*) ' T_instantaneous, after rescaling = ', T_instantaneous
+        else
+          write (logfile,*) ' No rescaling the velocities based on T_intial. '
+        end if
+
+! Constraint #4
+! ----------------
+        if (iconstraint_L .eq. 1) then
+          write (logfile,*)
+          write (logfile,*) ' Constraining the angular momentum. '
+          call zero_ang_mom (s)
+        else
+          write (logfile,*) ' No constraining the angular momentum. '
         end if
 
 ! Writeout the velocities
@@ -252,6 +291,9 @@
 ! Format Statements
 ! ===========================================================================
 100     format (2x, ' Calculated position of the Center-of-Mass: ', 3(2x,f7.3))
+101     format (2x, ' initial vcm = ', 3d16.7)
+102     format (2x, '   final vcm = ', 3d16.7)
+
 200     format (2x, 70('='))
 201     format (2x, ' Atom # ', 2x, ' Type ', 6x,   &
      &              ' x ', 9x, ' y ', 9x, ' z ', 6x, ' Species # ')
@@ -382,12 +424,12 @@
           xlcm(3) = xlcm(3) + xmass*(s%atom(iatom)%ratom(1)*s%atom(iatom)%vatom(2) -  &
      &                               s%atom(iatom)%ratom(2)*s%atom(iatom)%vatom(1))
         end do
-        write (logfile,200) xlcm
+        write (logfile,101) xlcm
 
 ! Format Statements
 ! ===========================================================================
 100     format (2x, ' initial Lcm = ', 3d16.7)
-200     format (2x, '   final Lcm = ', 3d16.7)
+101     format (2x, '   final Lcm = ', 3d16.7)
 
 ! End Subroutine
 ! ===========================================================================
@@ -513,6 +555,7 @@
           cfactor(5) = 17.0d0/240.0d0
           cfactor(6) = 1.0d0/120.0d0
           cfactor(7) = 1.0d0/2520.0d0
+
         end if
 
 ! Format Statements
@@ -562,10 +605,9 @@
 ! ===========================================================================
         integer iatom
         integer in1
-        integer logfile                     !< writing to which unit
+        integer logfile                      !< writing to which unit
 
         real vscale                          !< velocity rescaling
-        real xmass
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -589,13 +631,13 @@
         tkinetic = 0.0d0
         do iatom = 1, s%natoms
           in1 = s%atom(iatom)%imass
-          xmass = species(in1)%xmass
-          tkinetic = tkinetic + (0.5d0/P_fovermp)*xmass                      &
-     &      *(s%atom(iatom)%vatom(1)**2 + s%atom(iatom)%vatom(2)**2          &
-     &        + s%atom(iatom)%vatom(3)**2)
+          tkinetic = tkinetic                                                  &
+     &      + (0.5d0/P_fovermp)*species(in1)%xmass                             &
+     &       *(s%atom(iatom)%vatom(1)**2 + s%atom(iatom)%vatom(2)**2           &
+     &                                     + s%atom(iatom)%vatom(3)**2)
         end do
-        T_instantaneous = (2.0d0/3.0d0)*tkinetic*P_kconvert/s%natoms
-        write (logfile,*) ' T_instantaneous = ', T_instantaneous
+        tkinetic = tkinetic/s%natoms
+        T_instantaneous = (2.0d0/3.0d0)*tkinetic*P_kconvert
 
 ! Rescale the temperature if iensemble = 1 (constant temperature MD)
         if (iensemble .eq. 1 .and. .not. T_instantaneous .le. 0) then
@@ -608,8 +650,10 @@
           end do
         end if
         T_average = ((itime_step - 1)*T_average + T_instantaneous)/itime_step
+        write (logfile,*) ' Average Temperature = ', T_average
 
 ! Predictor
+        write (logfile,*)
         write (logfile,*) ' Predictor-Corrector: predict the positions. '
         call predictor (s, itime_step)
 
@@ -618,12 +662,13 @@
           tkinetic = 0.0d0
           do iatom = 1, s%natoms
             in1 = s%atom(iatom)%imass
-            xmass = species(in1)%xmass
-            tkinetic = tkinetic + (0.5d0/P_fovermp)*xmass                      &
-     &        *(s%atom(iatom)%vatom(1)**2 + s%atom(iatom)%vatom(2)**2          &
-     &          + s%atom(iatom)%vatom(3)**2)
+            tkinetic = tkinetic                                              &
+     &        + (0.5d0/P_fovermp)*species(in1)%xmass                         &
+     &         *(s%atom(iatom)%vatom(1)**2 + s%atom(iatom)%vatom(2)**2       &
+     &                                     + s%atom(iatom)%vatom(3)**2)
           end do
-          T_instantaneous = (2.0d0/3.0d0)*tkinetic*P_kconvert/s%natoms
+          tkinetic = tkinetic/s%natoms
+          T_instantaneous = (2.0d0/3.0d0)*tkinetic*P_kconvert
           vscale = sqrt(T_want/T_instantaneous)
           do iatom = 1, s%natoms
             s%atom(iatom)%vatom = s%atom(iatom)%vatom*vscale
@@ -637,9 +682,41 @@
           end if
         end if
 
+! Now write out the basis file information.
+        write (logfile,*)
+        write (logfile,*) ' Atom Coordinates: '
+        write (logfile,200)
+        write (logfile,201)
+        write (logfile,200)
+        do iatom = 1, s%natoms
+          if (ishiftO .eq. 1) then
+            write (logfile,202) iatom, s%atom(iatom)%species%symbol,          &
+     &                                 s%atom(iatom)%ratom - shifter,         &
+     &                                 s%atom(iatom)%imass
+          else
+            write (logfile,202) iatom, s%atom(iatom)%species%symbol,          &
+     &                                 s%atom(iatom)%ratom, s%atom(iatom)%imass
+          end if
+        end do
+        write (logfile,200)
+
+! Writeout the velocities
+        write (logfile,*)
+        write (logfile,*) ' Atom Velocities: '
+        write (logfile,200)
+        write (logfile,201)
+        write (logfile,200)
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          write (logfile,202) iatom, species(in1)%symbol, s%atom(iatom)%vatom, in1
+        end do
+
 ! Format Statements
 ! ===========================================================================
-! None
+200     format (2x, 70('='))
+201     format (2x, ' Atom # ', 2x, ' Type ', 6x,   &
+     &              ' x ', 9x, ' y ', 9x, ' z ', 6x, ' Species # ')
+202     format (3x, i5, 7x, a2, 3(2x,f10.5), 7x, i2)
 
 ! End Subroutine
 ! ===========================================================================
@@ -686,9 +763,13 @@
         integer iatom
         integer in1
         integer iorder
+        integer logfile
 
         real dtfactor
         real xmass
+        real xmass_total
+
+        real, dimension (3) :: xlcm
 
         real, dimension (3) :: acceleration
         real, dimension (:, :), allocatable :: difference
@@ -706,6 +787,9 @@
 
 ! Procedure
 ! ===========================================================================
+! Initialize logfile
+        logfile = s%logfile
+
 ! First calculate the accelerations at the predicted points and the
 ! differences between the predicted and actual accelerations
         if (itime_step .eq. 1) then
@@ -726,21 +810,48 @@
         end if
 
 ! Gear (often fifth-order)
-        do iatom = 1, s%natoms
-          do iorder = 0, ngear
-            if (iorder .eq. 2) then
-              dtfactor = 1.0d0
-            else
-              dtfactor = dt**(2-iorder)
-            end if
-              s%atom(iatom)%xdot(iorder,:) = s%atom(iatom)%xdot(iorder,:)    &
-     &         + cfactor(iorder)*difference(:,iatom)*(factorial(iorder)/2.0d0)*dtfactor
+        do iorder = 0, ngear
+          dtfactor = dt**(2-iorder)
+          do iatom = 1, s%natoms
+            s%atom(iatom)%xdot(iorder,:) = s%atom(iatom)%xdot(iorder,:)        &
+     &       + cfactor(iorder)*difference(:,iatom)*(factorial(iorder)/2.0d0)*dtfactor
           end do
         end do
 
+! Calculate the center of mass position and velocity.
+        xmass_total = 0.0d0
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          xmass_total = xmass_total + species(in1)%xmass
+          s%rcm = s%rcm + species(in1)%xmass*s%atom(iatom)%ratom
+          s%vcm = s%vcm + species(in1)%xmass*s%atom(iatom)%vatom
+        end do
+        s%rcm = s%rcm/xmass_total
+        if (ishiftO .eq. 1) s%rcm = s%rcm - shifter
+        s%vcm = s%vcm/xmass_total
+
+        write (logfile, 100) s%rcm
+        write (logfile, 101) s%vcm
+
+! Calculate the center of mass angular momentum.
+        xlcm = 0.0d0
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          xmass = species(in1)%xmass
+          xlcm(1) = xlcm(1) + xmass*(s%atom(iatom)%ratom(2)*s%atom(iatom)%vatom(3) - &
+     &                               s%atom(iatom)%ratom(3)*s%atom(iatom)%vatom(2))
+          xlcm(2) = xlcm(2) + xmass*(s%atom(iatom)%ratom(3)*s%atom(iatom)%vatom(1) - &
+     &                               s%atom(iatom)%ratom(1)*s%atom(iatom)%vatom(3))
+          xlcm(3) = xlcm(3) + xmass*(s%atom(iatom)%ratom(1)*s%atom(iatom)%vatom(2) - &
+     &                               s%atom(iatom)%ratom(2)*s%atom(iatom)%vatom(1))
+        end do
+        write (logfile, 102) xlcm
+
 ! Format Statements
 ! ===========================================================================
-! None
+100     format (2x, '         center of mass position = ', 3d12.4)
+101     format (2x, '         center of mass velocity = ', 3d12.4)
+102     format (2x, ' center of mass angular momentum = ', 3d12.4)
 
 ! End Subroutine
 ! ===========================================================================
@@ -794,7 +905,7 @@
         real xmass
         real xmass_total
 
-        real, dimension (3) :: rcm, vcm, xlcm
+        real, dimension (3) :: xlcm
 
         interface
           function factorial (i)
@@ -812,43 +923,14 @@
 ! Initialize logfile
         logfile = s%logfile
 
-! Calculate the center of mass position and velocity.
-        xmass_total = 0.0d0
-        do iatom = 1, s%natoms
-          in1 = s%atom(iatom)%imass
-          xmass_total = xmass_total + species(in1)%xmass
-          rcm = rcm + species(in1)%xmass*s%atom(iatom)%ratom
-          vcm = vcm + species(in1)%xmass*s%atom(iatom)%vatom
-        end do
-        rcm = rcm/xmass_total
-        vcm = vcm/xmass_total
-
-        write (logfile, *)
-        write (logfile, 100) rcm
-        write (logfile, 101) vcm
-
-! Calculate the center of mass angular momentum.
-        xlcm = 0.0d0
-        do iatom = 1, s%natoms
-          in1 = s%atom(iatom)%imass
-          xmass = species(in1)%xmass
-          xlcm(1) = xlcm(1) + xmass*(s%atom(iatom)%ratom(2)*s%atom(iatom)%vatom(3) - &
-     &                               s%atom(iatom)%ratom(3)*s%atom(iatom)%vatom(2))
-          xlcm(2) = xlcm(2) + xmass*(s%atom(iatom)%ratom(3)*s%atom(iatom)%vatom(1) - &
-     &                               s%atom(iatom)%ratom(1)*s%atom(iatom)%vatom(3))
-          xlcm(3) = xlcm(3) + xmass*(s%atom(iatom)%ratom(1)*s%atom(iatom)%vatom(2) - &
-     &                               s%atom(iatom)%ratom(2)*s%atom(iatom)%vatom(1))
-        end do
-        write (logfile, 102) xlcm
-
 ! Move the atoms
 ! For the gear algorithm update both the positions and the velocities after
 ! each prediction and correction
 ! Actual prediction step - usually 5th order Gear algorithm.
-        do iatom = 1, s%natoms
-          do iorder = 0, ngear - 1
-            do isum = iorder + 1, ngear
-              ifactor = isum - iorder
+        do iorder = 0, ngear - 1
+          do isum = iorder + 1, ngear
+            ifactor = isum - iorder
+            do iatom = 1, s%natoms
               s%atom(iatom)%xdot(iorder,:) = s%atom(iatom)%xdot(iorder,:)    &
      &         + s%atom(iatom)%xdot(isum,:)*(dt**ifactor)/factorial(ifactor)
             end do
@@ -864,6 +946,39 @@
           s%atom(iatom)%vatom = s%atom(iatom)%xdot(1,:)
         end do
 
+! Calculate the center of mass position and velocity.
+        xmass_total = 0.0d0
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          xmass_total = xmass_total + species(in1)%xmass
+          s%rcm = s%rcm + species(in1)%xmass*s%atom(iatom)%ratom
+          s%vcm = s%vcm + species(in1)%xmass*s%atom(iatom)%vatom
+        end do
+        s%rcm = s%rcm/xmass_total
+        if (ishiftO .eq. 1) s%rcm = s%rcm - shifter
+        s%vcm = s%vcm/xmass_total
+
+        write (logfile, 100) s%rcm
+        write (logfile, 101) s%vcm
+
+! Calculate the center of mass angular momentum.
+        xlcm = 0.0d0
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          xmass = species(in1)%xmass
+          xlcm(1) = xlcm(1) + xmass*(s%atom(iatom)%ratom(2)*s%atom(iatom)%vatom(3) - &
+     &                               s%atom(iatom)%ratom(3)*s%atom(iatom)%vatom(2))
+          xlcm(2) = xlcm(2) + xmass*(s%atom(iatom)%ratom(3)*s%atom(iatom)%vatom(1) - &
+     &                               s%atom(iatom)%ratom(1)*s%atom(iatom)%vatom(3))
+          xlcm(3) = xlcm(3) + xmass*(s%atom(iatom)%ratom(1)*s%atom(iatom)%vatom(2) - &
+     &                               s%atom(iatom)%ratom(2)*s%atom(iatom)%vatom(1))
+        end do
+        write (logfile, 102) xlcm
+
+! Completely quench the velocities if necessary.  Quench the velocities on
+! every n`th step if iquench = +n or whenever the instantaneous temperature
+! (T_instantaneous) is lower than the instantaneous temperature on the previous
+! step (T_previous) if iquench = -1.
         if (iquench .eq. 0) then
           write (logfile, *)
           write (logfile, 200) T_instantaneous, T_previous
@@ -871,9 +986,6 @@
           return
         end if
 
-! Completely quench the velocities if necessary.  Quench the velocities on
-! every n`th step if iquench = +n or whenever the instantaneous temperature
-! (T_instantaneous) is lower than the instantaneous temperature on the previous ! step (T_previous) if iquench = -1.
         kquench = 0
         if (iquench .gt. 0 .and. mod(itime_step,iquench) .eq. 0) kquench = 1
         if (iquench .eq. -1 .and. T_instantaneous .lt. T_previous) kquench = 1
@@ -922,6 +1034,7 @@
             end do
           end do
         end if
+        T_previous = T_instantaneous
 
 ! Format Statements
 ! ===========================================================================
