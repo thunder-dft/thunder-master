@@ -105,7 +105,7 @@
         integer issh, jssh                !< counting over orbitals
         integer norb_mu, norb_nu          !< size of the block for the pair
 
-        real z                           !< distance between atom pairs
+        real z                            !< distance between atom pairs
         real Zi, Zj
 
         real, dimension (:, :), allocatable :: coulomb
@@ -117,8 +117,8 @@
         real, dimension (3) :: eta        !< vector part of epsilon eps(:,3)
         real, dimension (3, 3) :: eps     !< the epsilon matrix
         real, dimension (3, 3, 3) :: deps !< derivative of epsilon matrix
-        real, dimension (3) :: r1, r2   !< positions of iatom and jatom
-        real, dimension (3) :: sighat   !< unit vector along r2 - r1
+        real, dimension (3) :: r1, r2     !< positions of iatom and jatom
+        real, dimension (3) :: sighat     !< unit vector along r2 - r1
 
         interface
           function distance (a, b)
@@ -147,6 +147,9 @@
           do issh = 1, species(in1)%nssh
             Q0(iatom) = Q0(iatom) + species(in1)%shell(issh)%Qneutral
           end do
+
+          ! cut some lengthy notation
+          pfi=>s%forces(iatom); pfi%usr = 0.0d0
         end do
 
 ! Loop over the atoms in the central cell.
@@ -203,7 +206,7 @@
             allocate (coulomb (norb_mu, norb_nu))
             allocate (dcoulomb (norb_mu, norb_nu))
             allocate (vdcoulomb (3, norb_mu, norb_nu))
-            call getDMEs_Fdata_2c (in1, in2, interaction, isubtype, z,       &
+            call getDMEs_Fdata_2c (in1, in2, interaction, isubtype, z,        &
      &                             norb_mu, norb_nu, coulomb, dcoulomb)
 
 ! Note that if we are calculating the on-site matrix elements, then the
@@ -234,12 +237,12 @@
 !             u0(iatom)%neighbors(ineigh)%E = 0.0d0
               do issh = 1, species(in1)%nssh
                 do jssh = 1, species(in2)%nssh
-                   pfi%usr = pfi%usr                                           &
-      &              + (P_eq2/2.0d0)*species(in1)%shell(issh)%Qneutral         &
-      &                *species(in2)%shell(jssh)%Qneutral*vdcoulomb(:,issh,jssh)
-                   pfj%usr = pfj%usr                                           &
-      &              - (P_eq2/2.0d0)*species(in1)%shell(issh)%Qneutral         &
-      &                *species(in2)%shell(jssh)%Qneutral*vdcoulomb(:,issh,jssh)
+                  pfi%usr = pfi%usr                                           &
+      &             + (P_eq2/2.0d0)*species(in1)%shell(issh)%Qneutral         &
+      &              *species(in2)%shell(jssh)%Qneutral*vdcoulomb(:,issh,jssh)
+                  pfj%usr = pfj%usr                                           &
+      &             - (P_eq2/2.0d0)*species(in1)%shell(issh)%Qneutral         &
+      &              *species(in2)%shell(jssh)%Qneutral*vdcoulomb(:,issh,jssh)
                 end do
               end do
               pfi%usr = pfi%usr - (P_eq2/2.0d0)*eta(:)*(Zi*Zj/z**2)
@@ -448,14 +451,14 @@
 ! calculate SN-AT part ("atomic" correction) forces
 ! exc_sn_bond : xc-energy from third term on the right in Eq. (16): PRB 71, 235101 (2005)
 ! e_vxc_bond_sn : energy already included in the band-structure through vxc_sn_bond
-              de_xc_bond_sn = de_xc_bond_sn                                    &
-     &          + q_mu*(dexc_bond*Dprho_bond_shell                             &
-     &          + Dprho_bond_shell*d2exc_bond*(prho_bond - prho_bond_shell)    &
-     &          + dexc_bond*(Dprho_bond - Dprho_bond_shell))
-              de_vxc_bond_sn = de_vxc_bond_sn                                  &
-     &          + q_mu*(dmuxc_bond*Dprho_bond_shell                            &
-     &          + Dprho_bond_shell*d2muxc_bond*(prho_bond - prho_bond_shell)   &
-     &          + dmuxc_bond*(Dprho_bond - Dprho_bond_shell))
+               de_xc_bond_sn = de_xc_bond_sn                                   &
+     &           + q_mu*(dexc_bond*Dprho_bond_shell                            &
+     &           + Dprho_bond_shell*d2exc_bond*(prho_bond - prho_bond_shell)   &
+     &           + dexc_bond*(Dprho_bond - Dprho_bond_shell))
+               de_vxc_bond_sn = de_vxc_bond_sn                                 &
+     &           + q_mu*(dmuxc_bond*Dprho_bond_shell                           &
+     &           + Dprho_bond_shell*d2muxc_bond*(prho_bond - prho_bond_shell)  &
+     &           + dmuxc_bond*(Dprho_bond - Dprho_bond_shell))
               end do ! end loop m1 = -l1, l1
               n1 = n1 + l1
             end do  ! do issh = 1, nssh(in1)

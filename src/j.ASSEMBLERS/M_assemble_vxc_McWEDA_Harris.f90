@@ -109,7 +109,7 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine assemble_vxc (s)
+        subroutine assemble_vxc_2c (s)
         implicit none
 
 ! Argument Declaration and Description
@@ -141,6 +141,7 @@
 ! ===========================================================================
 ! Initialize logfile
         logfile = s%logfile
+        write (logfile,*) ' Calculating McWEDA interactions here. '
 
 ! Calculate rho_in (density) matrix elements
         write (logfile,*) ' Calling rho (density) input assemblers. '
@@ -189,8 +190,8 @@
 ! equation (16) PRB 71, 235101 (2005)
 ! vxc = vxc_bond + vxc_SN - vxc_SN_bond
             pvxc_neighbors%block = vxc_bond(iatom)%neighbors(ineigh)%block     &
-    &                             + vxc_SN(iatom)%neighbors(ineigh)%block      &
-    &                             - vxc_SN_bond(iatom)%neighbors(ineigh)%block
+     &                            + vxc_SN(iatom)%neighbors(ineigh)%block      &
+     &                            - vxc_SN_bond(iatom)%neighbors(ineigh)%block
           end do
         end do
 
@@ -743,6 +744,7 @@
             deallocate (s%vxc(iatom)%neighbors(ineigh)%block)
             deallocate (vxc_SN(iatom)%neighbors(ineigh)%block)
             deallocate (vxc_SN_bond(iatom)%neighbors(ineigh)%block)
+            deallocate (vxc_bond(iatom)%neighbors(ineigh)%block)
           end do
           deallocate (s%vxc(iatom)%neighbors)
           deallocate (vxc_SN(iatom)%neighbors)

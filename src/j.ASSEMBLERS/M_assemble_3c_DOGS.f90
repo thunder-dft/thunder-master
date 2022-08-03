@@ -63,19 +63,18 @@
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
-!>       This routine calculates the three center matrix interactions
-!! for (interaction, isubtype), and add them to corresponding ME2c.
+!       This routine calculates the three center matrix interactions
+! for (interaction, isorp), and add them to corresponding ME2c.
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -99,7 +98,7 @@
         integer ialpha, iatom, jatom     !< the three parties involved
         integer ibeta, jbeta             !< cells for three atoms
         integer ineigh, mneigh           !< counter over neighbors
-        integer in1, in2, in3            !< species numbers
+        integer in1, in2, indna          !< species numbers
         integer interaction, isorp       !< which interaction and subtype
         integer issh                     !< counting over shells
         integer norb_mu, norb_nu         !< size of the block for the pair
@@ -113,7 +112,7 @@
         real x, cost                     !< dnabc and angle
 
         real, dimension (3, 3) :: eps    !< the epsilon matrix
-        real, dimension (3) :: r1, r2, r3, r12!< positions
+        real, dimension (3) :: r1, r2, r3, r12  !< positions
         real, dimension (3) :: sighat    !< unit vector along r2 - r1
         real, dimension (3) :: rhat      !< unit vector along bc - r3
 
@@ -153,10 +152,10 @@
 ! ===========================================================================
 ! Loop over the atoms in the central cell.
         do ialpha = 1, s%natoms
-          in3 = s%atom(ialpha)%imass
+          indna = s%atom(ialpha)%imass
           r3 = s%atom(ialpha)%ratom
 
-          ! loop over the common neigbor pairs of ialp
+          ! loop over the common neigbor pairs of ialpha
           do ineigh = 1, s%neighbors(ialpha)%ncommon
             mneigh = s%neighbors(ialpha)%neigh_common(ineigh)
             if (mneigh .ne. 0) then
@@ -245,8 +244,8 @@
               end do
 
               rcutoff3_min = 99.0d0
-              do issh = 1, species(in3)%nssh
-                rcutoff3_min = min(rcutoff3_min, species(in3)%shell(issh)%rcutoffA)
+              do issh = 1, species(indna)%nssh
+                rcutoff3_min = min(rcutoff3_min, species(indna)%shell(issh)%rcutoffA)
               end do
 
               rend = rcutoff1_min + rcutoff3_min
@@ -275,18 +274,18 @@
 
 ! Neutral atom case
               isorp = 0
-              call getMEs_Fdata_3c (in1, in2, in3, interaction, isorp, x,    &
+              call getMEs_Fdata_3c (in1, in2, indna, interaction, isorp, x,   &
      &                              z, norb_mu, norb_nu, cost, bcnam)
 
               ! Rotate into crystal coordinates
               call rotate (in1, in2, eps, norb_mu, norb_nu, bcnam, bcnax)
 
               ! Add this piece into the total
-              pvna_neighbors%block = pvna_neighbors%block + bcnax*P_eq2
+              pvna_neighbors%block  = pvna_neighbors%block + bcnax*P_eq2
 
 ! Charged atom cases
-              do isorp = 1, species(in3)%nssh
-                call getMEs_Fdata_3c (in1, in2, in3, interaction, isorp, x,  &
+              do isorp = 1, species(indna)%nssh
+                call getMEs_Fdata_3c (in1, in2, indna, interaction, isorp, x,  &
      &                                z, norb_mu, norb_nu, cost, bcnam)
 
                 ! Rotate into crystal coordinates
@@ -297,13 +296,8 @@
                 pvna_neighbors%block = pvna_neighbors%block                  &
      &            + dQ*(stinky*bcnax + (1.0d0 - stinky)*emnpl)*P_eq2
               end do
-
-              deallocate (bcnam)
-              deallocate (bcnax)
-
-              deallocate (sterm)
-              deallocate (dterm)
-              deallocate (emnpl)
+              deallocate (bcnam, bcnax)
+              deallocate (sterm, dterm, emnpl)
             end if
           end do ! end loop over neighbors
         end do ! end loop over atoms

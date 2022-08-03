@@ -800,14 +800,11 @@
      &                              norb_nu, bcnam)
               call rotate (in1, in3, eps, norb_mu, norb_nu, bcnam, bcnax)
 
-              ! Note that we are smooting here.
-              pvna_neighbors%block = pvna_neighbors%block + dQ*bcnax*P_eq2
-!             pvna_neighbors%block = pvna_neighbors%block                      &
-!    &          + P_eq2*dQ*((1.0d0 - smooth)*emnpl + smooth*bcnax)
+              ! Note that we are smoothing here
+              pvna_neighbors%block = pvna_neighbors%block                      &
+     &          + P_eq2*dQ*((1.0d0 - smooth)*emnpl + smooth*bcnax)
             end do ! isorp
-
-            deallocate (bcnam)
-            deallocate (bcnax)
+            deallocate (bcnam, bcnax)
             deallocate (emnpl)
           end do ! end loop over neighbors
         end do ! end loop over atoms

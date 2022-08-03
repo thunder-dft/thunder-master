@@ -152,11 +152,16 @@
         integer ialpha, iatom, jatom     !< the three parties involved
         integer ibeta, jbeta             !< cells for three atoms
         integer ineigh, mneigh           !< counter over neighbors
-        integer in1, in2, in3            !< species numbers
+        integer in1, in2, indna          !< species numbers
         integer interaction, isorp       !< which interaction and subtype
         integer imu, inu, iindex         !< indexing counters
         integer norb_mu, norb_nu         !< size of the block for the pair
 
+!       real distance_13, distance_23    !< distance from 3rd atom
+        real dQ                          !< net charge on atom
+!       real rcutoff1_min, rcutoff2_min, rcutoff3_min, rend  !< for smoothing
+!       real stinky                      !< smoothing value
+!       real xsmooth                     !< for smoothing function
         real z                           !< distance between r1 and r2
         real x, cost                     !< dnabc and angle
 
@@ -214,9 +219,13 @@
 
 ! Procedure
 ! ===========================================================================
+
+!****************************************************************************
+! Neutral atom piece:
+!****************************************************************************
 ! Loop over the atoms in the central cell.
         do ialpha = 1, s%natoms
-          in3 = s%atom(ialpha)%imass
+          indna = s%atom(ialpha)%imass
           rna = s%atom(ialpha)%ratom
 
           ! cut some lengthy notation
@@ -313,8 +322,8 @@
               allocate (dpbcnam (norb_mu,norb_nu)); dpbcnam = 0.00
               allocate (dxbcnam (norb_mu,norb_nu)); dxbcnam = 0.00
               allocate (dybcnam (norb_mu,norb_nu)); dybcnam = 0.00
-              call getDMEs_Fdata_3c (in1, in2, in3, interaction, isorp, x,     &
-     &                               z, norb_mu, norb_nu, cost, rhat, sighat,  &
+              call getDMEs_Fdata_3c (in1, in2, indna, interaction, isorp, x,  &
+     &                               z, norb_mu, norb_nu, cost, rhat, sighat, &
      &                               bcnam, dpbcnam, dxbcnam, dybcnam)
 
               allocate (f3naMa(3,norb_mu,norb_nu)); f3naMa = 0.0d0
@@ -326,8 +335,8 @@
 ! ***************************************************************************
 ! Now consider the components of the different forces which is determined
 ! by whether or not the force is with respect to atom 3 or atom 1.
-              pFdata_bundle => Fdata_bundle_3c(in1, in2, in3)
-              pFdata_cell =>                                                &
+              pFdata_bundle => Fdata_bundle_3c(in1, in2, indna)
+              pFdata_cell =>                                                  &
      &          pFdata_bundle%Fdata_cell_3c(pFdata_bundle%index_3c(interaction,isorp,1))
 
               ! loop over matrix elements
@@ -339,7 +348,7 @@
                 f3naMa(:,imu,inu) = rhat*dxbcnam(imu,inu) + amt*dpbcnam(imu,inu)
 
 ! Now recover f3naMb which is a three-dimensional array
-                f3naMb(:,imu,inu) = - sighat*dybcnam(imu,inu)               &
+                f3naMb(:,imu,inu) = - sighat*dybcnam(imu,inu)                 &
      &            + bmt*dpbcnam(imu,inu) - f3naMa(:,imu,inu)/2.0d0
               end do ! end loop over matrix elements
 
@@ -364,11 +373,11 @@
 ! We do the - sign for forces at the end.
 ! ***************************************************************************
 ! Force on the neutral atom with respect to atom 3 (f3naMa).
-              call Drotate (in1, in2, eps, depsA, norb_mu, norb_nu,          &
+              call Drotate (in1, in2, eps, depsA, norb_mu, norb_nu,           &
      &                      bcnam, f3naMa, f3naXa)
 
 ! Force on the neutral atom with respect to atom 1 (f3naMb).
-              call Drotate (in1, in2, eps, depsB, norb_mu, norb_nu,          &
+              call Drotate (in1, in2, eps, depsB, norb_mu, norb_nu,           &
      &                      bcnam, f3naMb, f3naXb)
 
 ! Make things force-like and determine f3naXc, whcih is found from Newtons Laws:
@@ -378,11 +387,11 @@
 
               do inu = 1, norb_nu
                 do imu = 1, norb_mu
-                  pfalpha%f3naa = pfalpha%f3naa                              &
+                  pfalpha%f3naa = pfalpha%f3naa                               &
       &             - pRho_neighbors%block(imu,inu)*f3naXa(:,imu,inu)*P_eq2
-                  pfi%f3nab = pfi%f3nab                                      &
+                  pfi%f3nab = pfi%f3nab                                       &
       &             - pRho_neighbors%block(imu,inu)*f3naXb(:,imu,inu)*P_eq2
-                  pfj%f3nac = pfj%f3nac                                      &
+                  pfj%f3nac = pfj%f3nac                                       &
       &             - pRho_neighbors%block(imu,inu)*f3naXc(:,imu,inu)*P_eq2
                 end do
               end do
@@ -390,6 +399,194 @@
               deallocate (bcnam, dpbcnam, dxbcnam, dybcnam)
               deallocate (f3naMa, f3naMb)
               deallocate (f3naXa, f3naXb, f3naXc)
+            end if ! if (mneigh .ne. 0)
+          end do ! end loop over neighbors
+        end do ! end loop over atoms
+
+! ****************************************************************************
+! DO CHARGE CASES HERE.
+! There is a lot here because of the smoothing nonsense.
+! ****************************************************************************
+! Loop over the atoms in the central cell.
+        do ialpha = 1, s%natoms
+          indna = s%atom(ialpha)%imass
+          rna = s%atom(ialpha)%ratom
+
+          ! cut some lengthy notation
+          pfalpha=>s%forces(ialpha)
+
+          ! loop over the common neighbor pairs of ialp
+          do ineigh = 1, s%neighbors(ialpha)%ncommon
+            mneigh = s%neighbors(ialpha)%neigh_common(ineigh)
+            if (mneigh .ne. 0) then
+              iatom = s%neighbors(ialpha)%iatom_common_j(ineigh)
+              ibeta = s%neighbors(ialpha)%iatom_common_b(ineigh)
+              r1 = s%atom(iatom)%ratom + s%xl(ibeta)%a
+              in1 = s%atom(iatom)%imass
+              norb_mu = species(in1)%norb_max
+
+              jatom = s%neighbors(ialpha)%jatom_common_j(ineigh)
+              jbeta = s%neighbors(ialpha)%jatom_common_b(ineigh)
+              r2 = s%atom(jatom)%ratom + s%xl(jbeta)%a
+              in2 = s%atom(jatom)%imass
+              norb_nu = species(in2)%norb_max
+
+              ! cut lengthy notation
+              pfi=>s%forces(iatom); pfj=>s%forces(jatom)
+
+              ! density matrix
+              pdenmat=>s%denmat(iatom); pRho_neighbors=>pdenmat%neighbors(mneigh)
+
+! SET-UP STUFF
+! ****************************************************************************
+! Find r21 = vector pointing from r1 to r2, the two ends of the bondcharge.
+! This gives us the distance dbc (or y value in the 2D grid).
+              r21 = r2 - r1
+              z = distance (r1, r2)
+
+              ! unit vector in sigma direction.
+              if (z .lt. 1.0d-05) then
+                sighat(1) = 0.0d0
+                sighat(2) = 0.0d0
+                sighat(3) = 1.0d0
+              else
+                sighat = (r2 - r1)/z
+              end if
+
+! ****************************************************************************
+! Find rnabc = vector pointing from center of bondcharge to rna
+! This gives us the distance dnabc.
+              r12 = 0.5d0*(r1 + r2)
+              x = distance (r12, rna)
+
+              ! unit vector in rnabc direction.
+              if (x .lt. 1.0d-05) then
+                rhat(1) = 0.0d0
+                rhat(2) = 0.0d0
+                rhat(3) = 0.0d0
+              else
+                rhat = (rna - 0.5d0*(r1 + r2))/x
+              end if
+              cost = dot_product(sighat, rhat)
+              call epsilon_function (rhat, sighat, eps)
+
+! dera3 = depsA = deps/dratm in the 3-center system
+! der13 = depsB = deps/dr1 in the 3-center system
+              call Depsilon_3c (r1, r2, r21, z, rna, rhat, eps, depsA, depsB)
+
+! For now we just do the neutral atom interactions.
+! Charged atom interactions are assembled in assemble_ca_3c.f
+! So set isorp = 0 within this subroutine.
+!
+!              interaction    subtypes     index
+!
+!      bcna         1           0..9(max)   1..10
+
+! ****************************************************************************
+!
+! Get the D-matrices from the data files - which is the matrix in molecular
+! coordinates (stored in sm). Rotate the matrix into crystal coordinates.
+! The rotated  matrix elements are stored in sx, where x means crytal
+! coordinates.
+              interaction = P_bcna
+              do isorp = 1, species(indna)%nssh
+
+! Allocate block arrays
+                allocate (bcnam (norb_mu,norb_nu)); bcnam = 0.00
+                allocate (dpbcnam (norb_mu,norb_nu)); dpbcnam = 0.00
+                allocate (dxbcnam (norb_mu,norb_nu)); dxbcnam = 0.00
+                allocate (dybcnam (norb_mu,norb_nu)); dybcnam = 0.00
+                call getDMEs_Fdata_3c (in1, in2, indna, interaction, isorp, x,&
+     &                                 z, norb_mu, norb_nu, cost, rhat,       &
+     &                                 sighat, bcnam, dpbcnam, dxbcnam,       &
+     &                                 dybcnam)
+
+                allocate (f3naMa(3,norb_mu,norb_nu)); f3naMa = 0.0d0
+                allocate (f3naMb(3,norb_mu,norb_nu)); f3naMb = 0.0d0
+                allocate (f3naXa(3,norb_mu,norb_nu)); f3naXa = 0.0d0
+                allocate (f3naXb(3,norb_mu,norb_nu)); f3naXb = 0.0d0
+                allocate (f3naXc(3,norb_mu,norb_nu)); f3naXc = 0.0d0
+
+! ***************************************************************************
+! Now consider the components of the different forces which is determined
+! by whether or not the force is with respect to atom 3 or atom 1.
+
+! The first piece will be the force with respect to atom 3.
+                if (x .gt. 1.0d-5) then
+                  amt = (sighat - cost*rhat)/x
+                else
+                  amt = 0.0d0
+                end if
+
+! The second piece will be the force with respect to atom 1.
+                bmt = (cost*sighat - rhat)/z
+
+                pFdata_bundle => Fdata_bundle_3c(in1, in2, indna)
+                pFdata_cell =>                                                &
+     &            pFdata_bundle%Fdata_cell_3c(pFdata_bundle%index_3c(interaction,isorp,1))
+
+                ! loop over matrix elements
+                do iindex = 1, pFdata_cell%nME
+                  imu = pFdata_cell%mu_3c(iindex)
+                  inu = pFdata_cell%nu_3c(iindex)
+
+! Now recover f3naMa which is a three-dimensional array
+                  f3naMa(:,imu,inu) = rhat*dxbcnam(imu,inu) + amt*dpbcnam(imu,inu)
+
+! Now recover f3naMb which is a three-dimensional array
+                  f3naMb(:,imu,inu) = - sighat*dybcnam(imu,inu)               &
+     &              + bmt*dpbcnam(imu,inu) - f3naMa(:,imu,inu)/2.0d0
+                end do ! end loop over matrix elements
+
+! ***************************************************************************
+! Convert to Crystal Coordinates
+! ***************************************************************************
+! The call to rotated does the rotations to crystal coordinates of these
+! force things.
+!
+! For example:
+! Suppose we have f_A(3,mu,nu), which is d/dratm M(mu,nu) where M(mu,nu)
+! is in molecular. To transform M(mu,nu) to crystal, we need Udag * M * U.
+! Therefore, f_A(3,mu,nu)[CRYSTAL] = (d/dratm Udag) * M * U
+!                                   + Udag * M * (d/dratm U)
+!                                   + Udag * f_A * U.
+!
+! So, to use this baby, put in deps3c (deps/dr1, deps/dr2, deps/dratm),
+! and f_A and M.
+!
+! NOTE: rotated works on the assumption that we are adding derivatives,
+! NOT forces. So f3naMa,... etc. MUST not yet be forcelike.
+! We do the - sign for forces at the end.
+! ***************************************************************************
+! Force on the neutral atom with respect to atom 3 (f3naMa).
+                call Drotate (in1, in2, eps, depsA, norb_mu, norb_nu,         &
+     &                        bcnam, f3naMa, f3naXa)
+
+! Force on the neutral atom with respect to atom 1 (f3naMb).
+                call Drotate (in1, in2, eps, depsB, norb_mu, norb_nu,         &
+     &                        bcnam, f3naMb, f3naXb)
+
+! Make things force-like and determine f3naXc, whcih is found from Newtons Laws:
+!               f3naXa = - f3naXa
+!               f3naXb = - f3naXb
+                f3naXc = - f3naXa - f3naXb
+
+                dQ = s%atom(ialpha)%shell(isorp)%dQ
+                do inu = 1, norb_nu
+                  do imu = 1, norb_mu
+                    pfalpha%f3naa = pfalpha%f3naa                             &
+      &               - pRho_neighbors%block(imu,inu)*dQ*f3naXa(:,imu,inu)*P_eq2
+                    pfi%f3nab = pfi%f3nab                                     &
+      &               - pRho_neighbors%block(imu,inu)*dQ*f3naXb(:,imu,inu)*P_eq2
+                    pfj%f3nac = pfj%f3nac                                     &
+      &               - pRho_neighbors%block(imu,inu)*dQ*f3naXc(:,imu,inu)*P_eq2
+                  end do
+                end do
+
+                deallocate (bcnam, dpbcnam, dxbcnam, dybcnam)
+                deallocate (f3naMa, f3naMb)
+                deallocate (f3naXa, f3naXb, f3naXc)
+              end do ! end loop over isorp
             end if ! if (mneigh .ne. 0)
           end do ! end loop over neighbors
         end do ! end loop over atoms

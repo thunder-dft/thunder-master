@@ -115,12 +115,15 @@
           s%forces(iatom)%pulay = 0.0d0
 
           ! three-center interactions
+          ! non-local forces
           s%forces(iatom)%f3nla = 0.0d0
           s%forces(iatom)%f3nlb = 0.0d0
           s%forces(iatom)%f3nlc = 0.0d0
+          ! Hartree forces
           s%forces(iatom)%f3naa = 0.0d0
           s%forces(iatom)%f3nab = 0.0d0
           s%forces(iatom)%f3nac = 0.0d0
+          ! exchange-correlation forces
           s%forces(iatom)%f3xca = 0.0d0
           s%forces(iatom)%f3xcb = 0.0d0
           s%forces(iatom)%f3xcc = 0.0d0
@@ -376,11 +379,15 @@
 ! cut some lengthy notation
             pfj => s%forces(jatom)
 
-            pfi%vnl = pfi%vnl + 2.0d0*pfi%vnl_ontop(:,ineigh)
-            pfj%vnl = pfj%vnl - 2.0d0*pfi%vnl_ontop(:,ineigh)
+            pfi%vnl = pfi%vnl + pfi%vnl_ontop(:,ineigh)
+            pfj%vnl = pfj%vnl - pfi%vnl_ontop(:,ineigh)
+!           pfi%vnl = pfi%vnl + 2.0d0*pfi%vnl_ontop(:,ineigh)
+!           pfj%vnl = pfj%vnl - 2.0d0*pfi%vnl_ontop(:,ineigh)
 
-            pfi%ftot = pfi%ftot + 2.0d0*pfi%vnl_ontop(:,ineigh)
-            pfj%ftot = pfj%ftot - 2.0d0*pfi%vnl_ontop(:,ineigh)
+            pfi%ftot = pfi%ftot + pfi%vnl_ontop(:,ineigh)
+            pfj%ftot = pfj%ftot - pfi%vnl_ontop(:,ineigh)
+!           pfi%ftot = pfi%ftot + 2.0d0*pfi%vnl_ontop(:,ineigh)
+!           pfj%ftot = pfj%ftot - 2.0d0*pfi%vnl_ontop(:,ineigh)
           end do ! end loop over neighbors
         end do  ! end loop over atoms
 
@@ -574,7 +581,7 @@
 
 ! overlap repulsive contribution to total force
 ! ****************************************************************************
-!         pfi%ftot = pfi%ftot - pfi%pulay
+          pfi%ftot = pfi%ftot - pfi%pulay
         end do
 ! ***************************************************************************
 !                                  E N D

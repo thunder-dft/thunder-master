@@ -223,18 +223,18 @@
                 do imu = 1, norb_mu
                   do ncc = 1, species(indna)%norb_PP_max
                     f3nlXb(:,imu,inu) = f3nlXb(:,imu,inu)                      &
-                      - cl_value(ncc)*psvnl1_neighbors%Dblock(:,imu,ncc)       &
+                      + cl_value(ncc)*psvnl1_neighbors%Dblock(:,imu,ncc)       &
                                      *psvnl2_neighbors%block(inu,ncc)
                     f3nlXc(:,imu,inu) = f3nlXc(:,imu,inu)                      &
-                      - cl_value(ncc)*psvnl1_neighbors%block(imu,ncc)          &
+                      + cl_value(ncc)*psvnl1_neighbors%block(imu,ncc)          &
                                      *psvnl2_neighbors%Dblock(:,inu,ncc)
                   end do ! do ncc
                 end do ! do imu
               end do ! do inu
 
 ! Make things force-like and determine f3nlXc, which is found from Newtons Laws:
-              f3nlXb = - f3nlXb
-              f3nlXc = - f3nlXc
+!             f3nlXb = - f3nlXb
+!             f3nlXc = - f3nlXc
               f3nlXa = - f3nlXb - f3nlXc
 
               do inu = 1, norb_nu

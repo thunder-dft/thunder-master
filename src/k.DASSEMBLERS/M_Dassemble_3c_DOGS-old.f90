@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -43,14 +45,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 
 ! Module Description
@@ -82,13 +83,23 @@
 !
 ! ===========================================================================
         module M_Dassemble_3c
+
+! /GLOBAL
         use M_assemble_blocks
+
+! /SYSTEM
         use M_configuraciones
-        use M_Fdata_3c
         use M_neighbors
         use M_rotations
         use M_Drotations
+
+! /FDATA
+        use M_Fdata_3c
+
+! /ASSEMBLERS
         use M_assemble_3c
+
+! /SOLVESH
         use M_density_matrix
 
 ! Type Declaration
@@ -122,8 +133,8 @@
 ! Program Declaration
 ! ===========================================================================
         subroutine Dassemble_vna_3c (s)
-
         implicit none
+
         include '../include/constants.h'
         include '../include/interactions_3c.h'
 
@@ -289,7 +300,6 @@
 
               ! density matrix
               pdenmat=>s%denmat(iatom); pRho_neighbors=>pdenmat%neighbors(mneigh)
-
               poverlap=>s%overlap(iatom); pS_neighbors=>poverlap%neighbors(mneigh)
               pdipole_z=>s%dipole_z(iatom); pdip_neighbors=>pdipole_z%neighbors(mneigh)
 
@@ -502,7 +512,6 @@
      &           + bmt*dpbcnam(imu,inu) - f3naMa(:,imu,inu)/2.0d0
               end do ! end loop over matrix elements
 
-
 ! ***************************************************************************
 ! Convert to Crystal Coordinates
 ! ***************************************************************************
@@ -532,9 +541,20 @@
      &                      bcnam, f3naMb, f3naXb)
 
 ! Make things force-like and determine f3naXc, whcih is found from Newtons Laws:
-              f3naXa = - f3naXa
-              f3naXb = - f3naXb
+!             f3naXa = - f3naXa
+!             f3naXb = - f3naXb
               f3naXc = - f3naXa - f3naXb
+
+              do inu = 1, norb_nu
+                do imu = 1, norb_mu
+                  pfalpha%f3naa = pfalpha%f3naa                                &
+      &             - pRho_neighbors%block(imu,inu)*f3naXa(:,imu,inu)
+                  pfi%f3nab = pfi%f3nab                                        &
+      &             - pRho_neighbors%block(imu,inu)*f3naXb(:,imu,inu)
+                  pfj%f3nac = pfj%f3nac                                        &
+      &             - pRho_neighbors%block(imu,inu)*f3naXc(:,imu,inu)
+                end do
+              end do
 
 !*********************************************************************************************************
 !*********************************************************************************************************
@@ -605,13 +625,6 @@
 !               dQ = s%atom(ialpha)%shell(isorp)%dQ
                 do inu = 1, norb_nu
                   do imu = 1, norb_mu
-                    pfalpha%f3naa = pfalpha%f3naa                            &
-      &               - pRho_neighbors%block(imu,inu)*f3naXa(:,imu,inu)
-                    pfi%f3nab = pfi%f3nab                                    &
-      &               - pRho_neighbors%block(imu,inu)*f3naXb(:,imu,inu)
-                    pfj%f3nac = pfj%f3nac                                    &
-      &               - pRho_neighbors%block(imu,inu)*f3naXc(:,imu,inu)
-
 !                    pvna_neighbors%Dblocka(:,imu,inu) =                            &
 !     &                pvna_neighbors%Dblocka(:,imu,inu)                            &
 !     &                + dQ*P_eq2*(stinky*f3naXat(:,imu,inu)                        &
@@ -644,6 +657,7 @@
             end if ! if (mneigh .ne. 0)
           end do ! end loop over neighbors
         end do ! end loop over atoms
+
 ! Deallocate Arrays
 ! ===========================================================================
 ! None

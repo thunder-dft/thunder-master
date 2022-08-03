@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -50,13 +52,19 @@
 !! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
          module M_Dassemble_vxc_3c
+
+! /GLOBAL
          use M_assemble_blocks
+
+! /SYSTEM
          use M_configuraciones
+         use M_rotations
+         use M_Drotations
+
+! /FDATA
          use M_Fdata_2c
          use M_Fdata_3c
-         use M_rotations
-         use M_Drotations 
-        
+
 ! Type Declaration
 ! ===========================================================================
 ! None
@@ -75,14 +83,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -107,14 +114,13 @@
         integer ibeta, jbeta             !< cells for three atoms
         integer ineigh, mneigh           !< counter over neighbors
         integer in1, in2, in3            !< species numbers
-        integer isubtype                 !< which subtype
-        integer interaction, isorp       !< which interaction and subtype
-        integer ix, iindex
+        integer isorp                    !< which subtype
+        integer iindex
         integer nssh_i, nssh_j           !< size of the block for the pair
         integer issh, jssh               !< counter over shells
         integer norb_mu, norb_nu         !< size of the block for the pair
         integer imu, inu
-        integer n1, n2, l1, l2, m1, m2   !< quantum numbers n, l, and m
+        integer n1, n2, l1, l2, m1, m2     !< quantum numbers n, l, and m
 
         real dexc_in                       !< 1st derivative of xc
         real d2exc_in                      !< 2nd derivativive of xc
@@ -123,13 +129,11 @@
         real muxc_in                       !< xc potential_
         real d2muxc_in                     !< 2nd derivative of xc
         
-        real vxc_mag                     !< magnitud like term
-        real Qin                    !< charge
+        real Qin                         !< charge
         real z                           !< distances between r1 and r2
         real x, cost                     !< dnabc and angle
 
         real, dimension (3, 3) :: eps     !< the epsilon matrix
-        real, dimension (3, 3, 3) :: deps !< derivative of epsilon matrix
         real, dimension (3) :: r1, r2, r3, r12, r21   !< positions
         real, dimension (3) :: sighat     !< unit vector along r2 - r1
         real, dimension (3) :: rhat       !< unit vector along bc - r3
@@ -153,13 +157,14 @@
         real, dimension (:, :), allocatable :: dpbcxcm
         real, dimension (:, :), allocatable :: dxbcxcm
         real, dimension (:, :), allocatable :: dybcxcm
-
+        
         real, dimension (:, :, :), allocatable :: vdxcMa
         real, dimension (:, :, :), allocatable :: vdxcMb
+        real, dimension (:, :, :), allocatable :: vdxcMc
         real, dimension (:, :, :), allocatable :: vdxcXa
         real, dimension (:, :, :), allocatable :: vdxcXb
         real, dimension (:, :, :), allocatable :: vdxcXc
-
+        
         ! Derivative of rho in crystal coordinates
         real, dimension (:, :, :), allocatable :: rhoxa ! derivative respect to a
         real, dimension (:, :, :), allocatable :: rhoxb ! derivative respect to b
@@ -173,19 +178,6 @@
         real, dimension (:, :, :), allocatable :: rhoma_shell ! derivative respect to a
         real, dimension (:, :, :), allocatable :: rhomb_shell ! derivative respect to b
         real, dimension (:, :, :), allocatable :: rhomc_shell ! derivative respect to c
-
-
-
-        real, dimension (:, :), allocatable :: bcxcm_shell
-        real, dimension (:, :), allocatable :: bcxcx_shell
-        real, dimension (:, :), allocatable :: dpbcxcm_shell
-        real, dimension (:, :), allocatable :: dxbcxcm_shell
-        real, dimension (:, :), allocatable :: dybcxcm_shell
-
-        real, dimension (:, :, :), allocatable :: vdxcMa_shell
-        real, dimension (:, :, :), allocatable :: vdxcMb_shell
-        real, dimension (:, :, :), allocatable :: vdxcMc_shell
-
 
         type(T_Fdata_cell_3c), pointer :: pFdata_cell
         type(T_Fdata_bundle_3c), pointer :: pFdata_bundle
@@ -289,7 +281,20 @@
               cost = dot_product(sighat, rhat)
 
               call epsilon_function (rhat, sighat, eps)
+
+! dera3 = depsA = deps/dratm in the 3-center system
+! der13 = depsB = deps/dr1 in the 3-center system
               call Depsilon_3c (r1, r2, r21, z, r3, rhat, eps, depsA, depsB)
+
+! The first piece will be the force with respect to atom 3.
+              if (x .gt. 1.0d-5) then
+                amt = (sighat - cost*rhat)/x
+              else
+                amt = 0.0d0
+              end if
+
+! The second piece will be the force with respect to atom 1.
+              bmt = (cost*sighat - rhat)/z
 
 ! Get the matrix from the data files - which is the matrix in molecular
 ! coordinates, stored in bcxcm. where m means molecular coordinates.
@@ -317,79 +322,45 @@
               allocate (rhoxb(3, norb_mu, norb_nu)); rhoxb = 0.0d0
               allocate (rhoxc(3, norb_mu, norb_nu)); rhoxc = 0.0d0
 
-              allocate (bcxcm_shell (nssh_i, nssh_j)); bcxcm_shell = 0.0d0
-
-              ! vectorized derivatives
-              allocate (vdxcMa_shell (3, nssh_i, nssh_j)); vdxcMa_shell = 0.0d0
-              allocate (vdxcMb_shell (3, nssh_i, nssh_j)); vdxcMb_shell = 0.0d0
-              allocate (vdxcMc_shell (3, nssh_i, nssh_j)); vdxcMc_shell = 0.0d0
-
               allocate (rhoma_shell (3, nssh_i, nssh_j)); rhoma_shell = 0.0d0
               allocate (rhomb_shell (3, nssh_i, nssh_j)); rhomb_shell = 0.0d0
               allocate (rhomc_shell (3, nssh_i, nssh_j)); rhomc_shell = 0.0d0
- 
-              do isubtype = 1, species(in3)%nssh
-                Qin = species(in3)%shell(isubtype)%Qin
+
+! Here we calculate the rho part that is dependent of the crystal coordinates, 
+! which means that it is not the shell part (average over the shell) 
+! ****************************************************************************
+! DO CHARGED ATOM CASES HERE.
+! ****************************************************************************
+              do isorp = 1, species(in3)%nssh
+                Qin = s%atom(ialpha)%shell(isorp)%Qin
                 
                 bcxcm = 0.0d0; dpbcxcm = 0.0d0;
                 dxbcxcm = 0.0d0; dybcxcm = 0.0d0;
                 vdxcMa = 0.0d0; vdxcMb = 0.0d0;
                 vdxcXa = 0.0d0; vdxcXb = 0.0d0; vdxcXc = 0.0d0
-
-                call getDMEs_Fdata_3c (in1, in2, in3, P_rho_3c, isubtype, x, &
-     &                                 z, norb_mu, norb_nu, cost, rhat,      &
+                call getDMEs_Fdata_3c (in1, in2, in3, P_rho_3c, isorp, x,     &
+     &                                 z, norb_mu, norb_nu, cost, rhat,       &
      &                                 sighat, bcxcm, dpbcxcm, dxbcxcm, dybcxcm)
-
+             
                 ! Rotate into crystal coordinates
                 call rotate (in1, in2, eps, norb_mu, norb_nu, bcxcm, bcxcx)
-                do ix = 1, 3
 
-! The first piece will be the force with respect to atom 3.
-                 if (x .gt. 1.0d-5) then
-                  amt(ix) = (sighat(ix) - cost*rhat(ix))/x
-                 else
-                  amt = 0.0d0
-                 end if
+                pFdata_bundle => Fdata_bundle_3c(in1, in2, in3)
+                pFdata_cell =>                                               &
+     &            pFdata_bundle%Fdata_cell_3c(pFdata_bundle%index_3c(P_rho_3c,isorp,1))
 
-                 bmt(:) = (cost*sighat(:) - rhat(:))/z
-
-                 pFdata_bundle => Fdata_bundle_3c(in1, in2, in3)
-                 pFdata_cell =>                                               &
-     &             pFdata_bundle%Fdata_cell_3c(pFdata_bundle%index_3c(P_rho_3c,isubtype,1))
-
-                 do iindex = 1, pFdata_cell%nME
-                   imu = pFdata_cell%mu_3c(iindex)
-                   inu = pFdata_cell%nu_3c(iindex)
+                do iindex = 1, pFdata_cell%nME
+                  imu = pFdata_cell%mu_3c(iindex)
+                  inu = pFdata_cell%nu_3c(iindex)
 
 ! Now recover f3naMa which is a two-dimensional array
-                   vdxcMa(ix,imu,inu) = rhat(ix)*dxbcxcm(imu,inu)            &
-     &                                 + amt(ix)*dpbcxcm(imu,inu)
-
-! The second piece will be the force with respect to atom 1.
-                   bmt(ix) = (cost*sighat(ix) - rhat(ix))/z
+                  vdxcMa(:,imu,inu) = rhat*dxbcxcm(imu,inu) + amt*dpbcxcm(imu,inu)
 
 ! Now recover f3naMb which is a two-dimensional array
-                   vdxcMb(ix,imu,inu) = - sighat(ix)*dybcxcm(imu, inu)       &
-     &                                   + bmt(ix)*dpbcxcm(imu, inu)         &
-     &                                   - vdxcMa(ix,imu,inu)/2.0d0
+                  vdxcMb(:,imu,inu) = - sighat*dybcxcm(imu,inu)              &
+     &             + bmt*dpbcxcm(imu, inu) - vdxcMa(:,imu,inu)/2.0d0
                  end do ! iindex
-                end do ! ix
-                
-! shell part
-                dpbcxcm= 0.0d0; dxbcxcm= 0.0d0; dybcxcm= 0.0d0;
-                call getDMEs_Fdata_3c (in1, in2, in3, P_rhoS_3c, isubtype, x,&
-     &                                 z, nssh_i, nssh_j, cost, rhat, sighat,&
-     &                                  bcxcm_shell, dpbcxcm, dxbcxcm, dybcxcm)                
-                do issh = 1, species(in1)%nssh
-                   do jssh = 1, species(in2)%nssh
-                     vdxcMa_shell(:,issh,jssh) = rhat(:)*dxbcxcm(issh,jssh) + amt(:)*dpbcxcm(issh,jssh)
-                     bmt(:) = (cost*sighat(:) - rhat(:))/z
-
-                     vdxcMb_shell(:,issh,jssh) = - sighat(:)*dybcxcm(issh,jssh)                             &
-     &                                      + bmt(:)*dpbcxcm(issh,jssh) - vdxcMa_shell(:,issh,jssh)/2.0d0
-                     vdxcMc_shell(:,issh,jssh) = - vdxcMa_shell(:,issh,jssh) - vdxcMb_shell(:,issh,jssh)
-                   end do ! jssh
-                end do ! issh
+               
 ! ***************************************************************************
 ! Convert to Crystal Coordinates
 ! ***************************************************************************
@@ -426,31 +397,69 @@
                 rhoxa = rhoxa + vdxcXa*Qin
                 rhoxb = rhoxb + vdxcXb*Qin
                 rhoxc = rhoxc + vdxcXc*Qin
-
-                rhoma_shell =  rhoma_shell + vdxcMa_shell*Qin
-                rhomb_shell =  rhomb_shell + vdxcMb_shell*Qin
-                rhomc_shell =  rhomc_shell + vdxcMc_shell*Qin
-
-              end do ! isubtype = 1, species(in3)%nssh
-
+              end do ! isorp = 1, species(in3)%nssh
               deallocate (bcxcm, bcxcx, dpbcxcm, dxbcxcm, dybcxcm)
               deallocate (vdxcMa, vdxcMb, vdxcXa, vdxcXb, vdxcXc)
-              deallocate (bcxcm_shell)
-              deallocate (vdxcMa_shell, vdxcMb_shell, vdxcMc_shell)
 
+! Here we calculate the rho part that is averaged over the shell,
+! which means that this is the average part.
+              allocate (bcxcm(nssh_i, nssh_j)); bcxcm = 0.0d0
+              allocate (bcxcx(nssh_i, nssh_j)); bcxcx = 0.0d0
+              allocate (dpbcxcm(nssh_i, nssh_j)); dpbcxcm = 0.0d0
+              allocate (dxbcxcm(nssh_i, nssh_j)); dxbcxcm = 0.0d0
+              allocate (dybcxcm(nssh_i, nssh_j)); dybcxcm = 0.0d0
+              
+              ! vectorial representations
+              allocate (vdxcMa(3, nssh_i, nssh_j)); vdxcMa = 0.0d0
+              allocate (vdxcMb(3, nssh_i, nssh_j)); vdxcMb = 0.0d0
+              allocate (vdxcMc(3, nssh_i, nssh_j)); vdxcMc = 0.0d0
+              allocate (vdxcXa(3, nssh_i, nssh_j)); vdxcXa = 0.0d0
+              allocate (vdxcXb(3, nssh_i, nssh_j)); vdxcXb = 0.0d0
+              allocate (vdxcXc(3, nssh_i, nssh_j)); vdxcXc = 0.0d0
+              
+              do isorp = 1, species(in3)%nssh
+                Qin = s%atom(ialpha)%shell(isorp)%Qin
+                                
+                bcxcm = 0.0d0; dpbcxcm = 0.0d0
+                dxbcxcm = 0.0d0; dybcxcm = 0.0d0
+                call getDMEs_Fdata_3c (in1, in2, in3, P_rhoS_3c, isorp, x,    &
+     &                                 z, nssh_i, nssh_j, cost, rhat, sighat, &
+     &                                 bcxcm, dpbcxcm, dxbcxcm, dybcxcm)
 
+                do issh = 1, species(in1)%nssh
+                   do jssh = 1, species(in2)%nssh
+                     vdxcMa(:,issh,jssh) = rhat(:)*dxbcxcm(issh,jssh)         &
+     &                                    + amt(:)*dpbcxcm(issh,jssh)
+                     bmt(:) = (cost*sighat(:) - rhat(:))/z
+
+                     vdxcMb(:,issh,jssh) = - sighat(:)*dybcxcm(issh,jssh)    &
+     &                                      + bmt(:)*dpbcxcm(issh,jssh)      &
+     &                                      - vdxcMa(:,issh,jssh)/2.0d0
+                     vdxcMc(:,issh,jssh) = - vdxcMa(:,issh,jssh) - vdxcMb(:,issh,jssh)
+                   end do ! jssh
+                end do ! issh
+                rhoma_shell = rhoma_shell + vdxcMa*Qin
+                rhomb_shell = rhomb_shell + vdxcMb*Qin
+                rhomc_shell = rhomc_shell + vdxcMc*Qin
+              end do ! isorp = 1, species(in3)%nssh
+              deallocate (bcxcm, bcxcx, dpbcxcm, dxbcxcm, dybcxcm)
+              deallocate (vdxcMa, vdxcMb, vdxcMc, vdxcXa, vdxcXb, vdxcXc)
+              
+! Here we put together the shell and crystal part to build up the final force
               n1 = 0
               do issh = 1, species(in1)%nssh
+
 ! n1 : counter used to determine orbitals imu
                 l1 = species(in1)%shell(issh)%lssh
                 n1 = n1 + l1 + 1
                 n2 = 0
+
                 do jssh = 1, species(in2)%nssh
 ! n2 : counter used to determine orbitals inu
                    l2 = species(in2)%shell(jssh)%lssh
                    n2 = n2 + l2 + 1
                    call lda_ceperley_alder (prhoS_in_neighbors%block(issh,jssh), exc_in, muxc_in,  &
-     &                                   dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
+     &                                      dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
                        
                    rhop_a = rhoma_shell(:,issh,jssh)                    
                    rhop_b = rhomb_shell(:,issh,jssh)                     
@@ -459,27 +468,24 @@
 ! loop over orbitals in the iatom-shell (imu)
                    do m1 = -l1, l1
                      imu = n1 + m1
+
 ! loop over orbitals in the ineigh-shell (inu)
                      do m2 = -l2, l2
                        inu = n2 + m2
-
-                     
-                       mxca(:,imu,inu) = mxca(:,imu,inu)  & 
-             &              - rhop_a*d2muxc_in*(prho_in_neighbors%block(imu,inu)  & 
-             &             -prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu)) &
-             &             - dmuxc_in*rhoxa(:,imu,inu)
+                       mxca(:,imu,inu) = mxca(:,imu,inu)                       &
+             &          - rhop_a*d2muxc_in*(prho_in_neighbors%block(imu,inu)   &
+             &          - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu)) &
+             &          - dmuxc_in*rhoxa(:,imu,inu)
              
-                       mxcb(:,imu,inu) = mxcb(:,imu,inu)  &
-             &              - rhop_b*d2muxc_in*(prho_in_neighbors%block(imu,inu)  & 
-             &             -prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu)) &
-             &             - dmuxc_in*rhoxb(:,imu,inu)
+                       mxcb(:,imu,inu) = mxcb(:,imu,inu)                       &
+             &          - rhop_b*d2muxc_in*(prho_in_neighbors%block(imu,inu)   &
+             &          - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu)) &
+             &          - dmuxc_in*rhoxb(:,imu,inu)
              
-                       mxcc(:,imu,inu) = mxcc(:,imu,inu)  &
-             &              - rhop_c*d2muxc_in*(prho_in_neighbors%block(imu,inu)  & 
-             &             -prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu)) &
-             &             - dmuxc_in*rhoxc(:,imu,inu)
-
-                      
+                       mxcc(:,imu,inu) = mxcc(:,imu,inu)                       &
+             &          - rhop_c*d2muxc_in*(prho_in_neighbors%block(imu,inu)   &
+             &          - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu)) &
+             &          - dmuxc_in*rhoxc(:,imu,inu)
                      end do !** m2 = -l2, l2
                    end do !** m1 = -l1, l1
                    n2 = n2 + l2
@@ -487,17 +493,13 @@
                 n1 = n1 + l1
               end do ! issh = 1, species(in1)%nss
               
-              do inu =1, norb_nu
-                do imu=1, norb_mu
-                  pfalpha%f3xca= pfalpha%f3xca  +pRho_neighbors%block(imu,inu)*mxca(:,imu,inu)
-                  
-                  pfi%f3xcb = pfi%f3xcb +pRho_neighbors%block(imu,inu)*mxcb(:,imu,inu)
-                  
-                  pfj%f3xcc = pfj%f3xcc +pRho_neighbors%block(imu,inu)*mxcc(:,imu,inu)
-                  
+              do inu = 1, norb_nu
+                do imu = 1, norb_mu
+                  pfalpha%f3xca = pfalpha%f3xca + pRho_neighbors%block(imu,inu)*mxca(:,imu,inu)
+                  pfi%f3xcb = pfi%f3xcb + pRho_neighbors%block(imu,inu)*mxcb(:,imu,inu)
+                  pfj%f3xcc = pfj%f3xcc + pRho_neighbors%block(imu,inu)*mxcc(:,imu,inu)
                 end do !imu , norb_mu
               end do !inu =1, norb_nu
-                   
             end if ! if (mneigh .ne. 0)
             deallocate (rhoxa, rhoxb, rhoxc)
             deallocate (mxca, mxcb, mxcc)

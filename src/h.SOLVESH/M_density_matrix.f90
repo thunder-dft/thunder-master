@@ -47,11 +47,17 @@
 ! Module declaration
 ! ============================================================================
         module M_density_matrix
+
+! /GLOBAL
         use M_assemble_blocks
+
+! /SYSTEM
         use M_configuraciones
-        use M_Fdata_2c
         use M_kspace
         use M_rotations
+
+! /FDATA
+        use M_Fdata_2c
 
 ! Type Declaration
 ! ===========================================================================
@@ -202,22 +208,26 @@
 ! Loop over all atoms iatom in the unit cell, and then over all its neighbors.
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
-          ! cut some lengthy notation
-          pdenmat=>s%denmat(iatom)
           r1 = s%atom(iatom)%ratom
           in1 = s%atom(iatom)%imass
           norb_mu = species(in1)%norb_max
           num_neigh = s%neighbors(iatom)%neighn
+
+          ! cut some lengthy notation
+          pdenmat=>s%denmat(iatom)
+
+! Allocate arrays
           allocate (pdenmat%neighbors(num_neigh))
 
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
-            ! cut some more lengthy notation
-            pRho_neighbors=>pdenmat%neighbors(ineigh)
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
+
+            ! cut some more lengthy notation
+            pRho_neighbors=>pdenmat%neighbors(ineigh)
 
 ! Allocate the block size
             norb_nu = species(in2)%norb_max
@@ -337,8 +347,6 @@
 
         type(T_assemble_block), pointer :: pCape_neighbors
         type(T_assemble_neighbors), pointer :: pcapemat
-        type(T_assemble_block), pointer :: pRho_neighbors
-        type(T_assemble_neighbors), pointer :: pdenmat
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -356,24 +364,26 @@
 ! Loop over all atoms iatom in the unit cell, and then over all its neighbors.
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
-          ! cut some lengthy notation
-          pcapemat=>s%capemat(iatom)
-          pdenmat=>s%denmat(iatom)
           r1 = s%atom(iatom)%ratom
           in1 = s%atom(iatom)%imass
           norb_mu = species(in1)%norb_max
           num_neigh = s%neighbors(iatom)%neighn
+
+          ! cut some lengthy notation
+          pcapemat=>s%capemat(iatom)
+
+! Allocate arrays
           allocate (pcapemat%neighbors(num_neigh))
 
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
-            ! cut some more lengthy notation
-            pCape_neighbors=>pcapemat%neighbors(ineigh)
-            pRho_neighbors=>pdenmat%neighbors(ineigh)
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
+
+            ! cut some more lengthy notation
+            pCape_neighbors=>pcapemat%neighbors(ineigh)
 
 ! Allocate the block size
             norb_nu = species(in2)%norb_max
@@ -387,7 +397,6 @@
               sks = s%kpoints(ikpoint)%k
               dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
               phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight*P_spin
-
 
 ! Loop over all bands
               do iband = 1, s%norbitals_new
@@ -405,7 +414,6 @@
 ! Finally the density matrix:
                       pCape_neighbors%block(imu,inu) =                         &
      &                  pCape_neighbors%block(imu,inu) + s%kpoints(ikpoint)%eigen(iband)*gutr
-
                     end do
                   end do
                 end if

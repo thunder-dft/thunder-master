@@ -1,24 +1,26 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -43,13 +45,23 @@
 !! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
         module M_Dassemble_2c
+
+! /GLOBAL
         use M_assemble_blocks
+
+! /SYSTEM
         use M_configuraciones
-        use M_Fdata_2c
         use M_neighbors
         use M_rotations
         use M_Drotations
+
+! /FDATA
+        use M_Fdata_2c
+
+! /ASSEMBLERS
         use M_assemble_2c
+
+! /SOLVESH
         use M_density_matrix
 
 ! Type Declaration
@@ -69,14 +81,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -263,14 +274,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -455,14 +465,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -484,7 +493,7 @@
 ! ===========================================================================
         integer iatom, ineigh           !< counter over atoms and neighbors
         integer in1, in2, in3           !< species numbers
-        integer imu, inu				  !< counter over orbitals
+        integer imu, inu				 !< counter over orbitals
         integer jatom                   !< neighbor of iatom
         integer interaction, isorp      !< which interaction and subtype
         integer num_neigh               !< number of neighbors
@@ -644,15 +653,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-!> @author Barry Haycock
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -739,21 +746,23 @@
 
         type(T_assemble_block), pointer :: pS_neighbors
         type(T_assemble_neighbors), pointer :: poverlap
-        type(T_assemble_block), pointer :: pvna_neighbors
-        type(T_assemble_neighbors), pointer :: pvna
 
         ! density matrix stuff
         type(T_assemble_neighbors), pointer :: pdenmat
         type(T_assemble_block), pointer :: pRho_neighbors
+        type(T_assemble_block), pointer :: pRho_neighbors_matom
 
         type(T_forces), pointer :: pfi
 
 ! Allocate Arrays
 ! ===========================================================================
+! We build the vna_ontop forces here, so we allocate and initialize
+! The vna_atom forces are built in M_build_forces because they are assembled
+! differently than the vna_ontop forces.
         do iatom = 1, s%natoms
           pfi=>s%forces(iatom)
           num_neigh = s%neighbors(iatom)%neighn
-!         allocate (pfi%vna_atom (3, num_neigh)); pfi%vna_atom = 0.0d0
+          allocate (pfi%vna_atom (3, num_neigh)); pfi%vna_atom = 0.0d0
           allocate (pfi%vna_ontop (3, num_neigh)); pfi%vna_ontop = 0.0d0
         end do
 
@@ -769,7 +778,6 @@
           norb_mu = species(in1)%norb_max
 
           ! cut some lengthy notation
-          pvna=>s%vna(iatom)
           pdenmat=>s%denmat(iatom)
           pfi=>s%forces(iatom)
 
@@ -780,15 +788,10 @@
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
+            norb_nu = species(in2)%norb_max
 
             ! cut some more lengthy notation
-            pvna_neighbors=>pvna%neighbors(ineigh)
             pRho_neighbors=>pdenmat%neighbors(ineigh)
-
-! Allocate block size
-            norb_nu = species(in2)%norb_max
-            allocate (pvna_neighbors%Dblock (3, norb_mu, norb_mu))
-            pvna_neighbors%Dblock = 0.0d0
 
 ! SET-UP STUFF
 ! ****************************************************************************
@@ -860,7 +863,6 @@
                   if (z .gt. 1.0d-3) vdbcnam(:,imu,inu) = - eta(:)*dbcnam(imu,inu)
                 end do
               end do
-
  			  call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcnam,    &
      &	                    vdbcnam, vdbcnax)
 
@@ -868,7 +870,7 @@
               do inu = 1, norb_nu
                 do imu = 1, norb_mu
                   pfi%vna_ontop(:,ineigh) = pfi%vna_ontop(:,ineigh)          &
-     &             - pRho_neighbors%block(imu,inu)*vdbcnax(:,imu,inu)*P_eq2
+      &             - pRho_neighbors%block(imu,inu)*vdbcnax(:,imu,inu)*P_eq2
                 end do
               end do
 
@@ -893,7 +895,6 @@
                     if (z .gt. 1.0d-3) vdbcnam(:,imu,inu) = - eta(:)*dbcnam(imu,inu)
                   end do
                 end do
-
  			    call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcnam,  &
      &	                      vdbcnam, vdbcnax)
 
@@ -948,7 +949,7 @@
               end do
 
 ! Charged atom case
-              do isorp = 1, species(in3)%nssh
+              do isorp = 1, species(in2)%nssh
                 dQ = s%atom(jatom)%shell(isorp)%dQ
 
 ! Reinitialize
@@ -999,8 +1000,9 @@
           matom = s%neigh_self(iatom)
 
           ! cut some lengthy notation
-          pvna=>s%vna(iatom)
           poverlap=>s%overlap(iatom); pS_neighbors=>poverlap%neighbors(matom)
+          pdenmat=>s%denmat(iatom); pRho_neighbors_matom=>pdenmat%neighbors(matom)
+          pfi=>s%forces(iatom)
 
 ! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
@@ -1009,9 +1011,6 @@
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
-
-            ! cut some more lengthy notation
-            pvna_neighbors=>pvna%neighbors(ineigh)
 
 ! SET-UP STUFF
 ! ****************************************************************************
@@ -1106,7 +1105,13 @@
 
             call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcnam,    &
      &                    vdbcnam, vdbcnax)
-			pvna_neighbors%Dblock = pvna_neighbors%Dblock + vdbcnax*P_eq2
+! Notice the explicit negative sign, this makes it force like.
+            do inu = 1, norb_mu
+              do imu = 1, norb_mu
+                pfi%vna_atom(:,ineigh) = pfi%vna_atom(:,ineigh)              &
+      &           - pRho_neighbors_matom%block(imu,inu)*vdbcnax(:,imu,inu)*P_eq2
+               end do
+            end do
 
 ! Charged atom case
             do isorp = 1, species(in2)%nssh
@@ -1115,7 +1120,7 @@
 ! Reinitialize
               bcnam = 0.0d0; bcnax = 0.0d0; dbcnam = 0.0d0
               vdbcnam = 0.0d0; vdbcnax = 0.0d0
-              call getDMEs_Fdata_2c (in1, in2, interaction, isorp, z,        &
+              call getDMEs_Fdata_2c (in1, in2, interaction, isorp, z,          &
      &                               norb_mu, norb_nu, bcnam, dbcnam)
 
 ! emnpl = monopole term
@@ -1129,21 +1134,29 @@
                   if (z .gt. 1.0d-4) then
                     vdbcnam(:,imu,inu) = - eta(:)*dbcnam(imu,inu)
                     emnpl(imu,inu) = pS_neighbors%block(imu,inu)/z
-                    vdemnpl(:,imu,inu) = pS_neighbors%Dblock(:,imu,inu)/z   &
-     &                                  + eta(:)*pS_neighbors%block(imu,inu)/z**2
+
+                    ! Note that pS_neighbors%Dblock(:,imu,inu) = 0.0d0 as this is
+                    ! the derivative of overlap, but at a different site.
+!                   vdemnpl(:,imu,inu) = pS_neighbors%Dblock(:,imu,inu)/z      &
+!    &                                  + eta(:)*pS_neighbors%block(imu,inu)/z**2
+                    ! This term is really (-eta) and (-) from the 1/z derivative
+                    vdemnpl(:,imu,inu) = + eta(:)*pS_neighbors%block(imu,inu)/z**2
                   end if
                 end do
               end do
-
               call rotate (in1, in3, eps, norb_mu, norb_nu, bcnam, bcnax)
-              call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcnam,    &
+              call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcnam,      &
      &                      vdbcnam, vdbcnax)
 
               do inu = 1, norb_nu
                 do imu = 1, norb_mu
-                  pvna_neighbors%Dblock(:,imu,inu) = pvna_neighbors%Dblock(:,imu,inu) &
-     &             + P_eq2*(- eta(:)*Dsmooth*bcnax(imu,inu) + smooth*vdbcnax(:,imu,inu) &
-     &             + eta(:)*Dsmooth*emnpl(imu,inu) + (1 - smooth)*vdemnpl(:,imu,inu))*dQ
+                  pfi%vna_atom(:,ineigh) = pfi%vna_atom(:,ineigh)              &
+      &             - pRho_neighbors_matom%block(imu,inu)*P_eq2*dQ             &
+      &              *(smooth*vdbcnax(:,imu,inu)                               &
+      &                - eta(:)*Dsmooth*bcnax(imu,inu)                         &
+      &                + (1.0d0 - smooth)*vdemnpl(:,imu,inu)                   &
+      &                + eta(:)*Dsmooth*emnpl(imu,inu))
+                       ! This last term is really (- eta) and (-Dsmooth)
                 end do
               end do
               deallocate (emnpl, vdemnpl)
@@ -1176,14 +1189,13 @@
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Subroutine Declaration

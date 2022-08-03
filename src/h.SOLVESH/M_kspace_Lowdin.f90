@@ -315,10 +315,10 @@
         type(T_assemble_neighbors), pointer :: pvna
 
         ! exchange-correlation interactions
-        type(T_assemble_block), pointer :: prho_in_neighbors
-        type(T_assemble_neighbors), pointer :: prho_in
-        type(T_assemble_block), pointer :: prho_bond_neighbors
-        type(T_assemble_neighbors), pointer :: prho_bond
+!       type(T_assemble_block), pointer :: prho_in_neighbors
+!       type(T_assemble_neighbors), pointer :: prho_in
+!       type(T_assemble_block), pointer :: prho_bond_neighbors
+!       type(T_assemble_neighbors), pointer :: prho_bond
 !       type(T_assemble_block), pointer :: pWrho_in_neighbors
 !       type(T_assemble_neighbors), pointer :: pWrho_in
 !       type(T_assemble_block), pointer :: pWrho_bond_neighbors
@@ -363,8 +363,8 @@
           pvna=>s%vna(iatom)
 
           ! vxc interactions
-          prho_in=>s%rho_in(iatom)
-          prho_bond=>s%rho_bond(iatom)
+!         prho_in=>s%rho_in(iatom)
+!         prho_bond=>s%rho_bond(iatom)
 !         pWrho_in=>s%rho_in_weighted(iatom)
 !         pWrho_bond=>s%rho_bond_weighted(iatom)
           pvxc=>s%vxc(iatom)
@@ -432,30 +432,30 @@
             deallocate (vna_block)
 
 ! Exchange-correlation matrix elements - density
-            write (logfile,*)
-            write (logfile,'(4x,A)') 'rho: input density matrices (for vxc) '
-            write (logfile,'(4x,A)') '------------------------------------- '
+!           write (logfile,*)
+!           write (logfile,'(4x,A)') 'rho: input density matrices (for vxc) '
+!           write (logfile,'(4x,A)') '------------------------------------- '
             ! cut some more lengthy notation
-            prho_in_neighbors=>prho_in%neighbors(ineigh)
-            norb_mu = species(in1)%norb_max
-            norb_nu = species(in2)%norb_max
-            do imu = 1, norb_mu
-              write (logfile,104)                                            &
-     &         (prho_in_neighbors%block(imu,inu), inu = 1, norb_nu)
-            end do
+!           prho_in_neighbors=>prho_in%neighbors(ineigh)
+!           norb_mu = species(in1)%norb_max
+!           norb_nu = species(in2)%norb_max
+!           do imu = 1, norb_mu
+!             write (logfile,104)                                            &
+!    &         (prho_in_neighbors%block(imu,inu), inu = 1, norb_nu)
+!           end do
 
 ! Exchange-correlation matrix elements - bond density
-            write (logfile,*)
-            write (logfile,'(4x,A)') 'rho: input (bond) density (for vxc)   '
-            write (logfile,'(4x,A)') '------------------------------------- '
+!           write (logfile,*)
+!           write (logfile,'(4x,A)') 'rho: input (bond) density (for vxc)   '
+!           write (logfile,'(4x,A)') '------------------------------------- '
             ! cut some more lengthy notation
-            prho_bond_neighbors=>prho_bond%neighbors(ineigh)
-            norb_mu = species(in1)%norb_max
-            norb_nu = species(in2)%norb_max
-            do imu = 1, norb_mu
-              write (logfile,104)                                              &
-     &         (prho_bond_neighbors%block(imu,inu), inu = 1, norb_nu)
-            end do
+!           prho_bond_neighbors=>prho_bond%neighbors(ineigh)
+!           norb_mu = species(in1)%norb_max
+!           norb_nu = species(in2)%norb_max
+!           do imu = 1, norb_mu
+!             write (logfile,104)                                              &
+!    &         (prho_bond_neighbors%block(imu,inu), inu = 1, norb_nu)
+!           end do
 
 ! Exchange-correlation matrix elements - input weighted density
 !            write (logfile,*)

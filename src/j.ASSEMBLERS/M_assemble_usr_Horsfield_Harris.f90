@@ -1,19 +1,22 @@
 ! copyright info:
 !
-!                             @Copyright 2014
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
@@ -38,13 +41,19 @@
 !!
 ! ===========================================================================
         module M_assemble_usr
+
+! /GLOBAL
+        use M_assemble_blocks
+
+! /SYSTEM
         use M_configuraciones
-        use M_grid
+
+! /FDATA
+        use M_Fdata_1c
         use M_Fdata_2c
 
 ! module procedures
         contains
-
 
 ! ===========================================================================
 ! assemble_uee.f90
@@ -55,14 +64,13 @@
 !! Hartree interactions and is stored in uee.
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -87,8 +95,7 @@
 ! Variable Declaration and Description
 ! ===========================================================================
         integer iatom, ineigh             !< counter over atoms and neighbors
-        integer ipoint                    !< counter over grid points
-        integer in1, in2, in3             !< species numbers
+        integer in1, in2                  !< species numbers
         integer jatom                     !< neighbor of iatom
         integer interaction, isubtype     !< which interaction and subtype
         integer logfile                   !< writing to which unit
@@ -97,14 +104,9 @@
         integer issh, jssh                !< counting over orbitals
         integer norb_mu, norb_nu          !< size of the block for the pair
 
-        real density                      !< value of density at grid point
         real u0_tot
-
-        real uhdcc                        !< double counting corrections - grid
-        real dvhdn, dvhn0
-
         real uee_self_tot
-        real z                            !< distance between atom pairs
+        real z                           !< distance between atom pairs
         real Zi, Zj
 
         real, allocatable :: coulomb (:, :)
@@ -174,7 +176,7 @@
 ! For these Harris interactions, there are no subtypes and isorp = 0
             isubtype = 0
             interaction = P_coulomb
-            in3 = in2
+
             allocate (coulomb (norb_mu, norb_nu))
             call getMEs_Fdata_2c (in1, in2, interaction, isubtype, z,         &
      &                             norb_mu, norb_nu, coulomb)
@@ -191,7 +193,7 @@
               do issh = 1, species(in1)%nssh
                 do jssh = 1, species(in1)%nssh
                   uee_self(iatom) = uee_self(iatom)                           &
-     &              + species(in1)%shell(issh)%Qneutral                       &
+     &              + (P_eq2/2.0d0)*species(in1)%shell(issh)%Qneutral         &
      &                *species(in1)%shell(jssh)%Qneutral*coulomb(issh,jssh)
                 end do
               end do
@@ -207,12 +209,12 @@
                 do jssh = 1, species(in2)%nssh
                   u0(iatom)%neighbors(ineigh)%E =                             &
      &              u0(iatom)%neighbors(ineigh)%E                             &
-     &              + species(in1)%shell(issh)%Qneutral                       &
+     &               + species(in1)%shell(issh)%Qneutral                      &
      &                *species(in2)%shell(jssh)%Qneutral*coulomb(issh,jssh)
                 end do
               end do
-              u0(iatom)%neighbors(ineigh)%E = (P_eq2/2.0d0)*(Zi*Zj/z          &
-     &          - u0(iatom)%neighbors(ineigh)%E)
+              u0(iatom)%neighbors(ineigh)%E =                                 &
+     &          (P_eq2/2.0d0)*(Zi*Zj/z - u0(iatom)%neighbors(ineigh)%E)
             end if
             deallocate (coulomb)
 
@@ -222,29 +224,8 @@
           uee_self_tot = uee_self_tot + uee_self(iatom)
         end do ! end loop over atoms
 
-! Now calculate the double-counting term for the Poisson solution.
-! Hartree term
-        uhdcc = 0.0d0
-        dvhn0 = 0.0d0
-        dvhdn = 0.0d0
-
-! Loop over points in the grid
-        do ipoint = 0, nrm - 1
-          density = rhoG0(ipoint) + drhoG(ipoint)
-          uhdcc = uhdcc + vcaG(ipoint)*density
-
-          ! functional derivative pieces integrated
-          dvhn0 = dvhn0 + vcaG(ipoint)*rhoG0(ipoint)
-          dvhdn = dvhdn + vcaG(ipoint)*drhoG(ipoint)
-        end do
-
-        ! multiply by integration factor
-        dvhn0 = -1.0d0*dvhn0*dvolume
-        dvhdn = -0.5d0*dvhdn*dvolume
-        uhdcc = dvhn0 + dvhdn
-
         ! Final double-counting correction for coulomb part
-        uii_uee = u0_tot - uee_self_tot + uhdcc
+        uii_uee = u0_tot - uee_self_tot
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -265,23 +246,50 @@
 
 
 !===========================================================================
-! assebmle_uxc
+! assemble_uxc
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
 !>       This routine calculates the exchange-correlation double-counting
-!! energy for density functional theory on the grid.
+!! energy for Horsfield (Harris).
 !
+! We use a finite difference approach to change the densities and then
+! find the corresponding changes in the exchange-correlation potential.
+! This a bit clumsy sometimes, and probably can use a rethinking to improve.
+! However, it actually works quite well for many molecular systems.
+!
+! We compute neutral cases for ideriv = 1. For other ideriv's we have the
+! following KEY:
+!
+! Case 1 (KEY=1), neutral neutral corresponds to (00)
+! KEY = 1,2,3,4,5 for ideriv = 1,2,3,4,5
+!
+! For the one-center case we only use ideriv = 1,2,3 as there is only one atom.
+!
+!                                   |
+!                                   + (0+) KEY=5
+!                                   |
+!                                   |
+!                                   |
+!                       KEY=2       |  KEY=1
+!                      (-0)         |(00)        (+0) KEY=3
+!                     --+-----------O-----------+--
+!                                   |
+!                                   |
+!                                   |
+!                                   |
+!                                   |
+!                                   +(0-) KEY=4
+!                                   |
 ! ===========================================================================
 ! Code written by:
-! P. Jelinek
-! Department of Thin Films
-! Institute of Physics AS CR
-! Cukrovarnicka 10
-! Prague 6, CZ-162
-! FAX +420-2-33343184
-! Office telephone  +420-2-20318530
-! email: jelinekp@fzu.cz
+! James P. Lewis
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
+!
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -292,10 +300,10 @@
 ! Argument Declaration and Description
 ! ===========================================================================
 ! Input
-        type(T_structure), target :: s           !< the structure to be used
+        type(T_structure), target :: s           !< the structure to be used.
 
-        !< double counting correction for coulomb part
-        real, intent (out) :: uxcdcc
+! Output
+        real uxcdcc           !< double counting correction for coulomb part
 
 ! Parameters and Data Declaration
 ! ===========================================================================
@@ -303,13 +311,28 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer ipoint                  !< counter over grid point
+        integer iatom, ineigh             !< counter over atoms and neighbors
+        integer in1, in2                  !< species numbers
+        integer jatom                     !< neighbor of iatom
+        integer interaction, isubtype     !< which interaction and subtype
+        integer num_neigh                 !< number of neighbors
+        integer mbeta                     !< the cell containing iatom's neighbor
+        integer norb_mu, norb_nu          !< size of the block for the pair
 
-! Loops
-        real density                     !< input density
+        real z                           !< distance between atom pairs
 
-        ! parameters for lda_ceperley_alder
-        real exc, muxc, dexc, d2exc, dmuxc, d2muxc
+        ! results
+        real uxcdc_bond
+        real, dimension (0:0) :: uxc
+
+        real, dimension (3) :: r1, r2
+
+        interface
+          function distance (a, b)
+            real distance
+            real, intent (in), dimension (3) :: a, b
+          end function distance
+        end interface
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -317,24 +340,62 @@
 ! Procedure
 ! ===========================================================================
 ! Initialize
-        uxcdcc = 0.d0
+        uxcdc_bond = 0.0d0
 
-! Loop over points in the grid
-        do ipoint = 0, nrm - 1
-          density = drhoG(ipoint) + rhoG0(ipoint)
+! Loop over the atoms in the central cell.
+        do iatom = 1, s%natoms
+          r1 = s%atom(iatom)%ratom
+          in1 = s%atom(iatom)%imass
+          num_neigh = s%neighbors(iatom)%neighn
 
-! calculate the exchange-correlation potential
-          call lda_ceperley_alder (density, exc, muxc, dexc, d2exc, dmuxc, d2muxc)
-          uxcdcc = uxcdcc + (exc - muxc)*density
-        end do
+! Calculate exc_bond : energy from first one center piece of exchange-
+! correlation already included in the band-structure through vxc_1c
+          uxcdc_bond = uxcdc_bond + vxc_1c(in1)%E
 
-        ! multiply by integration factor
-        uxcdcc = uxcdcc*dvolume
+! Loop over the neighbors of each iatom.
+          do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
+            mbeta = s%neighbors(iatom)%neigh_b(ineigh)
+            jatom = s%neighbors(iatom)%neigh_j(ineigh)
+            r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
+            in2 = s%atom(jatom)%imass
+
+            ! distance between the two atoms
+            z = distance (r1, r2)
+
+! GET DOUBLE-COUNTING EXCHANGE-CORRELATION INTERACTIONS
+! ****************************************************************************
+! If r1 .ne. r2, then this is a case where the potential is located at one of
+! the sites of a wavefunction (ontop case).
+            if (iatom .eq. jatom .and. mbeta .eq. 0) then
+
+! Do nothing here - special case. Interaction already calculated in atm case.
+            else
+
+! Now find the value of the integrals needed to evaluate the neutral
+! atom/neutral atom exchange-correlation double-counting interaction.
+! For these Harris interactions, there are no subtypes and ideriv = 0
+              isubtype = 0
+              interaction = P_uxc
+
+              ! we set norb_mu = 1 and norb_nu = 1 because this interaction
+              ! is not a matrix, but rather just a energy based on distances
+              norb_mu = 1
+              norb_nu = 1
+
+              call getMEs_Fdata_2c (in1, in2, interaction, isubtype, z,         &
+     &                              norb_mu, norb_nu, uxc)
+
+              ! add the uxc from interpolation to the total
+              uxcdc_bond = uxcdc_bond + (uxc(0)/2.0d0)
+            end if ! end if for r1 .eq. r2 case
+          end do ! end loop over neighbors
+       end do ! end loop over atoms
+       uxcdcc = uxcdc_bond
 
 ! Deallocate Arrays
 ! ===========================================================================
 ! None
-
+ 
 ! Format Statements
 ! ===========================================================================
 ! None

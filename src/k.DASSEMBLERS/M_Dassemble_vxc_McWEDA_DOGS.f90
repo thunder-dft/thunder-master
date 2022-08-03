@@ -144,7 +144,7 @@
         call Dassemble_rho_weighted_2c (s)
 
 ! calculate derivatives of XC-potential matrix elements
-        write (logfile,*) ' Calling vxc Dassemblers. '
+        write (logfile,*) ' Calling vxc assemblers. '
 
 ! Calculate the derivativies of the matrix elements
         ! this term has the 2 center SNXC part and the OLSXC part too
@@ -227,7 +227,7 @@
         ! inputs for xc functional
         real prho_in_shell               !< temporary storage
         real prho_bond_shell             !< temporary storage
-        real poverlap                    !< temporary storage
+        real poverlap                    !< temporary stroage
         real prho_in                     !< temporary storage
         real prho_bond                   !< temporary storage
         real dexc_in, dexc_bond          !< 1st derivative of xc energy
@@ -503,7 +503,7 @@
 ! calculate GSN for rho_bond ("atomic" correction)
 ! Use "+" here because the energy contribution for the bond-part is "-"
                         pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh)  &
-     &                   + pRho_neighbors_matom%block(imu,inu)                 &
+     &                   - pRho_neighbors_matom%block(imu,inu)                 &
      &                    *(Dprho_bond_shell*d2muxc_bond*prho_bond             &
      &                      + dmuxc_bond*Dprho_bond)
                       end if ! imu .eq. inu
@@ -563,22 +563,24 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, ineigh            !< counter over atoms and neighbors
-        integer in1, in2, in3            !< species numbers
-        integer jatom                    !< neighbor of iatom
-        integer interaction, isorp       !< which interaction and subtype
-        integer num_neigh                !< number of neighbors
-        integer mbeta                    !< the cell containing iatom's neighbor
+        integer iatom, ineigh             !< counter over atoms and neighbors
+        integer in1, in2, in3             !< species numbers
+        integer jatom                     !< neighbor of iatom
+        integer interaction, isorp        !< which interaction and subtype
+        integer num_neigh                 !< number of neighbors
+        integer mbeta                     !< the cell containing iatom's neighbor
 
         integer imu, inu
-        integer norb_mu, norb_nu         !< size of the block for the pair
+        integer norb_mu, norb_nu          !< size of the block for the pair
 
-        real z                           !< distance between r1 and r2
+        real z                            !< distance between r1 and r2
+        real dQ                           !< charge in orbital
+
         real, dimension (3) :: eta        !< vector part of epsilon eps(:,3)
         real, dimension (3, 3, 3) :: deps !< derivative of epsilon matrix
-        real, dimension (3, 3) :: eps    !< the epsilon matrix
-        real, dimension (3) :: r1, r2    !< positions of iatom and jatom
-        real, dimension (3) :: sighat    !< unit vector along r2 - r1
+        real, dimension (3, 3) :: eps     !< the epsilon matrix
+        real, dimension (3) :: r1, r2     !< positions of iatom and jatom
+        real, dimension (3) :: sighat     !< unit vector along r2 - r1
 
         real, dimension (:, :), allocatable :: bcxcm
         real, dimension (:, :), allocatable :: bcxcx
@@ -700,18 +702,78 @@
               end do
 
 ! Drotate then puts the vectors in coordinates alone the bond-charge.
-              call Drotate (in1, in2, eps, deps, norb_mu, norb_nu,            &
+              call Drotate (in1, in3, eps, deps, norb_mu, norb_nu,            &
      &                      bcxcm, vdcxcm, vdbcxcx)
               do inu = 1, norb_nu
                 do imu = 1, norb_mu
                   pfi%vxc_off_site(:,ineigh) = pfi%vxc_off_site(:,ineigh)     &
-      &              - pRho_neighbors%block(imu,inu)*vdbcxcx(:,imu,inu)
+     &              - pRho_neighbors%block(imu,inu)*vdbcxcx(:,imu,inu)
                 end do
               end do
+
+! FORCES - DNUXC ONTOP LEFT AND RIGHT CASES
+! ****************************************************************************
+! For the dnuxc_ontop case, the potential is in the first atom - left (iatom):
+! dbcnam is the "scalar" derivative of the matrix; vdbcnam is the "vector"
+! derivative of the matrix in molecular coordinates.  When we are done, we get:
+! vdtx as the vector derivative of the matrix in crystal coordinates.
+
+! Charged atom cases
+              interaction = P_dnuxc_ontopL
+              in3 = in2
+
+              do isorp = 1, species(in1)%nssh
+                call getDMEs_Fdata_2c (in1, in3, interaction, isorp, z,        &
+     &                                 norb_mu, norb_nu, bcxcm, dbcxcm)
+
+! Note the minus sign. d/dr1 = - eta * d/dd.
+                do inu = 1, norb_nu
+                  do imu = 1, norb_mu
+                    vdcxcm(:,imu,inu) = - eta(:)*dbcxcm(imu,inu)
+                  end do
+                end do
+
+! Drotate then puts the vectors in coordinates alone the bond-charge.
+                call Drotate (in1, in3, eps, deps, norb_mu, norb_nu,           &
+     &                        bcxcm, vdcxcm, vdbcxcx)
+                dQ = s%atom(iatom)%shell(isorp)%dQ
+                do inu = 1, norb_nu
+                  do imu = 1, norb_mu
+                    pfi%vxc_off_site(:,ineigh) = pfi%vxc_off_site(:,ineigh)    &
+     &                - pRho_neighbors%block(imu,inu)*vdbcxcx(:,imu,inu)*dQ
+                  end do
+                end do
+              end do  ! end loop over isorp
+
+! Charged atom cases
+              interaction = P_dnuxc_ontopR
+              in3 = in2
+              do isorp = 1, species(in2)%nssh
+                call getDMEs_Fdata_2c (in1, in3, interaction, isorp, z,        &
+     &                                 norb_mu, norb_nu, bcxcm, dbcxcm)
+
+! Note the minus sign. d/dr1 = - eta * d/dd.
+                do inu = 1, norb_nu
+                  do imu = 1, norb_mu
+                    vdcxcm(:,imu,inu) = - eta(:)*dbcxcm(imu,inu)
+                  end do
+                end do
+
+! Drotate then puts the vectors in coordinates alone the bond-charge.
+                call Drotate (in1, in3, eps, deps, norb_mu, norb_nu,           &
+     &                        bcxcm, vdcxcm, vdbcxcx)
+                dQ = s%atom(jatom)%shell(isorp)%dQ
+                do inu = 1, norb_nu
+                  do imu = 1, norb_mu
+                    pfi%vxc_off_site(:,ineigh) = pfi%vxc_off_site(:,ineigh)    &
+     &                - pRho_neighbors%block(imu,inu)*vdbcxcx(:,imu,inu)*dQ
+                  end do
+                end do
+              end do  ! end loop over isorp
               deallocate (bcxcm, bcxcx)
               deallocate (dbcxcm, vdcxcm)
               deallocate (vdbcxcx)
-            end if ! different atoms loop
+            end if ! different atoms condition
           end do ! end loop over neighbors
         end do ! end loop over atoms
 
