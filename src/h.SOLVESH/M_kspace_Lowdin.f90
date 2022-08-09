@@ -46,8 +46,10 @@
 ! ============================================================================
         module M_kspace
 
-! /SYSTEM
+! /GLOBAL
         use M_assemble_blocks
+
+! /SYSTEM
         use M_species
         use M_configuraciones
 

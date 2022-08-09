@@ -585,13 +585,6 @@
                 end do
               end if
 
-! ****************************************************************************
-! Calling rho2c_store for new densities.
-! Because we change the charge states for the densities, then we need to
-! recalculate the density for the ispecies, jspecies pair and store again.
-! ****************************************************************************
-              call rho_2c_store (ispecies, jspecies)
-
               ! cut some lengthy notation with pointers
               pFdata_bundle=>Fdata_bundle_2c(ispecies, jspecies)
               pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c + 1
@@ -605,12 +598,19 @@
               allocate (pFdata_cell%fofx(nME2c_max))
 
               ! Open ouput file for this species pair
-              write (filename, '("/uxc_", i2.2,".",i2.2,".",i2.2,".dat")')    &
+              write (filename, '("/uxc_", i2.2,".",i2.2,".",i2.2,".dat")') &
      &               ideriv, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
               if (skip) cycle
-              open (unit = 11, file = trim(Fdata_location)//trim(filename),   &
+              open (unit = 11, file = trim(Fdata_location)//trim(filename),     &
      &              status = 'unknown')
+
+! ****************************************************************************
+! Calling rho2c_store for new densities.
+! Because we change the charge states for the densities, then we need to
+! recalculate the density for the ispecies, jspecies pair and store again.
+! ****************************************************************************
+              call rho_2c_store (ispecies, jspecies)
 
               ! Set up grid loop control constants
               rcutoff1 = species(ispecies)%rcutoffA_max

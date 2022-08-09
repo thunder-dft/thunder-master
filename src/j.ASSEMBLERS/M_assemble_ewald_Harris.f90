@@ -37,7 +37,12 @@
 !!
 !! It contains the following subroutines within the module:
 !!
-!!       assemble_ewaldsr.f90 - assemble the overlap matrix
+!!       Dassemble_ewaldsr.f90 - assemble the short-range ewald matrix
+!!       Dassemble_ewaldlr.f90 - assemble the long-range ewald matrix
+!!
+!!       These routines really do nothing because this is Harris which
+!! has no charge dependency.  These routines just set the interactions
+!! to zero.
 !!
 !! For a complete list of the interactions see the files 2c.Z1.Z2.dir now
 !! located in the Fdata directory.  This list will change depending on

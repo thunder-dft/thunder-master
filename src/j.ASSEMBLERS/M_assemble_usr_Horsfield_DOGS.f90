@@ -222,15 +222,15 @@
               end do
               u0(iatom)%neighbors(ineigh)%E =                                 &
      &         (P_eq2/2.0d0)*(Zi*Zj/z - u0(iatom)%neighbors(ineigh)%E)
-              corksr(iatom)%neighbors(ineigh)%E = 0.0d0
-!             corksr(iatom)%neighbors(ineigh)%E =                             &
-!    &         (P_eq2/2.0d0)*(Zi*Zj - Q(iatom)*Q(jatom))/z
+              corksr(iatom)%neighbors(ineigh)%E =                             &
+     &          - (P_eq2/2.0d0)*(Zi*Zj - Q(iatom)*Q(jatom))/z
             end if ! end if for r1 .eq. r2 case
             deallocate (coulomb)
 
 ! Compute the total cell value of uii-uee; uii-uee = sum u0(i,m) - sum uee00(i)
+!           u0_tot = u0_tot + u0(iatom)%neighbors(ineigh)%E
             u0_tot = u0_tot + u0(iatom)%neighbors(ineigh)%E                   &
-     &                      - corksr(iatom)%neighbors(ineigh)%E
+     &                      + corksr(iatom)%neighbors(ineigh)%E
           end do ! end loop over neighbors
           uee_self_tot = uee_self_tot + uee_self(iatom)
         end do ! end loop over atoms
@@ -245,17 +245,17 @@
 
 ! Calculate q(iatom)*q(jatom) - q0(iatom)*q0(jatom) = QQ
             if (iatom .eq. jatom) then
-!              eklr = eklr + (P_eq2/2.0d0)*s%ewald(iatom,jatom)               &
-!     &                                   *(Zi*Zj - Q(iatom)*Q(jatom))
+               eklr = eklr - (P_eq2/2.0d0)*s%ewald(iatom,jatom)               &
+      &                                   *(Zi*Zj - Q(iatom)*Q(jatom))
             else
-!              eklr = eklr + (P_eq2/2.0d0)*s%ewald(iatom,jatom)               &
-!     &                                   *(Zi*Zj - Q(iatom)*Q(jatom))        &
-!     &                    + (P_eq2/2.0d0)*s%ewald(jatom,iatom)               &
-!     &                                   *(Zi*Zj - Q(iatom)*Q(jatom))
+               eklr = eklr - (P_eq2/2.0d0)*s%ewald(iatom,jatom)               &
+      &                                   *(Zi*Zj - Q(iatom)*Q(jatom))        &
+      &                    - (P_eq2/2.0d0)*s%ewald(jatom,iatom)               &
+      &                                   *(Zi*Zj - Q(iatom)*Q(jatom))
             end if
           end do
         end do
-        u0_tot = u0_tot + eklr
+        u0_tot = u0_tot - eklr
 
         ! Final double-counting correction for coulomb part
         uii_uee = u0_tot - uee_self_tot

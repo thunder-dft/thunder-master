@@ -104,11 +104,14 @@
         real z                            !< distance between atom pairs
         real Zi, Zj
 
+        real, dimension (3) :: dcorksr
+
         real, dimension (:, :), allocatable :: coulomb
         real, dimension (:, :), allocatable :: dcoulomb
         real, dimension (:, :, :), allocatable :: vdcoulomb
 
         real, allocatable :: Q0 (:)
+        real, allocatable :: Q(:)         !< total charge on atom
 
         real, dimension (3) :: eta        !< vector part of epsilon eps(:,3)
         real, dimension (3, 3) :: eps     !< the epsilon matrix
@@ -129,23 +132,25 @@
 ! Allocate Arrays
 ! ===========================================================================
         allocate (Q0 (s%natoms))             !< neutral atom charge, i.e. ionic
+        allocate (Q (s%natoms))              !< total input charge on atom
 
 ! Procedure
 ! ===========================================================================
 ! Initialize logfile
         logfile = s%logfile
+        write (logfile,*)
+        write (logfile,*) ' Welcome to Dassemble_usr.f! '
 
 ! Initialize arrays
         ! Calculate nuclear charge.
         do iatom = 1, s%natoms
           in1 = s%atom(iatom)%imass
           Q0(iatom) = 0.0d0
+          Q(iatom) = 0.0d0
           do issh = 1, species(in1)%nssh
             Q0(iatom) = Q0(iatom) + species(in1)%shell(issh)%Qneutral
+            Q(iatom) = Q(iatom) + s%atom(iatom)%shell(issh)%Qin
           end do
-
-          ! cut some lengthy notation
-          pfi=>s%forces(iatom); pfi%usr = 0.0d0
         end do
 
 ! Loop over the atoms in the central cell.
@@ -244,9 +249,17 @@
               end do
               pfi%usr = pfi%usr - (P_eq2/2.0d0)*eta(:)*(Zi*Zj/z**2)
               pfj%usr = pfj%usr + (P_eq2/2.0d0)*eta(:)*(Zi*Zj/z**2)
+
+              ! force due dcorksr
+              dcorksr(:) = - (P_eq2/2.0d0)*eta(:)*(Zi*Zj - Q(iatom)*Q(jatom))/z**2
+              pfi%usr = pfi%usr - dcorksr
+              pfj%usr = pfj%usr + dcorksr
             end if
             deallocate (coulomb, dcoulomb, vdcoulomb)
           end do ! end loop over neighbors
+
+          ! add in ewald contributions
+          pfi%usr = pfi%usr - (P_eq2/2.0d0)*pfi%ewald
         end do ! end loop over atoms
 
 ! Deallocate Arrays

@@ -54,8 +54,8 @@ FUNCTIONS = clebsch_gordan.o clm.o factorial.o simpson.o distance.o magnitude.o 
 SYSTEM_BEGIN =  M_species.o M_atom_functions.o M_atomPP_functions_KB.o M_atomPP_ion_functions_KB.o M_integrals_2c.o
 SYSTEM_LOOPRC = M_species.o M_atom_functions.o M_atomPP_functions_KB.o M_integrals_2c.o
 SYSTEM_CREATE = M_species.o M_atom_functions.o M_integrals_2c.o M_integrals_3c.o M_atomPP_functions_KB.o M_atomPP_ion_functions_KB.o
-SYSTEM_LIGHTNING = M_species.o M_kpoints.o M_configuraciones_McWEDA.o M_atom_functions.o M_neighbors.o M_neighbors_PP.o M_rotations.o M_grid.o rotate_PP.o
-SYSTEM = M_species.o M_kpoints.o M_configuraciones_McWEDA.o M_neighbors.o M_neighbors_PP.o M_atom_functions.o M_rotations.o M_integrals_2c.o M_grid.o M_Drotations.o M_Drotations_PP.o M_build_forces.o rotate_PP.o
+SYSTEM_LIGHTNING = M_species.o M_kpoints.o M_configuraciones.o M_atom_functions.o M_neighbors.o M_neighbors_PP.o M_rotations.o M_grid.o rotate_PP.o
+SYSTEM = M_species.o M_kpoints.o M_configuraciones.o M_neighbors.o M_neighbors_PP.o M_atom_functions.o M_rotations.o M_integrals_2c.o M_grid.o M_Drotations.o M_Drotations_PP.o M_build_forces.o rotate_PP.o
 
 BEGIN = M_psi.o M_rcatms_Coulomb.o M_rcatms_Coulomb_DMOL_excited.o M_rcatms_DMOL_excited.o M_rcatms.o M_vnn.o
 BEGIN_LOOPRC = M_psi.o M_rcatms_Coulomb.o M_rcatms.o M_looprc.o
@@ -143,8 +143,8 @@ endif
 
 # **************************i******** DOGS ***********************************
 ifneq (,$(findstring DOGS, ${SCF}))
-ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_ewald_Harris.o M_assemble_usr_Horsfield_DOGS.o M_assemble_vxc_Horsfield_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o
-DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_ewald_Harris.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o 
+ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_ewald_DOGS.o M_assemble_usr_Horsfield_DOGS.o M_assemble_vxc_Horsfield_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o
+DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_ewald_DOGS.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o 
 FDATA = M_Fdata_1c_Horsfield_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
 SCF = M_charges_Lowdin.o Qmixer_Anderson_DOGS.o
 endif
@@ -173,7 +173,7 @@ UTIL = absorption_gamma.o dos_kpoints.o M_isosurfaces.o
 endif
 ifneq (,$(findstring MDET, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix_MDET.o
-SYSTEM = M_species.o M_kpoints_MDET.o M_configuraciones_McWEDA.o M_neighbors.o M_neighbors_PP.o M_atom_functions.o
+SYSTEM = M_species.o M_kpoints_MDET.o M_configuraciones.o M_neighbors.o M_neighbors_PP.o M_atom_functions.o
 endif
 ifneq (,$(findstring KS, ${DIAGONALIZATION}))
 GRID = M_project_grid.o M_fft_grid.o writeout_xsf.o
@@ -327,7 +327,7 @@ M_atomPP_functions_KB.o : c.SYSTEM/M_atomPP_functions_KB.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_atomPP_ion_functions_KB.o : c.SYSTEM/M_atomPP_ion_functions_KB.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_configuraciones_McWEDA.o : c.SYSTEM/M_configuraciones_McWEDA.f90
+M_configuraciones.o : c.SYSTEM/M_configuraciones.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_integrals_2c.o : c.SYSTEM/M_integrals_2c.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
@@ -518,6 +518,8 @@ M_Dassemble_usr_McWEDA_Harris.o : k.DASSEMBLERS/M_Dassemble_usr_McWEDA_Harris.f9
 M_Dassemble_usr_McWEDA_DOGS.o : k.DASSEMBLERS/M_Dassemble_usr_McWEDA_DOGS.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Dassemble_ewald_Harris.o : k.DASSEMBLERS/M_Dassemble_ewald_Harris.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_Dassemble_ewald_DOGS.o : k.DASSEMBLERS/M_Dassemble_ewald_DOGS.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 
 # *****************************************************************************

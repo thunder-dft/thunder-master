@@ -232,7 +232,7 @@
             read (12) mesh
             wf(ispecies)%shell_data(issh)%mesh = mesh
 
-!Check the input files
+! Check the input files
             if (nZ_in .ne. species(ispecies)%nZ) then
               write (*,*) ' nZ_in = ', nZ_in, ' nZ = ', species(ispecies)%nZ
               write (*,*) ' The Z number the wavefunction file, for this shell '

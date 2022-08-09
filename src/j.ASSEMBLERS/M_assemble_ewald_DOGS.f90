@@ -24,7 +24,8 @@
 
 !
 ! RESTRICTED RIGHTS LEGEND
-! Use, duplication, or disclosure of this software and its documentation
+! Use, duplication, or disclosure of this software and its documentation:q
+
 ! by the Government is subject to restrictions as set forth in subdivision
 ! { (b) (3) (ii) } of the Rights in Technical Data and Computer Software
 ! clause at 52.227-7013.
@@ -41,6 +42,7 @@
 !!       assemble_ewaldsr.f90 - assemble the short-range ewald matrix
 !!       assemble_ewaldlr.f90 - assemble the long-range ewald matrix
 !!       assemble_ewald.f90 - builds the ewald interactions - atom pair
+!!       destroy_assemble_ewald.f90 - destroy the arrays
 !!
 !! For a complete list of the interactions see the files 2c.Z1.Z2.dir now
 !! located in the Fdata directory.  This list will change depending on
@@ -110,20 +112,24 @@
         integer ibeta, jbeta           !< cells for three atoms
         integer ineigh, mneigh         !< counter over neighbors
         integer in1, in2, in3          !< species numbers
-        integer isorp                  !< which interaction and subtype
 
         integer num_neigh              !< number of neighbors
         integer matom                  !< matom is the self-interaction atom
         integer mbeta                  !< the cell containing neighbor of iatom
 
+        integer issh
         integer norb_mu, norb_nu       !< size of the block for the pair
 
         real distance_13, distance_23  !< distance from 3rd atom
-        real dQ_sum                    !< net charge on atoms
         real z                         !< distance between r1 and r2
         real x                         !< dnabc
 
-        real, dimension (3) :: r1, r2, r3, r12!< positions
+! The charge transfer bit = need a +-dq on each orbital.
+        real, allocatable :: dQ (:)       !< charge on atom, i.e. ionic
+        real, allocatable :: Q0 (:)       !< total neutral atom charge, i.e. Ztot
+        real, allocatable :: Q (:)        !< total charge on atom
+
+        real, dimension (3) :: r1, r2, rna, r12  !< positions
 
         real, dimension (:, :), allocatable :: dterm
         real, dimension (:, :), allocatable :: sterm
@@ -147,35 +153,56 @@
 ! ===========================================================================
         allocate (s%ewaldsr (s%natoms))
         do iatom = 1, s%natoms
-          pewaldsr=>s%ewaldsr(iatom)
-          num_neigh = s%neighbors(iatom)%neighn
-          allocate (pewaldsr%neighbors(num_neigh))
           in1 = s%atom(iatom)%imass
           norb_mu = species(in1)%norb_max
+          num_neigh = s%neighbors(iatom)%neighn
+
+          ! cut some lengthy notation
+          pewaldsr=>s%ewaldsr(iatom)
+          allocate (pewaldsr%neighbors(num_neigh))
+
           do ineigh = 1, num_neigh   !  <==== loop over i's neighbors
-            pSR_neighbors=>pewaldsr%neighbors(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             in2 = s%atom(jatom)%imass
             norb_nu = species(in2)%norb_max
+
+            ! allocate the Dblock
+            pSR_neighbors=>pewaldsr%neighbors(ineigh)
             allocate (pSR_neighbors%block(norb_mu, norb_nu))
             pSR_neighbors%block = 0.0d0
           end do
         end do
 
+        ! needed for charge transfer bits
+        allocate (Q0 (s%natoms))
+        allocate (Q (s%natoms))
+        allocate (dQ (s%natoms))
+
 ! Procedure
 ! ===========================================================================
-!
+! Initialize the charge transfer bit
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          Q0(iatom) = 0.0d0
+          Q(iatom) = 0.0d0
+          do issh = 1, species(in1)%nssh
+            Q0(iatom) = Q0(iatom) + species(in1)%shell(issh)%Qneutral
+            Q(iatom) = Q(iatom) + s%atom(iatom)%shell(issh)%Qin
+          end do
+          dQ(iatom) = Q(iatom) - Q0(iatom)
+        end do
+
 ! T W O - C E N T E R   O V E R L A P   M O N O P O L E   P I E C E
 !****************************************************************************
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
-          ! cut some lengthy notation
-          poverlap=>s%overlap(iatom)
-          pewaldsr=>s%ewaldsr(iatom)
-
           matom = s%neigh_self(iatom)
           r1 = s%atom(iatom)%ratom
           in1 = s%atom(iatom)%imass
+
+          ! cut some lengthy notation
+          poverlap=>s%overlap(iatom)
+          pewaldsr=>s%ewaldsr(iatom)
 
           ! cut some more lengthy notation
           pS_neighbors=>poverlap%neighbors(matom)
@@ -203,17 +230,12 @@
 
 ! Do nothing here - special case. Interaction already calculated in ontop case.
             else
-              dQ_sum = 0.0d0 
-              do isorp = 1, species(in2)%nssh
-                dQ_sum = dQ_sum + s%atom(jatom)%shell(isorp)%dQ
-              end do
               pSR_neighbors%block = pSR_neighbors%block                      &
-     &          + dQ_sum*(pS_neighbors%block/z)*P_eq2
+     &          + dQ(jatom)*(pS_neighbors%block/z)*P_eq2
             end if
           end do ! end loop over neighbors
         end do ! end loop over atoms
 
-!
 ! T W O - C E N T E R   O V E R L A P   O N T O P   D I P O L E    P I E C E
 !****************************************************************************
 ! Loop over the atoms in the central cell.
@@ -260,27 +282,18 @@
               allocate (sterm (norb_mu, norb_nu))
               allocate (dterm (norb_mu, norb_nu))
 
-              dQ_sum = 0.0d0
-              do isorp = 1, species(in1)%nssh
-                dQ_sum = dQ_sum + s%atom(iatom)%shell(isorp)%dQ
-              end do
-              sterm = dQ_sum*pS_neighbors%block/(2.0d0*z)
-              dterm = dQ_sum*pdip_neighbors%block/(z**2)
+              sterm = pS_neighbors%block/(2.0d0*z)
+              dterm = pdip_neighbors%block/(z**2)
 
               pSR_neighbors%block = pSR_neighbors%block                      &
-     &          + (sterm + dterm)*P_eq2
+     &          + dQ(iatom)*(sterm + dterm)*P_eq2
 
 ! Find sum of charge for second atom and add to ewaldsr
-              dQ_sum = 0.0d0
-              do isorp = 1, species(in2)%nssh
-                dQ_sum = dQ_sum + s%atom(jatom)%shell(isorp)%dQ
-              end do
-              sterm = dQ_sum*pS_neighbors%block/(2.0d0*z)
-              dterm = dQ_sum*pdip_neighbors%block/(z**2)
+              sterm = pS_neighbors%block/(2.0d0*z)
+              dterm = pdip_neighbors%block/(z**2)
 
               pSR_neighbors%block = pSR_neighbors%block                      &
-     &          + (sterm - dterm)*P_eq2
-
+     &          + dQ(jatom)*(sterm - dterm)*P_eq2
               deallocate (sterm)
               deallocate (dterm)
             end if
@@ -293,7 +306,7 @@
 ! Loop over the atoms in the central cell.
         do ialpha = 1, s%natoms
           in3 = s%atom(ialpha)%imass
-          r3 = s%atom(ialpha)%ratom
+          rna = s%atom(ialpha)%ratom
 
           ! loop over the common neigbor pairs of ialp
           do ineigh = 1, s%neighbors(ialpha)%ncommon
@@ -305,29 +318,29 @@
               in1 = s%atom(iatom)%imass
               norb_mu = species(in1)%norb_max
 
-              ! cut some lengthy notation
-              pS_neighbors=>s%overlap(iatom)%neighbors(mneigh)
-              pdip_neighbors=>s%dipole_z(iatom)%neighbors(mneigh)
-              pSR_neighbors=>s%ewaldsr(iatom)%neighbors(mneigh)
-
               jatom = s%neighbors(ialpha)%jatom_common_j(ineigh)
               jbeta = s%neighbors(ialpha)%jatom_common_b(ineigh)
               r2 = s%atom(jatom)%ratom + s%xl(jbeta)%a
               in2 = s%atom(jatom)%imass
               norb_nu = species(in2)%norb_max
 
+              ! cut some lengthy notation
+              pS_neighbors=>s%overlap(iatom)%neighbors(mneigh)
+              pdip_neighbors=>s%dipole_z(iatom)%neighbors(mneigh)
+              pSR_neighbors=>s%ewaldsr(iatom)%neighbors(mneigh)
+
 ! Find r21 = vector pointing from r1 to r2, the two ends of the bondcharge.
 ! This gives us the distance dbc (or y value in the 2D grid).
               z = distance (r1, r2)
 
-! Find rnabc = vector pointing from center of bondcharge to r3
+! Find rnabc = vector pointing from center of bondcharge to rna
 ! This gives us the distance dnabc (or x value in the 2D grid).
               r12 = 0.5d0*(r1 + r2)
-              x = distance (r12, r3)
+              x = distance (r12, rna)
 
 ! Find other distances -
-              distance_13 = distance (r3, r1)
-              distance_23 = distance (r3, r2)
+              distance_13 = distance (rna, r1)
+              distance_23 = distance (rna, r2)
 
 ! Now combine the pieces together to get the correct short-range Ewald
 ! summation. Allocate the size of dterm and sterm according to size
@@ -335,16 +348,11 @@
               allocate (sterm (norb_mu, norb_nu))
               allocate (dterm (norb_mu, norb_nu))
 
-              dQ_sum = 0.0d0 
-              do isorp = 1, species(in3)%nssh
-                dQ_sum = dQ_sum + s%atom(ialpha)%shell(isorp)%dQ
-              end do
-
-              sterm = dQ_sum*pS_neighbors%block/2.0d0
-              dterm = dQ_sum*pdip_neighbors%block/z
+              sterm = dQ(ialpha)*pS_neighbors%block/2.0d0
+              dterm = dQ(ialpha)*pdip_neighbors%block/z
               pSR_neighbors%block =                                          &
-     &          pSR_neighbors%block + ((sterm - dterm)/distance_13           &
-     &                               + (sterm + dterm)/distance_23)*P_eq2
+      &          pSR_neighbors%block + ((sterm - dterm)/distance_13           &
+      &                               + (sterm + dterm)/distance_23)*P_eq2
               deallocate (sterm)
               deallocate (dterm)
             end if
@@ -414,8 +422,14 @@
 
         integer norb_mu, norb_nu        !< size of the block for the pair
 
-        real dQ_sum                     !< net charge on atom
+        integer logfile                 !< which unit to write output
+
         real z                          !< distance between r1 and r2
+
+! The charge transfer bit = need a +-dq on each orbital.
+        real, allocatable :: dQ (:)       !< charge on atom, i.e. ionic
+        real, allocatable :: Q0 (:)       !< total neutral atom charge, i.e. Ztot
+        real, allocatable :: Q (:)        !< total charge on atom
 
         real, dimension (3) :: r1, r2   !< positions of iatom and jatom
 
@@ -442,10 +456,50 @@
 ! ===========================================================================
         allocate (s%ewaldlr (s%natoms))
         allocate (sum_ewald (s%natoms))
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          norb_mu = species(in1)%norb_max
+          num_neigh = s%neighbors(iatom)%neighn
+
+          ! cut some lengthy notation
+          pewaldlr=>s%ewaldlr(iatom)
+          allocate (pewaldlr%neighbors(num_neigh))
+
+          do ineigh = 1, num_neigh   !  <==== loop over i's neighbors
+            jatom = s%neighbors(iatom)%neigh_j(ineigh)
+            in2 = s%atom(jatom)%imass
+            norb_nu = species(in2)%norb_max
+
+            ! allocate the Dblock
+            pLR_neighbors=>pewaldlr%neighbors(ineigh)
+            allocate (pLR_neighbors%block(norb_mu, norb_nu))
+            pLR_neighbors%block = 0.0d0
+          end do
+        end do
+
+        ! needed for charge transfer bits
+        allocate (Q0 (s%natoms))
+        allocate (Q (s%natoms))
+        allocate (dQ (s%natoms))
 
 ! Procedure
 ! ===========================================================================
+! Initialize logfile
+        logfile = s%logfile
+        write (logfile,*) ' Computing the ewald energy.'
         call assemble_ewald (s)
+
+! Initialize the charge transfer bit
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          Q0(iatom) = 0.0d0
+          Q(iatom) = 0.0d0
+          do issh = 1, species(in1)%nssh
+            Q0(iatom) = Q0(iatom) + species(in1)%shell(issh)%Qneutral
+            Q(iatom) = Q(iatom) + s%atom(iatom)%shell(issh)%Qin
+          end do
+          dQ(iatom) = Q(iatom) - Q0(iatom)
+        end do
 
 ! First a preliminary quantity. ewald(i,j) = sum(L) 1/(| bi-bj +/- L|
 ! We need to calculate SUMS of ewald sums in which the charge is included.
@@ -454,12 +508,7 @@
         sum_ewald = 0.0d0
         do iatom = 1, s%natoms
           do jatom = 1, s%natoms
-            in2 = s%atom(jatom)%imass
-            dQ_sum = 0.0d0
-            do issh = 1, species(in2)%nssh
-              dQ_sum = dQ_sum + s%atom(jatom)%shell(issh)%dQ
-            end do
-            sum_ewald(iatom) = sum_ewald(iatom) + dQ_sum*s%ewald(iatom,jatom)
+            sum_ewald(iatom) = sum_ewald(iatom) + dQ(jatom)*s%ewald(iatom,jatom)
           end do
         end do
 
@@ -473,33 +522,28 @@
 ! The value P_eq2 makes it into the units of eV.
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
+          r1 = s%atom(iatom)%ratom
+          in1 = s%atom(iatom)%imass
+          norb_mu = species(in1)%norb_max
+
           ! cut some lengthy notation
           poverlap=>s%overlap(iatom)
           pdipole_z=>s%dipole_z(iatom)
           pewaldlr=>s%ewaldlr(iatom)
 
-          r1 = s%atom(iatom)%ratom
-          in1 = s%atom(iatom)%imass
-          norb_mu = species(in1)%norb_max
-          num_neigh = s%neighbors(iatom)%neighn
-          allocate (pewaldlr%neighbors(num_neigh))
-
 ! Loop over the neighbors of the atom i.
+          num_neigh = s%neighbors(iatom)%neighn
           do ineigh = 1, num_neigh
-            ! cut some more lengthy notation
-            pS_neighbors=>poverlap%neighbors(ineigh)
-            pdip_neighbors=>pdipole_z%neighbors(ineigh)
-            pLR_neighbors=>pewaldlr%neighbors(ineigh)
-
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
-
-! Allocate block size
             norb_nu = species(in2)%norb_max
-            allocate (pLR_neighbors%block(norb_mu, norb_nu))
-            pLR_neighbors%block = 0.0d0
+
+            ! cut some more lengthy notation
+            pS_neighbors=>poverlap%neighbors(ineigh)
+            pdip_neighbors=>pdipole_z%neighbors(ineigh)
+            pLR_neighbors=>pewaldlr%neighbors(ineigh)
 
 ! SET-UP STUFF
 ! ***************************************************************************
@@ -524,9 +568,9 @@
               dterm = pdip_neighbors%block/z
             end if
 
-            pLR_neighbors%block =                                            &
-     &        pLR_neighbors%block + (sterm - dterm)*sum_ewald(iatom)*P_eq2   &
-     &                            + (sterm + dterm)*sum_ewald(jatom)*P_eq2
+            pLR_neighbors%block =                                             &
+     &       pLR_neighbors%block + (sterm - dterm)*sum_ewald(iatom)*P_eq2     &
+     &                           + (sterm + dterm)*sum_ewald(jatom)*P_eq2
             deallocate (sterm)
             deallocate (dterm)
           end do ! end loop over neighbors
@@ -606,7 +650,6 @@
         integer ig1mx, ig2mx, ig3mx    !< maximum number of the g grid
         integer il1, il2, il3          !< counters for real-space grid
         integer il1mx, il2mx, il3mx    !< maximum number of space grid
-        integer logfile                !< which unit to write output
 
         real argument, kappa, stuff
         real factor
@@ -644,10 +687,6 @@
 
 ! Procedure
 ! ===========================================================================
-! Initialize logfile
-        logfile = s%logfile
-        write (logfile,*) ' Computing the ewald energy.'
-
 ! Initialize ewald to zero and initialize other quantities
         s%ewald = 0.0d0
         a1vec = s%lattice(1)%a
@@ -750,8 +789,6 @@
 ! ***********************************************************************
 ! Compute gamma1:
 ! ***********************************************************************
-! Initialize fewald1
-
 ! Sum over g vectors.  If we are doing only a cluster, then only the gamma
 ! point is considered in the sum.
         if (s%icluster .eq. 1) then
@@ -795,8 +832,6 @@
 ! ***********************************************************************
 ! Compute gamma2:
 ! ***********************************************************************
-! Initialize fewald2
-
 ! If we are doing only a cluster, then only the central cell is considered
 ! in the sum.
         if (s%icluster .eq. 1) then
@@ -819,8 +854,8 @@
                   if (jatom .eq. iatom) factor = 0.5d0
 
                   cvec = il1*a1vec + il2*a2vec + il3*a3vec
-                  cvec = cvec + s%atom(iatom)%ratom
-                  z = distance (s%atom(jatom)%ratom, cvec)
+                  cvec = cvec + s%atom(iatom)%ratom - s%atom(jatom)%ratom
+                  z = sqrt(cvec(1)**2 + cvec(2)**2 + cvec(3)**2)
 
 ! skip the infinite self term.
                   if (z .gt. 0.0001d0) then
@@ -872,7 +907,7 @@
 
 
 ! ===========================================================================
-! destroy_assemble_ewaldsr
+! destroy_assemble_ewald
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================

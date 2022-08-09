@@ -617,7 +617,7 @@
 ! We always calculate LDA (iexc = 3) for the three-center interactions because
 ! doing gradient corrections for three-centers is a bug-a-boo and does not
 ! yield significant improvements.
-        iexc = 3
+!       iexc = 3
 
 ! Establish drho for this one-center case.
         drho = min(species(ispecies)%rcutoffA_max,                            &

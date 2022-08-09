@@ -1032,6 +1032,9 @@
 ! call epsilon_function (R1, sighat, spe), then eps(ix,3) = eta(ix).
             eta(:) = eps(:,3)
 
+! ****************************************************************************
+! Monopole and Dipole interactions for "smoothing"
+! ****************************************************************************
 ! Find the smoothing quantity - here we calculate the long-range effective
 ! monopole.  This term is included so that we obtain no discontinuities when
 ! atoms leave or enter the rcutoff_1 + rcutoff_2 range criteria.
@@ -1065,6 +1068,7 @@
             rend = rcutoff1_min + rcutoff2_min
             smooth = smoother (z, rend, xsmooth)
             Dsmooth = Dsmoother (z, rend, xsmooth)
+! ****************************************************************************
 
 ! For these interactions, there are no subtypes and isorp = 0
             interaction = P_vna_atom

@@ -38,5 +38,5 @@ DIAGONALIZATION = GAMMA
 #DIAGONALIZATION = KS
 
 # Choose the XC functional
-XC = LDA
-#XC = BLYP
+#XC = LDA
+XC = BLYP
