@@ -5,7 +5,7 @@
 ! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
 ! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
-! Arizona State University - Otto F. Sankey
+! Arizona State University - Otto F. Sankeydbc
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
@@ -148,7 +148,6 @@
         implicit none
 
         include '../include/gridsizes.h'
-
 
 ! Argument Declaration and Description
 ! ===========================================================================
@@ -293,8 +292,7 @@
      &                                              index_3c = 1, nME3c_max)
                 write (12,*) (pFdata_cell%mvalue_3c(index_3c),                 &
      &                                                  index_3c = 1, nME3c_max)
-              end do
-
+              end do ! end loop over itheta (defining files)
               write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, &
      &                             species(kspecies)%nZ
 
@@ -617,7 +615,8 @@
 ! We always calculate LDA (iexc = 3) for the three-center interactions because
 ! doing gradient corrections for three-centers is a bug-a-boo and does not
 ! yield significant improvements.
-!       iexc = 3
+! Find which exchange-correlation we are calcuating:
+        iexc = species_PP(ispecies)%iexc
 
 ! Establish drho for this one-center case.
         drho = min(species(ispecies)%rcutoffA_max,                            &

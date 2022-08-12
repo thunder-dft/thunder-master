@@ -3,7 +3,6 @@ SHELL = /bin/bash
 
 # Choose the COMPILER
 COMPILER = ifort
-#COMPILER = gfortran
 
 # Choose the Linear Algebra libraries
 #LINALG = LAPACK
@@ -22,13 +21,13 @@ MPI = FALSE
 MACHINE = HKQAI
 
 # Choose HORSFIELD or McWEDA
-THEORY = HORSFIELD
-#THEORY = McWEDA
+#THEORY = HORSFIELD
+THEORY = McWEDA
 
 # Choose HARRIS, DOGS, or KS (Kohn-Sham)
 # Note that the KS code only does LDA for now as it uses McWEDA routines. 
-#SCF = HARRIS
-SCF = DOGS
+SCF = HARRIS
+#SCF = DOGS
 #SCF = KS
 
 # Choose the DIAGONALIZATION Method - GAMMA, KPOINTS, or MDET (also GAMMA)
@@ -38,5 +37,5 @@ DIAGONALIZATION = GAMMA
 #DIAGONALIZATION = KS
 
 # Choose the XC functional
-#XC = LDA
-XC = BLYP
+XC = LDA
+#XC = BLYP

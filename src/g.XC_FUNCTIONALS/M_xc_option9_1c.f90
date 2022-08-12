@@ -149,7 +149,7 @@
 ! ===========================================================================
         integer ix
 
-        real aln
+!       real aln
         real dec
         real dex
         real drvexc
@@ -158,10 +158,10 @@
         real exc
         real fx
         real fxc
-        real rh
-        real rs
-        real x
-        real zeta
+!       real rh
+!       real rs
+!       real x
+!       real zeta
 
         real, dimension (2) :: cpot
         real, dimension (2) :: d
@@ -208,8 +208,8 @@
 ! If the improper iexc option was entered then the program will stop.
         else
           write (*,*) ' In get_potxc_1c.f90 - '
-          write (*,*) ' You must recomplile create.x for iexc = 3 '
-          write (*,*) ' Set XC = LDA in include/OPTIONS and recompile. '
+          write (*,*) ' You must recomplile create.x for iexc = 9 '
+          write (*,*) ' Set XC = BLYP in include/OPTIONS and recompile. '
           stop
         end if
 
@@ -403,20 +403,20 @@
 ! bhaycock@dit.ie
 ! (+353) 1 402 7960
 ! ===========================================================================
-      subroutine xbecke (d, s, u, v, ex, vx)
-      implicit none
+        subroutine xbecke (d, s, u, v, ex, vx)
+        implicit none
 
 ! Argument Declaration and Description
 ! ===========================================================================
 ! Input
-      real, intent (in) :: d                 ! density
-      real, intent (in) :: s                 ! abs(grad d)/(2kf*d)
-      real, intent (in) :: u                 ! grad(abs(grad d)...
-      real, intent (in) :: v                 ! (laplacian d)/(d*(2*kf)**2)
+        real, intent (in) :: d                 ! density
+        real, intent (in) :: s                 ! abs(grad d)/(2kf*d)
+        real, intent (in) :: u                 ! grad(abs(grad d)...
+        real, intent (in) :: v                 ! (laplacian d)/(d*(2*kf)**2)
 
 ! Output
-      real, intent (out) :: ex               ! exchange energy
-      real, intent (out) :: vx               ! exchange potential
+        real, intent (out) :: ex               ! exchange energy
+        real, intent (out) :: vx               ! exchange potential
 
 ! Local Parameters and Data Declaration
 ! ===========================================================================
@@ -548,33 +548,33 @@
 
 ! Local Variable Declaration and Description
 ! ===========================================================================
-        real alfc
+!       real alfc
         real density
         real densityp
-        real densityp11
-        real densityp12
-        real densityp22
+!       real densityp11
+!       real densityp12
+!       real densityp22
         real densitypp
-        real ec
-        real ecrs
-        real eczet
-        real fermik
-        real g
-        real gsfermik
-        real h
+!       real ec
+!       real ecrs
+!       real eczet
+!       real fermik
+!       real g
+!       real gsfermik
+!       real h
         real r
         real rs
-        real sfermik
-        real t
-        real uu
-        real vv
-        real ww
-        real zet
-        real ztp
-        real fk
-        real sk
+!       real sfermik
+!       real t
+!       real uu
+!       real vv
+!       real ww
+!       real zet
+!       real ztp
+!       real fk
+!       real sk
 
-        real, dimension (2) :: dvc, vc
+!       real, dimension (2) :: dvc, vc
         real, dimension (2) :: flip
 
 ! Allocate Arrays

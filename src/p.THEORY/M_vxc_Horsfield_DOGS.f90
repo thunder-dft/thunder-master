@@ -770,6 +770,14 @@
 ! For the once center case we only do +- dq changes in the density.
             do ideriv = ideriv_min, ideriv_max
 
+              ! Open ouput file for this species pair
+              write (filename, '("/vxc_ontop_", i2.2,".",i2.2,".",i2.2,".dat")')&
+     &               ideriv, species(ispecies)%nZ, species(jspecies)%nZ
+              inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
+              if (skip) cycle
+              open (unit = 11, file = trim(Fdata_location)//trim(filename),   &
+     &            status = 'unknown')
+
               ! Set the values of Qneutral_ion to the original Qneutral
               do issh = 1, species(ispecies)%nssh
                 species(ispecies)%shell(issh)%Qneutral_ion =                  &
@@ -811,14 +819,6 @@
               call make_munu (nFdata_cell_2c, ispecies, jspecies)
               nME2c_max = pFdata_cell%nME
               allocate (pFdata_cell%fofx(nME2c_max))
-
-              ! Open ouput file for this species pair
-              write (filename, '("/vxc_ontop_", i2.2,".",i2.2,".",i2.2,".dat")')&
-     &  	         ideriv, species(ispecies)%nZ, species(jspecies)%nZ
-              inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-              if (skip) cycle
-              open (unit = 11, file = trim(Fdata_location)//trim(filename),   &
-     &            status = 'unknown')
 
               ! Set up grid loop control constants
               rcutoff1 = species(ispecies)%rcutoffA_max
@@ -978,6 +978,14 @@
 ! For the once center case we only do +- dq changes in the density.
             do ideriv = ideriv_min, ideriv_max
 
+              ! Open ouput file for this species pair
+              write (filename, '("/vxc_atom_", i2.2,".",i2.2,".",i2.2,".dat")')&
+     &               ideriv, species(ispecies)%nZ, species(jspecies)%nZ
+              inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
+              if (skip) cycle
+              open (unit = 11, file = trim(Fdata_location)//trim(filename),   &
+     &              status = 'unknown')
+
               ! Set the values of Qneutral_ion to the original Qneutral
               do issh = 1, species(ispecies)%nssh
                 species(ispecies)%shell(issh)%Qneutral_ion =                  &
@@ -1019,14 +1027,6 @@
               call make_munu_atom (nFdata_cell_2c, ispecies, jspecies)
               nME2c_max = pFdata_cell%nME
               allocate (pFdata_cell%fofx(nME2c_max))
-
-              ! Open ouput file for this species pair
-              write (filename, '("/vxc_atom_", i2.2,".",i2.2,".",i2.2,".dat")')&
-     &               ideriv, species(ispecies)%nZ, species(jspecies)%nZ
-              inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-              if (skip) cycle
-              open (unit = 11, file = trim(Fdata_location)//trim(filename),   &
-     &              status = 'unknown')
 
               ! Set up grid loop control constants
               rcutoff1 = species(ispecies)%rcutoffA_max

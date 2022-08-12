@@ -60,7 +60,7 @@
         contains
 
 ! ===========================================================================
-! assemble_uee.f90
+! Dassemble_uee.f90
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
@@ -69,7 +69,7 @@
 ! ===========================================================================
 ! Code written by:
 ! James P. Lewis
-! Unit 909 of Buidling 17W
+! Unit 909 of Building 17W
 ! 17 Science Park West Avenue
 ! Pak Shek Kok, New Territories 999077
 ! Hong Kong
@@ -108,18 +108,20 @@
         real z                            !< distance between atom pairs
         real Zi, Zj
 
+        real, dimension (3) :: dcorksr
+
         real, dimension (:, :), allocatable :: coulomb
         real, dimension (:, :), allocatable :: dcoulomb
         real, dimension (:, :, :), allocatable :: vdcoulomb
 
-        real, allocatable :: Q0 (:)    !< total neutral atom charge, i.e. Ztot
-        real, allocatable :: Q(:)      !< total charge on atom
+        real, allocatable :: Q0 (:)
+        real, allocatable :: Q(:)         !< total charge on atom
 
         real, dimension (3) :: eta        !< vector part of epsilon eps(:,3)
         real, dimension (3, 3) :: eps     !< the epsilon matrix
         real, dimension (3, 3, 3) :: deps !< derivative of epsilon matrix
-        real, dimension (3) :: r1, r2   !< positions of iatom and jatom
-        real, dimension (3) :: sighat   !< unit vector along r2 - r1
+        real, dimension (3) :: r1, r2     !< positions of iatom and jatom
+        real, dimension (3) :: sighat     !< unit vector along r2 - r1
 
         interface
           function distance (a, b)
@@ -128,16 +130,13 @@
           end function distance
         end interface
 
-        ! force due to corksr
-        real, dimension (3) :: dcorksr
-
         type(T_forces), pointer :: pfi
         type(T_forces), pointer :: pfj
 
 ! Allocate Arrays
 ! ===========================================================================
-       allocate (Q0 (s%natoms))             !< neutral atom charge, i.e. ionic
-       allocate (Q (s%natoms))              !< total input charge on atom
+        allocate (Q0 (s%natoms))             !< neutral atom charge, i.e. ionic
+        allocate (Q (s%natoms))              !< total input charge on atom
 
 ! Procedure
 ! ===========================================================================
@@ -156,9 +155,6 @@
             Q0(iatom) = Q0(iatom) + species(in1)%shell(issh)%Qneutral
             Q(iatom) = Q(iatom) + s%atom(iatom)%shell(issh)%Qin
           end do
-
-          ! cut some lengthy notation
-          pfi=>s%forces(iatom); pfi%usr = 0.0d0
         end do
 
 ! Loop over the atoms in the central cell.
@@ -201,7 +197,7 @@
             call Depsilon_2c (r1, r2, eps, deps)
 
 ! As long as epsilon is called with sighat in the second "spot" as
-! call epsilon (R1, sighat, spe), then eps(ix,3) = eta(ix).
+! call epsilon_function (R1, sighat, spe), then eps(ix,3) = eta(ix).
             eta(:) = eps(:,3)
 
 ! GET COULOMB INTERACTIONS
@@ -259,21 +255,20 @@
               pfj%usr = pfj%usr + (P_eq2/2.0d0)*eta(:)*(Zi*Zj/z**2)
 
               ! force due dcorksr
-!             dcorksr(:) = - (P_eq2/2.0d0)*eta(:)*(Zi*Zj - Q(iatom)*Q(jatom))/z**2
-!             pfi%usr = pfi%usr - dcorksr
-!             pfj%usr = pfj%usr + dcorksr
+              dcorksr(:) = - (P_eq2/2.0d0)*eta(:)*(Zi*Zj - Q(iatom)*Q(jatom))/z**2
+              pfi%usr = pfi%usr - dcorksr
+              pfj%usr = pfj%usr + dcorksr
             end if
             deallocate (coulomb, dcoulomb, vdcoulomb)
-
           end do ! end loop over neighbors
 
-          ! long range ewald forces
-!         pfi%usr = pfi%usr - (P_eq2/2.0d0)*pfi%ewald
+          ! add in ewald contributions
+          pfi%usr = pfi%usr - (P_eq2/2.0d0)*pfi%ewald
         end do ! end loop over atoms
 
 ! Deallocate Arrays
 ! ===========================================================================
-        deallocate (Q,Q0)
+        deallocate (Q0)
 
 ! Format Statements
 ! ===========================================================================

@@ -94,15 +94,15 @@ ifneq (,$(findstring McWEDA, ${THEORY}))
 # ********************************* HARRIS ***********************************
 ifneq (,$(findstring HARRIS, ${SCF}))
 ASSEMBLERS = M_assemble_2c_Harris.o M_assemble_3c_Harris.o M_assemble_ewald_Harris.o M_assemble_rho_McWEDA_Harris.o M_assemble_usr_McWEDA_Harris.o M_assemble_vxc_McWEDA_Harris.o M_assemble_PP_2c.o M_assemble_PP_3c.o
-DASSEMBLERS = M_Dassemble_rho_McWEDA_Harris.o M_Dassemble_2c_Harris.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o M_Dassemble_ewald_Harris.o M_Dassemble_usr_McWEDA_Harris.o M_Dassemble_3c_Harris.o M_Dassemble_vxc_McWEDA_Harris.o M_Dassemble_vxc_3c_McWEDA_Harris.o
+DASSEMBLERS = M_Dassemble_rho_McWEDA_Harris.o M_Dassemble_2c_Harris.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o M_Dassemble_ewald_Harris.o M_Dassemble_usr_McWEDA_Harris.o M_Dassemble_3c_Harris.o M_Dassemble_vxc_3c_McWEDA_Harris.o M_Dassemble_vxc_McWEDA_Harris.o 
 FDATA = M_Fdata_1c_McWEDA_Harris.o M_Fdata_2c.o M_Fdata_3c.o
 SCF = M_charges_Lowdin.o Qmixer_Anderson_Harris.o
 endif
 
 # **************************i******** DOGS ***********************************
 ifneq (,$(findstring DOGS, ${SCF}))
-ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_DOGS.o M_assemble_usr_McWEDA_DOGS.o M_assemble_ewald_Harris.o
-DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o M_Dassemble_rho_McWEDA_DOGS.o M_Dassemble_vxc_McWEDA_DOGS.o M_Dassemble_vxc_3c_McWEDA_DOGS.o M_Dassemble_usr_McWEDA_DOGS.o M_Dassemble_ewald_Harris.o
+ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_DOGS.o M_assemble_usr_McWEDA_DOGS.o M_assemble_ewald_DOGS.o
+DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o M_Dassemble_rho_McWEDA_DOGS.o M_Dassemble_vxc_3c_McWEDA_DOGS.o M_Dassemble_vxc_McWEDA_DOGS.o M_Dassemble_usr_McWEDA_DOGS.o M_Dassemble_ewald_DOGS.o
 FDATA = M_Fdata_1c_McWEDA_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
 SCF = M_charges_Lowdin.o Qmixer_Anderson_DOGS.o
 endif

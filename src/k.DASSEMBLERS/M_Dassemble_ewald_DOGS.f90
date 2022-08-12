@@ -1233,21 +1233,12 @@
 ! Variable Declaration and Description
 ! ===========================================================================
         integer iatom                             !< counter over atoms
-        integer ineigh                            !< counter over neighbors
 
 ! Procedure
 ! ===========================================================================
         do iatom = 1, s%natoms
-          do ineigh = 1, s%neighbors(iatom)%neighn
-            deallocate (s%ewaldsr(iatom)%neighbors(ineigh)%block)
-!           deallocate (s%ewaldlr(iatom)%neighbors(ineigh)%block)
-          end do
-          deallocate (s%ewaldsr(iatom)%neighbors)
-!         deallocate (s%ewaldlr(iatom)%neighbors)
+          deallocate (s%forces(iatom)%ewaldsr)
         end do
-!       deallocate (s%ewald)
-        deallocate (s%ewaldsr)
-!       deallocate (s%ewaldlr)
 
 ! Deallocate Arrays
 ! ===========================================================================

@@ -75,6 +75,7 @@
 ! /DASSEMBLERS
         use M_Dassemble_rho_McWEDA
         use M_Dassemble_2c
+        use M_Dassemble_vxc_3c
 
 ! Type Declaration
 ! ===========================================================================
@@ -152,6 +153,9 @@
 
         ! this term has the d(<mu_i|vxc(rho_ij)|nu_j>)/dR part
         call Dassemble_vxc_bond (s)
+
+! Three-center forces for exchange-correlation
+        call Dassemble_vxc_3c (s)
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -309,17 +313,17 @@
                    l2 = species(in2)%shell(jssh)%lssh
                    n2 = n2 + l2 + 1
 ! Call lda-function with rho_in_weighted to get the coefficients for vxc expancion
-                   prho_in_shell =                                           &
+                   prho_in_shell =                                            &
                     s%rho_in_weighted(iatom)%neighbors(ineigh)%block(issh,jssh)
-                   Dprho_in_shell=                                           &
+                   Dprho_in_shell=                                            &
      &              s%rho_in_weighted(iatom)%neighbors(ineigh)%Dblock(:,issh,jssh)
-                   call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,  &
+                   call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,   &
      &                                      dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
 
 ! Call lda-function with rho_bon_weighted to get the coefficients for vxc expancion
-                   prho_bond_shell =                                         &
+                   prho_bond_shell =                                          &
      &              s%rho_bond_weighted(iatom)%neighbors(ineigh)%block(issh,jssh)
-                   Dprho_bond_shell=                               &
+                   Dprho_bond_shell=                                          &
      &              s%rho_bond_weighted(iatom)%neighbors(ineigh)%Dblock(:,issh,jssh)     
                    call lda_ceperley_alder (prho_bond_shell, exc_bond, muxc_bond, &
      &                                      dexc_bond, d2exc_bond, dmuxc_bond, d2muxc_bond)
@@ -332,43 +336,37 @@
                      do m2 = -l2, l2
                        inu = n2 + m2
 ! terms needed to build up the forces for the two-center parts
-                       poverlap =                                              &
+                       poverlap =                                             &
      &                   s%overlap(iatom)%neighbors(ineigh)%block(imu,inu)
-                       Dpoverlap =                                             &
+                       Dpoverlap =                                            &
      &                   s%overlap(iatom)%neighbors(ineigh)%Dblock(:,imu,inu)
 
-                       prho_in =                                               &
+                       prho_in =                                              &
      &                   s%rho_in(iatom)%neighbors(ineigh)%block(imu,inu)
-                       Dprho_in =                                              &
+                       Dprho_in =                                             &
      &                   s%rho_in(iatom)%neighbors(ineigh)%Dblock(:,imu,inu)
                        
-                       prho_bond =                                             &
+                       prho_bond =                                            &
      &                   s%rho_bond(iatom)%neighbors(ineigh)%block(imu,inu)
-                       Dprho_bond =                                            &
+                       Dprho_bond =                                           &
      &                   s%rho_bond(iatom)%neighbors(ineigh)%Dblock(:,imu,inu)
 
 ! calculate GSN force based on rho_in
-                       pfi%vxc_off_site(:,ineigh) = pfi%vxc_off_site(:,ineigh) &
-     &                   - pRho_neighbors%block(imu,inu)                       &
-     &                    *(muxc_in*Dpoverlap                                  &
-     &                      + dmuxc_in*poverlap*Dprho_in_shell                 &
-     &                      + d2muxc_in*Dprho_in_shell                         &
-     &                                 *(prho_in - prho_in_shell*poverlap)     &
-     &                      + dmuxc_in*(Dprho_in - Dprho_in_shell*poverlap     &
-     &                                  - prho_in_shell*Dpoverlap))
+                       pfi%vxc_off_site(:,ineigh) = pfi%vxc_off_site(:,ineigh)&
+     &                   - pRho_neighbors%block(imu,inu)                      &
+     &                    *(Dpoverlap*(muxc_in - dmuxc_in*prho_in_shell)      &
+     &                      + Dprho_in_shell*d2muxc_in                        &
+     &                       *(prho_in - prho_in_shell*poverlap)              &
+     &                      + dmuxc_in*Dprho_in)
 
 ! calculate GSN for rho_bond ("atomic" correction)
 ! Use "+" here because the energy contribution for the bond-part is "-"
-                       pfi%vxc_off_site(:,ineigh) = pfi%vxc_off_site(:,ineigh) &
-     &                   + pRho_neighbors%block(imu,inu)                       &
-     &                    *(muxc_bond*Dpoverlap                                &
-     &                      + dmuxc_bond*poverlap*Dprho_bond_shell             &
-     &                      + d2muxc_bond*Dprho_bond_shell                     &
-     &                       *(prho_bond - prho_bond_shell*poverlap)           &
-     &                      + dmuxc_bond*(Dprho_bond                           &
-     &                                    - Dprho_bond_shell*poverlap          &
-     &                                    - prho_bond_shell*Dpoverlap))
-
+                       pfi%vxc_off_site(:,ineigh) = pfi%vxc_off_site(:,ineigh)&
+     &                   + pRho_neighbors%block(imu,inu)                      &
+     &                    *(Dpoverlap*(muxc_bond - dmuxc_bond*prho_bond_shell)&
+     &                      + Dprho_bond_shell*d2muxc_bond                    &
+     &                       *(prho_bond - prho_bond_shell*poverlap)          &
+     &                      + dmuxc_bond*Dprho_bond)
                      end do !** m2 = -l2, l2
                    end do !** m1 = -l1, l1
                 end do !** jssh = 1, species(in2)%nssh
@@ -446,7 +444,6 @@
                   pfi%vxc_on_site(:,ineigh)= pfi%vxc_on_site(:,ineigh)         &
      &              - pRho_neighbors_matom%block(imu,imu)                      &
      &               *(Dprho_in_shell*d2muxc_in*(prho_in - prho_in_shell)      &
-     &                 + dmuxc_in*(Dprho_in - Dprho_in_shell)                  &
      &                 + dmuxc_in*Dprho_in_shell)
 
 ! calculate GSN for rho_bond ("atomic" correction)
@@ -455,7 +452,6 @@
      &              + pRho_neighbors_matom%block(imu,imu)                      &
      &               *(Dprho_bond_shell*d2muxc_bond                            &
      &                                 *(prho_bond - prho_bond_shell)          &
-     &                 + dmuxc_bond*(Dprho_bond - Dprho_bond_shell)            &
      &                 + dmuxc_bond*Dprho_bond_shell)
                 end do ! m1 = -l1, l1
 
@@ -488,29 +484,30 @@
 ! loop over orbitals in the ineigh-shell (inu)
                     do m2 = -l2, l2
                       inu = n2 + m2
+                      prho_in = s%rho_in(iatom)%neighbors(matom)%block(imu,inu)
+                      Dprho_in = s%rho_in(iatom)%neighbors(matom)%Dblock(:,imu,inu)
+                      prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,inu)
+                      Dprho_bond(:) = s%rho_bond(iatom)%neighbors(matom)%Dblock(:,imu,inu)
                       if (imu .ne. inu) then
-                        prho_in = s%rho_in(iatom)%neighbors(matom)%block(imu,inu)
-                        Dprho_in = s%rho_in(iatom)%neighbors(matom)%Dblock(:,imu,inu)
-
-                        prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,inu)
-                        Dprho_bond(:) = s%rho_bond(iatom)%neighbors(matom)%Dblock(:,imu,inu)
 
 ! calculate GSN for rho_in
-                        pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh)  &
-     &                   - pRho_neighbors_matom%block(imu,inu)                 &
+                        pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh) &
+      &                   - pRho_neighbors_matom%block(imu,inu)               &
      &                    *(Dprho_in_shell*d2muxc_in*prho_in + dmuxc_in*Dprho_in)
 
 ! calculate GSN for rho_bond ("atomic" correction)
 ! Use "+" here because the energy contribution for the bond-part is "-"
-                        pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh)  &
-     &                   + pRho_neighbors_matom%block(imu,inu)                 &
-     &                    *(Dprho_bond_shell*d2muxc_bond*prho_bond             &
+                        pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh) &
+     &                   + pRho_neighbors_matom%block(imu,inu)                &
+     &                    *(Dprho_bond_shell*d2muxc_bond*prho_bond            &
      &                      + dmuxc_bond*Dprho_bond)
                       end if ! imu .eq. inu
                     end do !do m2 = -l2, l2
                   end do !do m1 = -l1, l1
+
                   n2 = n2 + l2
                 end do  ! do jssh = 1, nssh(in1)
+
                 n1 = n1 + l1
               end do  ! do issh = 1, nssh(in1)
             end if !** differenciate between on site and off site

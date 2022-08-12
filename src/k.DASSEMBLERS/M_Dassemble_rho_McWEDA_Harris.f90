@@ -248,7 +248,7 @@
                 
                 call getDMEs_Fdata_2c (in1, in3, interaction, isorp, z,       &
      &                                 norb_mu, norb_nu, bcxcm, dbcxcm)
-                            
+
 ! Note that if we are calculating the on-site matrix elements, then the
 ! derivatives should be exactly zero.  This is what Otto referred to as the
 ! ferbie test.  For example, for the on-site overlap, we get an identity
@@ -290,7 +290,7 @@
      &                        vdbcxcm, vdbcxcx)
 
                 prho_in_neighbors%Dblock =                                    &
-     &            prho_in_neighbors%Dblock + vdbcxcx*Qneutral
+    &            prho_in_neighbors%Dblock + vdbcxcx*Qneutral
                 prho_bond_neighbors%Dblock =                                  &
      &            prho_bond_neighbors%Dblock + vdbcxcx*Qneutral
               end do

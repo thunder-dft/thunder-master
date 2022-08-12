@@ -75,6 +75,7 @@
 ! /DASSEMBLERS
         use M_Dassemble_rho_McWEDA
         use M_Dassemble_2c
+        use M_Dassemble_vxc_3c
 
 ! Type Declaration
 ! ===========================================================================
@@ -152,6 +153,9 @@
 
         ! this term has the d(<mu_i|vxc(rho_ij)|nu_j>)/dR part
         call Dassemble_vxc_bond (s)
+
+! Three-center forces for exchange-correlation
+        call Dassemble_vxc_3c (s)
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -348,27 +352,21 @@
      &                   s%rho_bond(iatom)%neighbors(ineigh)%Dblock(:,imu,inu)
 
 ! calculate GSN force based on rho_in
-                       pfi%vxc_off_site(:,ineigh) = pfi%vxc_off_site(:,ineigh) &
-     &                   - pRho_neighbors%block(imu,inu)                       &
-     &                    *(muxc_in*Dpoverlap                                  &
-     &                      + dmuxc_in*poverlap*Dprho_in_shell                 &
-     &                      + d2muxc_in*Dprho_in_shell                         &
-     &                                 *(prho_in - prho_in_shell*poverlap)     &
-     &                      + dmuxc_in*(Dprho_in - Dprho_in_shell*poverlap     &
-     &                                  - prho_in_shell*Dpoverlap))
+                       pfi%vxc_off_site(:,ineigh) = pfi%vxc_off_site(:,ineigh)&
+     &                   - pRho_neighbors%block(imu,inu)                      &
+     &                    *(Dpoverlap*(muxc_in - dmuxc_in*prho_in_shell)      &
+     &                      + Dprho_in_shell*d2muxc_in                        &
+     &                       *(prho_in - prho_in_shell*poverlap)              &
+     &                      + dmuxc_in*Dprho_in)
 
 ! calculate GSN for rho_bond ("atomic" correction)
 ! Use "+" here because the energy contribution for the bond-part is "-"
-                       pfi%vxc_off_site(:,ineigh) = pfi%vxc_off_site(:,ineigh) &
-     &                   + pRho_neighbors%block(imu,inu)                       &
-     &                    *(muxc_bond*Dpoverlap                                &
-     &                      + dmuxc_bond*poverlap*Dprho_bond_shell             &
-     &                      + d2muxc_bond*Dprho_bond_shell                     &
-     &                       *(prho_bond - prho_bond_shell*poverlap)           &
-     &                      + dmuxc_bond*(Dprho_bond                           &
-     &                                    - Dprho_bond_shell*poverlap          &
-     &                                    - prho_bond_shell*Dpoverlap))
-
+                       pfi%vxc_off_site(:,ineigh) = pfi%vxc_off_site(:,ineigh)&
+     &                   + pRho_neighbors%block(imu,inu)                      &
+     &                    *(Dpoverlap*(muxc_bond - dmuxc_bond*prho_bond_shell)&
+     &                      + Dprho_bond_shell*d2muxc_bond                    &
+     &                       *(prho_bond - prho_bond_shell*poverlap)          &
+     &                      + dmuxc_bond*Dprho_bond)
                      end do !** m2 = -l2, l2
                    end do !** m1 = -l1, l1
                 end do !** jssh = 1, species(in2)%nssh
@@ -446,8 +444,7 @@
                   pfi%vxc_on_site(:,ineigh)= pfi%vxc_on_site(:,ineigh)         &
      &              - pRho_neighbors_matom%block(imu,imu)                      &
      &               *(Dprho_in_shell*d2muxc_in*(prho_in - prho_in_shell)      &
-     &                 + dmuxc_in*(Dprho_in - Dprho_in_shell)                  &
-     &                 + dmuxc_in*Dprho_in_shell)
+     &                 + dmuxc_in*Dprho_in)
 
 ! calculate GSN for rho_bond ("atomic" correction)
 ! Use "+" here because the energy contribution for the bond-part is "-"
@@ -455,8 +452,7 @@
      &              + pRho_neighbors_matom%block(imu,imu)                      &
      &               *(Dprho_bond_shell*d2muxc_bond                            &
      &                                 *(prho_bond - prho_bond_shell)          &
-     &                 + dmuxc_bond*(Dprho_bond - Dprho_bond_shell)            &
-     &                 + dmuxc_bond*Dprho_bond_shell)
+     &                 + dmuxc_bond*Dprho_bond)
                 end do ! m1 = -l1, l1
 
 ! Loop over shells ineigh
@@ -496,15 +492,15 @@
                         Dprho_bond(:) = s%rho_bond(iatom)%neighbors(matom)%Dblock(:,imu,inu)
 
 ! calculate GSN for rho_in
-                        pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh)  &
-     &                   - pRho_neighbors_matom%block(imu,inu)                 &
+                        pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh) &
+      &                   - pRho_neighbors_matom%block(imu,inu)               &
      &                    *(Dprho_in_shell*d2muxc_in*prho_in + dmuxc_in*Dprho_in)
 
 ! calculate GSN for rho_bond ("atomic" correction)
 ! Use "+" here because the energy contribution for the bond-part is "-"
-                        pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh)  &
-     &                   - pRho_neighbors_matom%block(imu,inu)                 &
-     &                    *(Dprho_bond_shell*d2muxc_bond*prho_bond             &
+                        pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh) &
+     &                   + pRho_neighbors_matom%block(imu,inu)                &
+     &                    *(Dprho_bond_shell*d2muxc_bond*prho_bond            &
      &                      + dmuxc_bond*Dprho_bond)
                       end if ! imu .eq. inu
                     end do !do m2 = -l2, l2

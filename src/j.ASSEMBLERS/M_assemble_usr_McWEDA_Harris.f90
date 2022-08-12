@@ -214,7 +214,7 @@
                 end do
               end do
               u0(iatom)%neighbors(ineigh)%E =                                 &
-     &         (P_eq2/2.0d0)*(Zi*Zj/z - u0(iatom)%neighbors(ineigh)%E)
+     &          (P_eq2/2.0d0)*(Zi*Zj/z - u0(iatom)%neighbors(ineigh)%E)
             end if
             deallocate (coulomb)
 
