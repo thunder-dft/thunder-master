@@ -281,6 +281,16 @@
 ! der13 = depsB = deps/dr1 in the 3-center system
               call Depsilon_3c (r1, r2, r21, z, rna, rhat, eps, depsA, depsB)
 
+! The first piece will be the force with respect to atom 3.
+              if (x .gt. 1.0d-5) then
+                amt = (sighat - cost*rhat)/x
+              else
+                amt = 0.0d0
+              end if
+
+! The second piece will be the force with respect to atom 1.
+              bmt = (cost*sighat - rhat)/z
+
 ! For now we just do the neutral atom interactions.
 ! Charged atom interactions are assembled in assemble_ca_3c.f
 ! So set isorp = 0 within this subroutine.
@@ -316,17 +326,6 @@
 ! ***************************************************************************
 ! Now consider the components of the different forces which is determined
 ! by whether or not the force is with respect to atom 3 or atom 1.
-
-! The first piece will be the force with respect to atom 3.
-              if (x .gt. 1.0d-5) then
-                amt = (sighat - cost*rhat)/x
-              else
-                amt = 0.0d0
-              end if
-
-! The second piece will be the force with respect to atom 1.
-              bmt = (cost*sighat - rhat)/z
-
               pFdata_bundle => Fdata_bundle_3c(in1, in2, in3)
               pFdata_cell =>                                                &
      &          pFdata_bundle%Fdata_cell_3c(pFdata_bundle%index_3c(interaction,isorp,1))

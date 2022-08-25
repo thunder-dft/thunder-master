@@ -49,8 +49,8 @@
 ! Module Declaration
 ! ===========================================================================
         module M_xc_2c
-          use M_xc_1c
-          use M_precision
+        use M_xc_1c
+        use M_precision
 
 ! Type Declaration
 ! ===========================================================================
@@ -145,17 +145,17 @@
 ! ===========================================================================
         integer ix
 
-        real aln
-        real exc                     ! exchange-correlation energy
-        real ecp                     ! correlation potential
+!       real aln
+!       real exc                     ! exchange-correlation energy
+!       real ecp                     ! correlation potential
         real ex                      ! exchange potential
         real dec, dex                ! derivative of correlation and exchange
         real drvexc
         real fx
-        real fxc
-        real rs
-        real x
-        real zeta
+!       real fxc
+!       real rs
+!       real x
+!       real zeta
 
 ! density and derivatives - spin cases
         real, dimension (2) :: d, dp, dpp, dz, dzz, dpz
@@ -205,8 +205,8 @@
 ! If the improper iexc option was entered then the program will stop.
         else
           write (*,*) ' In get_potxc_2c.f90 - '
-          write (*,*) ' You must recomplile create.x for iexc = 3 '
-          write (*,*) ' Set XC = LDA in include/OPTIONS and recompile. '
+          write (*,*) ' You must recomplile create.x for iexc = 9 '
+          write (*,*) ' Set XC = BLYP in include/OPTIONS and recompile. '
           stop
         end if
 
@@ -431,16 +431,16 @@
 ! ===========================================================================
 ! Value of density and corresponding derivatives at the point r, z
         real density
-        real density_p, density_pp
-        real density_p11, density_p12, density_p22
-        real density_pz
+!       real density_p, density_pp
+!       real density_p11, density_p12, density_p22
+!       real density_pz
 
 ! inputs
-        real alfc, h, rs, t, uu, vv, ww
-        real zet, ztp, fk, sk, g
+!       real alfc, h, rs, t, uu, vv, ww
+!       real zet, ztp, fk, sk, g
 
 ! answers
-        real ec, ecrs, eczet, vcdn, vcup, dvcdn, dvcup
+!       real ec, ecrs, eczet, vcdn, vcup, dvcdn, dvcup
 
 
 ! Allocate Arrays

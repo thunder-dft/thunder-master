@@ -37,7 +37,12 @@
 !!
 !! It contains the following subroutines within the module:
 !!
-!!       assemble_ewaldsr.f90 - assemble the overlap matrix
+!!       Dassemble_ewaldsr.f90 - assemble the short-range ewald matrix
+!!       Dassemble_ewaldlr.f90 - assemble the long-range ewald matrix
+!!
+!!       These routines really do nothing because this is Harris which
+!! has no charge dependency.  These routines just set the interactions
+!! to zero.
 !!
 !! For a complete list of the interactions see the files 2c.Z1.Z2.dir now
 !! located in the Fdata directory.  This list will change depending on
@@ -45,8 +50,10 @@
 ! ===========================================================================
         module M_Dassemble_ewald
 
-! /SYSTEM
+! /GLOBAL
         use M_assemble_blocks
+
+! /SYSTEM
         use M_configuraciones
         use M_rotations
         use M_Drotations
@@ -99,44 +106,24 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, ineigh           !< counter over atoms and neighbors
-        integer in1, in2                !< species numbers
-        integer jatom                   !< neighbor of iatom
+        integer iatom                   !< counter over atoms
         integer num_neigh               !< number of neighbors
 
-        integer norb_mu, norb_nu        !< size of the block for the pair
-
-        type(T_assemble_block), pointer :: pSR_neighbors
-        type(T_assemble_neighbors), pointer :: pewaldsr
+        ! forces
+        type(T_forces), pointer :: pfi
 
 ! Allocate Arrays
 ! ===========================================================================
-        allocate (s%ewaldsr (s%natoms))
+!       allocate (s%ewaldsr (s%natoms))
 
 ! Procedure
 ! ===========================================================================
-! First loop over the atoms in the central cell and allocate.
+! We build the ewald forces here, so we allocate and initialize
         do iatom = 1, s%natoms
-          ! cut some lengthy notation
-          pewaldsr=>s%ewaldsr(iatom)
-          in1 = s%atom(iatom)%imass
-          norb_mu = species(in1)%norb_max
           num_neigh = s%neighbors(iatom)%neighn
-          allocate (pewaldsr%neighbors(num_neigh))
-
-! Loop over the neighbors of each iatom.
-          do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
-            ! cut some more lengthy notation
-            pSR_neighbors=>pewaldsr%neighbors(ineigh)
-            jatom = s%neighbors(iatom)%neigh_j(ineigh)
-            in2 = s%atom(jatom)%imass
-
-! Allocate block size
-            norb_nu = species(in2)%norb_max
-            allocate (pSR_neighbors%Dblock(3, norb_mu, norb_nu))
-            pSR_neighbors%Dblock = 0.0d0
-          end do ! end loop over neighbors
-        end do ! end loop over atoms
+          pfi=>s%forces(iatom)
+          allocate (pfi%ewaldsr (3, num_neigh)); pfi%ewaldsr = 0.0d0
+        end do
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -186,44 +173,15 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, ineigh           !< counter over atoms and neighbors
-        integer in1, in2                !< species numbers
-        integer jatom                   !< neighbor of iatom
-        integer num_neigh               !< number of neighbors
-
-        integer norb_mu, norb_nu        !< size of the block for the pair
-
-        type(T_assemble_block), pointer :: pLR_neighbors
-        type(T_assemble_neighbors), pointer :: pewaldlr
+! None
 
 ! Allocate Arrays
 ! ===========================================================================
-        allocate (s%ewaldlr (s%natoms))
+! None
 
 ! Procedure
 ! ===========================================================================
-! First loop over the atoms in the central cell and allocate.
-        do iatom = 1, s%natoms
-          ! cut some lengthy notation
-          pewaldlr=>s%ewaldlr(iatom)
-          in1 = s%atom(iatom)%imass
-          norb_mu = species(in1)%norb_max
-          num_neigh = s%neighbors(iatom)%neighn
-          allocate (pewaldlr%neighbors(num_neigh))
-
-! Loop over the neighbors of each iatom.
-          do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
-            ! cut some more lengthy notation
-            pLR_neighbors=>pewaldlr%neighbors(ineigh)
-            jatom = s%neighbors(iatom)%neigh_j(ineigh)
-            in2 = s%atom(jatom)%imass
-
-! Allocate block size
-            norb_nu = species(in2)%norb_max
-            allocate (pLR_neighbors%Dblock(3, norb_mu, norb_nu))
-            pLR_neighbors%Dblock = 0.0d0
-          end do ! end loop over neighbors
-        end do ! end loop over atoms
+! None
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -264,7 +222,7 @@
 
 ! Argument Declaration and Description
 ! ===========================================================================
-        type(T_structure), target :: s           !< the structure to be used.
+        type(T_structure), target :: s           !< the structure to be used
 
 ! Parameters and Data Declaration
 ! ===========================================================================
@@ -272,20 +230,13 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, ineigh           !< counter over atoms and neighbors
+        integer iatom                            !< counter over atoms
 
 ! Procedure
 ! ===========================================================================
         do iatom = 1, s%natoms
-          do ineigh = 1, s%neighbors(iatom)%neighn
-            deallocate (s%ewaldsr(iatom)%neighbors(ineigh)%Dblock)
-            deallocate (s%ewaldlr(iatom)%neighbors(ineigh)%Dblock)
-          end do
-          deallocate (s%ewaldsr(iatom)%neighbors)
-          deallocate (s%ewaldlr(iatom)%neighbors)
+          deallocate (s%forces(iatom)%ewaldsr)
         end do
-        deallocate (s%ewaldsr)
-        deallocate (s%ewaldlr)
 
 ! Deallocate Arrays
 ! ===========================================================================

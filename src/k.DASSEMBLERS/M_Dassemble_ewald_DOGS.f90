@@ -24,8 +24,7 @@
 
 !
 ! RESTRICTED RIGHTS LEGEND
-! Use, duplication, or disclosure of this software and its documentation:q
-
+! Use, duplication, or disclosure of this software and its documentation
 ! by the Government is subject to restrictions as set forth in subdivision
 ! { (b) (3) (ii) } of the Rights in Technical Data and Computer Software
 ! clause at 52.227-7013.
@@ -39,16 +38,16 @@
 !!
 !! It contains the following subroutines within the module:
 !!
-!!       assemble_ewaldsr.f90 - assemble the short-range ewald matrix
-!!       assemble_ewaldlr.f90 - assemble the long-range ewald matrix
-!!       assemble_ewald.f90 - builds the ewald interactions - atom pair
-!!       destroy_assemble_ewald.f90 - destroy the arrays
+!!       Dassemble_ewaldsr.f90 - assemble the short-range ewald matrix
+!!       Dassemble_ewaldlr.f90 - assemble the long-range ewald matrix
+!!       Dassemble_ewald.f90 - builds the ewald interactions - atom pair
+!!       destroy_Dassemble_ewald.f90 - destroy the arrays
 !!
 !! For a complete list of the interactions see the files 2c.Z1.Z2.dir now
 !! located in the Fdata directory.  This list will change depending on
 !! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
-        module M_assemble_ewald
+        module M_Dassemble_ewald
 
 ! /GLOBAL
         use M_precision
@@ -69,11 +68,11 @@
 
 
 ! ===========================================================================
-! assemble_ewaldsr.f90
+! Dassemble_ewaldsr.f90
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
-!>       This routine calculates matrix elements for the short range
+!>       This routine calculates forces for the short range
 !> ewald (Coulomb) interactions. These will be used to offset the total
 !> ewald interactions which are calculated in the long-range ewald
 !> subroutine.
@@ -92,7 +91,7 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine assemble_ewaldsr (s)
+        subroutine Dassemble_ewaldsr (s)
         implicit none
 
         include '../include/constants.h'
@@ -112,12 +111,13 @@
         integer ibeta, jbeta           !< cells for three atoms
         integer ineigh, mneigh         !< counter over neighbors
         integer in1, in2, in3          !< species numbers
+        integer issh                   !< counter over shells
 
         integer num_neigh              !< number of neighbors
         integer matom                  !< matom is the self-interaction atom
         integer mbeta                  !< the cell containing neighbor of iatom
 
-        integer issh
+        integer imu, inu                !< counter over MEs
         integer norb_mu, norb_nu       !< size of the block for the pair
 
         real distance_13, distance_23  !< distance from 3rd atom
@@ -130,9 +130,19 @@
         real, allocatable :: Q (:)        !< total charge on atom
 
         real, dimension (3) :: r1, r2, rna, r12  !< positions
+        real, dimension (3) :: sighat   !< unit vector along r2 - r1
+        real, dimension (3) :: rhatA1    !< unit vector along rna - r1
+        real, dimension (3) :: rhatA2    !< unit vector along rna - r2
 
         real, dimension (:, :), allocatable :: dterm
+        real, dimension (:, :, :), allocatable :: dpterm
         real, dimension (:, :), allocatable :: sterm
+        real, dimension (:, :, :), allocatable :: spterm
+
+        ! derivatives of three-center overlap-dipole ewald interactions
+        real, dimension (:, :, :), allocatable :: demnplA
+        real, dimension (:, :, :), allocatable :: demnplB
+        real, dimension (:, :, :), allocatable :: demnplC
 
         interface
           function distance (a, b)
@@ -146,31 +156,23 @@
         type(T_assemble_block), pointer :: pdip_neighbors
         type(T_assemble_neighbors), pointer :: pdipole_z
 
-        type(T_assemble_block), pointer :: pSR_neighbors
-        type(T_assemble_neighbors), pointer :: pewaldsr
+        ! density matrix stuff
+        type(T_assemble_neighbors), pointer :: pdenmat
+        type(T_assemble_block), pointer :: pRho_neighbors
+        type(T_assemble_block), pointer :: pRho_neighbors_matom
+
+        ! forces
+        type(T_forces), pointer :: pfalpha
+        type(T_forces), pointer :: pfi
+        type(T_forces), pointer :: pfj
 
 ! Allocate Arrays
 ! ===========================================================================
-        allocate (s%ewaldsr (s%natoms))
+! We build the ewald forces here, so we allocate and initialize
         do iatom = 1, s%natoms
-          in1 = s%atom(iatom)%imass
-          norb_mu = species(in1)%norb_max
           num_neigh = s%neighbors(iatom)%neighn
-
-          ! cut some lengthy notation
-          pewaldsr=>s%ewaldsr(iatom)
-          allocate (pewaldsr%neighbors(num_neigh))
-
-          do ineigh = 1, num_neigh   !  <==== loop over i's neighbors
-            jatom = s%neighbors(iatom)%neigh_j(ineigh)
-            in2 = s%atom(jatom)%imass
-            norb_nu = species(in2)%norb_max
-
-            ! allocate the Dblock
-            pSR_neighbors=>pewaldsr%neighbors(ineigh)
-            allocate (pSR_neighbors%block(norb_mu, norb_nu))
-            pSR_neighbors%block = 0.0d0
-          end do
+          pfi=>s%forces(iatom)
+          allocate (pfi%ewaldsr (3, num_neigh)); pfi%ewaldsr = 0.0d0
         end do
 
         ! needed for charge transfer bits
@@ -199,14 +201,20 @@
           matom = s%neigh_self(iatom)
           r1 = s%atom(iatom)%ratom
           in1 = s%atom(iatom)%imass
+          norb_mu = species(in1)%norb_max
 
           ! cut some lengthy notation
           poverlap=>s%overlap(iatom)
-          pewaldsr=>s%ewaldsr(iatom)
 
           ! cut some more lengthy notation
           pS_neighbors=>poverlap%neighbors(matom)
-          pSR_neighbors=>pewaldsr%neighbors(matom)
+
+          ! density matrix
+          pdenmat=>s%denmat(iatom)
+          pRho_neighbors_matom=>pdenmat%neighbors(matom)
+
+          ! cut some lengthy notation
+          pfi=>s%forces(iatom)
 
 ! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
@@ -216,9 +224,19 @@
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
 
+! SET-UP STUFF
+! ***************************************************************************
 ! Find r21 = vector pointing from r1 to r2, the two ends of the bondcharge.
 ! This gives us the distance dbc (or y value in the 2D grid).
             z = distance (r1, r2)
+            ! unit vector in sigma direction.
+            if (z .lt. 1.0d-05) then
+              sighat(1) = 0.0d0
+              sighat(2) = 0.0d0
+              sighat(3) = 1.0d0
+            else
+              sighat = (r2 - r1)/z
+            end if
 
 ! Get the overlap matrix from the data files - which is the matrix in molecular
 ! coordinates (stored in bcnam). Divide by the distance between the centers
@@ -228,10 +246,17 @@
 ! the sites of a wavefunction and we do nothing here.
             if (iatom .eq. jatom .and. mbeta .eq. 0) then
 
-! Do nothing here - special case. Interaction already calculated in ontop case.
+! Do nothing here - special case. Interaction does not exist.
             else
-              pSR_neighbors%block = pSR_neighbors%block                      &
-     &          + dQ(jatom)*(pS_neighbors%block/z)*P_eq2
+
+              ! force on iatom, ineigh
+              do inu = 1, norb_mu
+                do imu = 1, norb_mu
+                  pfi%ewaldsr(:,ineigh) = pfi%ewaldsr(:,ineigh)              &
+      &             - P_eq2*pRho_neighbors_matom%block(imu,inu)*dQ(jatom)    &
+      &                    *(pS_neighbors%block(imu,inu)/z**2)*sighat(:)
+                end do
+              end do
             end if
           end do ! end loop over neighbors
         end do ! end loop over atoms
@@ -240,14 +265,19 @@
 !****************************************************************************
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
-          ! cut some lengthy notation
-          poverlap=>s%overlap(iatom)
-          pdipole_z=>s%dipole_z(iatom)
-          pewaldsr=>s%ewaldsr(iatom)
-
           r1 = s%atom(iatom)%ratom
           in1 = s%atom(iatom)%imass
           norb_mu = species(in1)%norb_max
+
+          ! cut some lengthy notation
+          poverlap=>s%overlap(iatom)
+          pdipole_z=>s%dipole_z(iatom)
+
+          ! density matrix
+          pdenmat=>s%denmat(iatom)
+
+          ! force on iatom
+          pfi=>s%forces(iatom)
 
 ! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
@@ -261,11 +291,23 @@
             ! cut some more lengthy notation
             pS_neighbors=>poverlap%neighbors(ineigh)
             pdip_neighbors=>pdipole_z%neighbors(ineigh)
-            pSR_neighbors=>pewaldsr%neighbors(ineigh)
 
+            ! density matrix
+            pRho_neighbors=>pdenmat%neighbors(ineigh)
+
+! SET-UP STUFF
+! ***************************************************************************
 ! Find r21 = vector pointing from r1 to r2, the two ends of the bondcharge.
 ! This gives us the distance dbc (or y value in the 2D grid).
             z = distance (r1, r2)
+            ! unit vector in sigma direction.
+            if (z .lt. 1.0d-05) then
+              sighat(1) = 0.0d0
+              sighat(2) = 0.0d0
+              sighat(3) = 1.0d0
+            else
+              sighat = (r2 - r1)/z
+            end if
 
 ! Get the overlap matrix from the data files - which is the matrix in molecular
 ! coordinates (stored in bcnam). Divide by the distance between the centers
@@ -275,27 +317,38 @@
 ! the sites of a wavefunction and we do nothing here.
             if (iatom .eq. jatom .and. mbeta .eq. 0) then
 
-! Do nothing here - special case. Interaction already calculated in ontop case.
+! Do nothing here - special case. Interaction does not exist.
             else
 
 ! Find sum of charge for first atom and add to ewaldsr
               allocate (sterm (norb_mu, norb_nu))
+              allocate (spterm (3, norb_mu, norb_nu))
               allocate (dterm (norb_mu, norb_nu))
+              allocate (dpterm (3, norb_mu, norb_nu))
 
               sterm = pS_neighbors%block/(2.0d0*z)
+              spterm = pS_neighbors%Dblock/(2.0d0*z)
               dterm = pdip_neighbors%block/(z**2)
+              dpterm = pdip_neighbors%Dblock/(z**2)
 
-              pSR_neighbors%block = pSR_neighbors%block                      &
-     &          + dQ(iatom)*(sterm + dterm)*P_eq2
-
-! Find sum of charge for second atom and add to ewaldsr
-              sterm = pS_neighbors%block/(2.0d0*z)
-              dterm = pdip_neighbors%block/(z**2)
-
-              pSR_neighbors%block = pSR_neighbors%block                      &
-     &          + dQ(jatom)*(sterm - dterm)*P_eq2
-              deallocate (sterm)
-              deallocate (dterm)
+              ! force on iatom
+              do inu = 1, norb_nu
+                do imu = 1, norb_mu
+                  pfi%ewaldsr(:,ineigh) = pfi%ewaldsr(:,ineigh)               &
+     &             - P_eq2*pRho_neighbors%block(imu,inu)                      &
+     &                    *dQ(iatom)*(spterm(:,imu,inu) + dpterm(:,imu,inu))  &
+     &             - P_eq2*pRho_neighbors%block(imu,inu)                      &
+     &                    *dQ(iatom)*(sterm(imu,inu)                          &
+     &                                + 2.0d0*dterm(imu,inu))*(sighat(:)/z)   &
+     &             - P_eq2*pRho_neighbors%block(imu,inu)                      &
+     &                    *dQ(jatom)*(spterm(:,imu,inu) - dpterm(:,imu,inu))  &
+     &             - P_eq2*pRho_neighbors%block(imu,inu)                      &
+     &                    *dQ(jatom)*(sterm(imu,inu)                          &
+     &                                - 2.0d0*dterm(imu,inu))*(sighat(:)/z)
+                end do
+              end do
+              deallocate (sterm, spterm)
+              deallocate (dterm, dpterm)
             end if
           end do ! end loop over neighbors
         end do ! end loop over atoms
@@ -307,6 +360,9 @@
         do ialpha = 1, s%natoms
           in3 = s%atom(ialpha)%imass
           rna = s%atom(ialpha)%ratom
+
+          ! cut some lengthy notation
+          pfalpha=>s%forces(ialpha)
 
           ! loop over the common neigbor pairs of ialp
           do ineigh = 1, s%neighbors(ialpha)%ncommon
@@ -324,14 +380,28 @@
               in2 = s%atom(jatom)%imass
               norb_nu = species(in2)%norb_max
 
-              ! cut some lengthy notation
-              pS_neighbors=>s%overlap(iatom)%neighbors(mneigh)
-              pdip_neighbors=>s%dipole_z(iatom)%neighbors(mneigh)
-              pSR_neighbors=>s%ewaldsr(iatom)%neighbors(mneigh)
+              ! cut lengthy notation
+              pfi=>s%forces(iatom); pfj=>s%forces(jatom)
 
+              ! density matrix
+              pdenmat=>s%denmat(iatom); pRho_neighbors=>pdenmat%neighbors(mneigh)
+
+              poverlap=>s%overlap(iatom); pS_neighbors=>poverlap%neighbors(mneigh)
+              pdipole_z=>s%dipole_z(iatom); pdip_neighbors=>pdipole_z%neighbors(mneigh)
+
+! SET-UP STUFF
+! ***************************************************************************
 ! Find r21 = vector pointing from r1 to r2, the two ends of the bondcharge.
 ! This gives us the distance dbc (or y value in the 2D grid).
               z = distance (r1, r2)
+              ! unit vector in sigma direction.
+              if (z .lt. 1.0d-05) then
+                sighat(1) = 0.0d0
+                sighat(2) = 0.0d0
+                sighat(3) = 1.0d0
+              else
+                sighat = (r2 - r1)/z
+              end if
 
 ! Find rnabc = vector pointing from center of bondcharge to rna
 ! This gives us the distance dnabc (or x value in the 2D grid).
@@ -342,19 +412,78 @@
               distance_13 = distance (rna, r1)
               distance_23 = distance (rna, r2)
 
+! Find the unit vector in rna-r1 direction.
+              if (distance_13 .gt. 1.0d-05) then
+                rhatA1(:) = (rna(:) - r1(:))/distance_13
+              end if
+
+! Find the unit vector in rna-r2 direction.
+              if (distance_23 .gt. 1.0d-05) then
+                rhatA2(:) = (rna(:) - r2(:))/distance_23
+              end if
+
 ! Now combine the pieces together to get the correct short-range Ewald
 ! summation. Allocate the size of dterm and sterm according to size
 ! of the blocks
               allocate (sterm (norb_mu, norb_nu))
+              allocate (spterm (3, norb_mu, norb_nu))
               allocate (dterm (norb_mu, norb_nu))
+              allocate (dpterm (3, norb_mu, norb_nu))
 
-              sterm = dQ(ialpha)*pS_neighbors%block/2.0d0
-              dterm = dQ(ialpha)*pdip_neighbors%block/z
-              pSR_neighbors%block =                                          &
-      &          pSR_neighbors%block + ((sterm - dterm)/distance_13           &
-      &                               + (sterm + dterm)/distance_23)*P_eq2
-              deallocate (sterm)
-              deallocate (dterm)
+              allocate (demnplA (3, norb_mu, norb_nu))
+              allocate (demnplB (3, norb_mu, norb_nu))
+              allocate (demnplC (3, norb_mu, norb_nu))
+
+              sterm = pS_neighbors%block/2.0d0
+              spterm = pS_neighbors%Dblock/2.0d0
+              dterm = pdip_neighbors%block/z
+              dpterm = pdip_neighbors%Dblock/z
+
+! Now the derivatives
+! A = 3, B = 1, C = 2 <B|A|C> This is NOT force-like.
+
+! demnplA: The net effect is a minus sign.
+! There are three minus signs in all - one belonging to the sighat term,
+! one belonging to the 1/y term and a minus subtraction error.
+! No minus signs are "force-like". This is not a force like derivative,
+! but a regular derivative d/dr1.
+              do inu = 1, norb_nu
+                do imu = 1, norb_mu
+                  dpterm(:,imu,inu) = dpterm(:,imu,inu) + dterm(imu,inu)*sighat(:)/z
+                  demnplA(:,imu,inu) =                                        &
+     &             - dQ(ialpha)*(sterm(imu,inu)                               &
+     &                          - dterm(imu,inu))*rhatA1(:)/distance_13**2    &
+     &             - dQ(ialpha)*(sterm(imu,inu)                               &
+     &                          + dterm(imu,inu))*rhatA2(:)/distance_23**2
+                  demnplB(:,imu,inu) =                                        &
+                   + dQ(ialpha)*(sterm(imu,inu)                               &
+     &                          - dterm(imu,inu))*rhatA1(:)/distance_13**2    &
+     &             + dQ(ialpha)*(spterm(:,imu,inu)                            &
+     &                           - dpterm(:,imu,inu))/distance_13             &
+     &             + dQ(ialpha)*(spterm(:,imu,inu)                            &
+     &                           + dpterm(:,imu,inu))/distance_23
+                end do
+              end do
+              ! terms are (-) because we subtract ewaldsr from the Hamiltonian
+              demnplA = - demnplA
+              demnplB = - demnplB
+
+! By Newton's laws demnplC = - demnplA - demnplB
+              demnplC = - demnplA - demnplB
+
+              do inu = 1, norb_nu
+                do imu = 1, norb_mu
+                  pfalpha%f3naa = pfalpha%f3naa                                &
+      &             - P_eq2*pRho_neighbors%block(imu,inu)*demnplA(:,imu,inu)
+                  pfi%f3nab = pfi%f3nab                                        &
+      &             - P_eq2*pRho_neighbors%block(imu,inu)*demnplB(:,imu,inu)
+                  pfj%f3nac = pfj%f3nac                                        &
+      &             - P_eq2*pRho_neighbors%block(imu,inu)*demnplC(:,imu,inu)
+                end do
+              end do
+              deallocate (sterm, spterm)
+              deallocate (dterm, dpterm)
+              deallocate (demnplA, demnplB, demnplC)
             end if
           end do ! end loop over neighbors
         end do ! end loop over atoms
@@ -370,11 +499,11 @@
 ! End Subroutine
 ! ===========================================================================
         return
-        end subroutine assemble_ewaldsr
+        end subroutine Dassemble_ewaldsr
 
 
 ! ===========================================================================
-! assemble_ewaldlr.f90
+! Dassemble_ewaldlr.f90
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
@@ -396,7 +525,7 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine assemble_ewaldlr (s)
+        subroutine Dassemble_ewaldlr (s)
         implicit none
 
         include '../include/constants.h'
@@ -415,11 +544,12 @@
 ! ===========================================================================
         integer iatom, ineigh           !< counter over atoms and neighbors
         integer in1, in2                !< species numbers
-        integer jatom                   !< neighbor of iatom
+        integer jatom, katom            !< neighbor of iatom
         integer issh                    !< counter over shells
         integer num_neigh               !< number of neighbors
         integer mbeta                   !< the cell containing neighbor of iatom
 
+        integer imu, inu                !< counter over MEs
         integer norb_mu, norb_nu        !< size of the block for the pair
 
         integer logfile                 !< which unit to write output
@@ -432,10 +562,14 @@
         real, allocatable :: Q (:)        !< total charge on atom
 
         real, dimension (3) :: r1, r2   !< positions of iatom and jatom
+        real, dimension (3) :: sighat   !< unit vector along r2 - r1
 
         real, allocatable, dimension (:, :) :: dterm
+        real, allocatable, dimension (:, :, :) :: dpterm
         real, allocatable, dimension (:, :) :: sterm
+        real, allocatable, dimension (:, :, :) :: spterm
         real, allocatable, dimension (:) :: sum_ewald
+        real, allocatable, dimension (:, :) :: sum_dewald
 
         interface
           function distance (a, b)
@@ -449,33 +583,19 @@
         type(T_assemble_block), pointer :: pdip_neighbors
         type(T_assemble_neighbors), pointer :: pdipole_z
 
-        type(T_assemble_block), pointer :: pLR_neighbors
-        type(T_assemble_neighbors), pointer :: pewaldlr
+        ! density matrix stuff
+        type(T_assemble_neighbors), pointer :: pdenmat
+        type(T_assemble_block), pointer :: pRho_neighbors
+
+        ! forces
+        type(T_forces), pointer :: pfi
+        type(T_forces), pointer :: pfj
+        type(T_forces), pointer :: pfk
 
 ! Allocate Arrays
 ! ===========================================================================
-        allocate (s%ewaldlr (s%natoms))
-        allocate (sum_ewald (s%natoms))
-        do iatom = 1, s%natoms
-          in1 = s%atom(iatom)%imass
-          norb_mu = species(in1)%norb_max
-          num_neigh = s%neighbors(iatom)%neighn
-
-          ! cut some lengthy notation
-          pewaldlr=>s%ewaldlr(iatom)
-          allocate (pewaldlr%neighbors(num_neigh))
-
-          do ineigh = 1, num_neigh   !  <==== loop over i's neighbors
-            jatom = s%neighbors(iatom)%neigh_j(ineigh)
-            in2 = s%atom(jatom)%imass
-            norb_nu = species(in2)%norb_max
-
-            ! allocate the Dblock
-            pLR_neighbors=>pewaldlr%neighbors(ineigh)
-            allocate (pLR_neighbors%block(norb_mu, norb_nu))
-            pLR_neighbors%block = 0.0d0
-          end do
-        end do
+        allocate (sum_ewald (s%natoms)); sum_ewald = 0.0d0
+        allocate (sum_dewald (3, s%natoms)); sum_dewald = 0.0d0
 
         ! needed for charge transfer bits
         allocate (Q0 (s%natoms))
@@ -486,8 +606,8 @@
 ! ===========================================================================
 ! Initialize logfile
         logfile = s%logfile
-        write (logfile,*) ' Computing the ewald energy.'
-        call assemble_ewald (s)
+        write (logfile,*) ' Computing the ewald energy and forces.'
+        call Dassemble_ewald (s)
 
 ! Initialize the charge transfer bit
         do iatom = 1, s%natoms
@@ -505,10 +625,10 @@
 ! We need to calculate SUMS of ewald sums in which the charge is included.
 ! In the nutshell we are calculating:
 !       Sum_(i,L) q(i)/|b(i)-b(alpha)+L|
-        sum_ewald = 0.0d0
         do iatom = 1, s%natoms
           do jatom = 1, s%natoms
             sum_ewald(iatom) = sum_ewald(iatom) + dQ(jatom)*s%ewald(iatom,jatom)
+            sum_dewald(:,iatom) = sum_dewald(:,iatom) + dQ(jatom)*s%dewald(:,iatom,jatom)
           end do
         end do
 
@@ -529,7 +649,10 @@
           ! cut some lengthy notation
           poverlap=>s%overlap(iatom)
           pdipole_z=>s%dipole_z(iatom)
-          pewaldlr=>s%ewaldlr(iatom)
+
+          ! density matrix
+          pdenmat=>s%denmat(iatom)
+          pfi=>s%forces(iatom)
 
 ! Loop over the neighbors of the atom i.
           num_neigh = s%neighbors(iatom)%neighn
@@ -543,17 +666,30 @@
             ! cut some more lengthy notation
             pS_neighbors=>poverlap%neighbors(ineigh)
             pdip_neighbors=>pdipole_z%neighbors(ineigh)
-            pLR_neighbors=>pewaldlr%neighbors(ineigh)
+
+            ! density matrix - neighbors
+            pRho_neighbors=>pdenmat%neighbors(ineigh)
+            pfj=>s%forces(jatom)
 
 ! SET-UP STUFF
 ! ***************************************************************************
 ! Find r21 = vector pointing from r1 to r2, the two ends of the bondcharge.
 ! This gives us the distance dbc (or y value in the 2D grid).
             z = distance (r1, r2)
+            ! unit vector in sigma direction.
+            if (z .lt. 1.0d-05) then
+              sighat(1) = 0.0d0
+              sighat(2) = 0.0d0
+              sighat(3) = 1.0d0
+            else
+              sighat = (r2 - r1)/z
+            end if
 
 ! Allocate the size of dterm and sterm according to size of the blocks
             allocate (sterm (norb_mu, norb_nu))
+            allocate (spterm (3, norb_mu, norb_nu))
             allocate (dterm (norb_mu, norb_nu))
+            allocate (dpterm (3, norb_mu, norb_nu))
 
 ! "Charge" on each atom of the bondcharge. We split the charge S and
 ! dipole p to be S/2-p/d on atom 1 and S/2+p/d on atom 2. If atom 1 is
@@ -563,22 +699,98 @@
 ! If r1 .ne. r2, then this is a case where the potential is located at one of
 ! the sites of a wavefunction and we do nothing here.
             if (iatom .eq. jatom .and. mbeta .eq. 0) then
+              spterm = 0.0d0
               dterm = 0.0d0
-            else
-              dterm = pdip_neighbors%block/z
-            end if
+              dpterm = 0.0d0
 
-            pLR_neighbors%block =                                             &
-     &       pLR_neighbors%block + (sterm - dterm)*sum_ewald(iatom)*P_eq2     &
-     &                           + (sterm + dterm)*sum_ewald(jatom)*P_eq2
-            deallocate (sterm)
-            deallocate (dterm)
+              ! force on iatom
+              do inu = 1, norb_nu
+                do imu = 1, norb_mu
+                  pfi%ewaldlr = pfi%ewaldlr                                   &
+     &              - P_eq2*pRho_neighbors%block(imu,inu)*sterm(imu,inu)*sum_dewald(:,iatom)
+                end do
+              end do
+
+              ! force on jatom
+              do inu = 1, norb_nu
+                do imu = 1, norb_mu
+                  pfj%ewaldlr = pfj%ewaldlr                                   &
+     &              - P_eq2*pRho_neighbors%block(imu,inu)*sterm(imu,inu)*sum_dewald(:,jatom)
+                end do
+              end do
+            else
+              spterm = pS_neighbors%Dblock/2.0d0
+              dterm = pdip_neighbors%block/z
+              do imu = 1, norb_mu
+                do inu = 1, norb_nu
+                  dpterm(:,imu,inu) = pdip_neighbors%Dblock(:,imu,inu)/z      &
+     &                               + pdip_neighbors%block(imu,inu)*sighat(:)/z**2
+                end do
+              end do
+
+              ! force on iatom
+              do inu = 1, norb_nu
+                do imu = 1, norb_mu
+                  pfi%ewaldlr = pfi%ewaldlr                                   &
+     &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
+     &               *(sterm(imu,inu) - dterm(imu,inu))*sum_dewald(:,iatom)   &
+     &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
+     &               *(spterm(:,imu,inu) - dpterm(:,imu,inu))*sum_ewald(iatom)&
+     &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
+                     *(sterm(imu,inu) + dterm(imu,inu))                       &
+     &               *dQ(iatom)*s%dewald(:,iatom,jatom)                       &
+     &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
+     &               *(spterm(:,imu,inu) + dpterm(:,imu,inu))*sum_ewald(jatom)
+                end do
+              end do
+
+              ! force on jatom
+              do inu = 1, norb_nu
+                do imu = 1, norb_mu
+                  pfj%ewaldlr = pfj%ewaldlr                                   &
+     &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
+     &               *(sterm(imu,inu)                                         &
+     &                 - dterm(imu,inu))*dQ(jatom)*s%dewald(:,jatom,iatom)    &
+     &              + P_eq2*pRho_neighbors%block(imu,inu)                     &
+     &               *(spterm(:,imu,inu) - dpterm(:,imu,inu))*sum_ewald(iatom)&
+     &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
+     &               *(sterm(imu,inu) + dterm(imu,inu))*sum_dewald(:,jatom)   &
+     &              + P_eq2*pRho_neighbors%block(imu,inu)                     &
+     &               *(spterm(:,imu,inu) + dpterm(:,imu,inu))*sum_ewald(jatom)
+                end do
+              end do
+            end if ! end if for r1 .eq. r2 case
+
+! ****************************************************************************
+! There is a correction to the force on the "other" atoms, katom, which are
+! implicit in the ewald sums. Here katom is neither iatom nor jatom.
+! ****************************************************************************
+            do katom = 1, s%natoms
+
+              ! force on jatom
+              pfk=>s%forces(katom)
+
+              if (katom .ne. iatom .and. katom .ne. jatom) then
+                ! force on katom
+                do inu = 1, norb_nu
+                  do imu = 1, norb_mu
+                    pfk%ewaldlr = pfk%ewaldlr                                 &
+     &                - pRho_neighbors%block(imu,inu)*dQ(katom)*P_eq2         &
+     &                 *(sterm(imu,inu) - dterm(imu,inu))*s%dewald(:,katom,iatom) &
+     &                - pRho_neighbors%block(imu,inu)*dQ(katom)*P_eq2         &
+     &                 *(sterm(imu,inu) + dterm(imu,inu))*s%dewald(:,katom,jatom)
+                  end do
+                end do
+              end if ! end if for katom not iatom or jatom
+            end do ! end loop over katom
+            deallocate (sterm, spterm)
+            deallocate (dterm, dpterm)
           end do ! end loop over neighbors
         end do ! end loop over atoms
 
 ! Deallocate Arrays
 ! ===========================================================================
-        deallocate (sum_ewald)
+        deallocate (sum_ewald, sum_dewald)
 
 ! Format Statements
 ! ===========================================================================
@@ -587,11 +799,11 @@
 ! End Subroutine
 ! ===========================================================================
         return
-        end subroutine assemble_ewaldlr
+        end subroutine Dassemble_ewaldlr
 
 
 ! ===========================================================================
-! assemble_ewald.f90
+! Dassemble_ewald.f90
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
@@ -628,7 +840,7 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine assemble_ewald (s)
+        subroutine Dassemble_ewald (s)
         implicit none
 
         include '../include/constants.h'
@@ -646,19 +858,27 @@
 ! Variable Declaration and Description
 ! ===========================================================================
         integer iatom, jatom           !< the three parties involved
+        integer in1                    !< species numbers
+
         integer ig1, ig2, ig3          !< counters for the g grid
         integer ig1mx, ig2mx, ig3mx    !< maximum number of the g grid
         integer il1, il2, il3          !< counters for real-space grid
         integer il1mx, il2mx, il3mx    !< maximum number of space grid
+        integer issh                   !< counter over shells
 
         real argument, kappa, stuff
-        real factor
+        real factor, factorf
         real g1mag2, g2mag2, g3mag2    !< magnitude's (squared) of g's
         real gmin2, gmax               !< maximum and minimum magnitude of g's
         real gdotb                     !< dot product of k-space and real space
+        real qq                        !< charges
         real r1mag2, r2mag2, r3mag2    !< magnitude's (squared) of r's
         real rmin2, rmax               !< maximum and minimum magnitude of a's
         real z
+
+! The charge transfer bit = need a +-dq on each orbital.
+        real, allocatable :: Q0 (:)       !< total neutral atom charge, i.e. Ztot
+        real, allocatable :: Q (:)        !< total charge on atom
 
         real, dimension (3) :: a1vec, a2vec, a3vec
         real, dimension (3) :: cvec    !< resulting vector
@@ -681,12 +901,32 @@
           end function magnitude
         end interface
 
+        ! forces
+        type(T_forces), pointer :: pfi
+        type(T_forces), pointer :: pfj
+
 ! Allocate Arrays
 ! ===========================================================================
         allocate (s%ewald (s%natoms, s%natoms))
+        allocate (s%dewald (3, s%natoms, s%natoms))
+
+        ! needed for charge transfer bits
+        allocate (Q0 (s%natoms))
+        allocate (Q (s%natoms))
 
 ! Procedure
 ! ===========================================================================
+! Calculate nuclear charge.
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          Q0(iatom) = 0.0d0
+          Q(iatom) = 0.0d0
+          do issh = 1, species(in1)%nssh
+            Q0(iatom) = Q0(iatom) + species(in1)%shell(issh)%Qneutral
+            Q(iatom) = Q(iatom) + s%atom(iatom)%shell(issh)%Qin
+          end do
+        end do
+
 ! Initialize ewald to zero and initialize other quantities
         s%ewald = 0.0d0
         a1vec = s%lattice(1)%a
@@ -789,6 +1029,8 @@
 ! ***********************************************************************
 ! Compute gamma1:
 ! ***********************************************************************
+! Initialize fewald1
+
 ! Sum over g vectors.  If we are doing only a cluster, then only the gamma
 ! point is considered in the sum.
         if (s%icluster .eq. 1) then
@@ -811,8 +1053,17 @@
 
 ! Sum over s and s', the basis indices.
                 do iatom = 1, s%natoms
+
+                  ! cut some lengthy notation
+                  pfi=>s%forces(iatom)
+
                   do jatom = iatom, s%natoms
+
+                    ! cut some lengthy notation
+                    pfj=>s%forces(jatom)
+
                     factor = 1.0d0*stuff
+                    factorf = 2.0d0*stuff
                     if (jatom .eq. iatom) factor = 0.5d0*stuff
 ! g dot b:
                     gdotb =                                                   &
@@ -822,6 +1073,15 @@
 
                     s%ewald(iatom,jatom) = s%ewald(iatom,jatom) + factor*cos(gdotb)
                     s%ewald(jatom,iatom) = s%ewald(jatom,iatom) + factor*cos(gdotb)
+
+                    ! forces
+                    qq = Q(iatom)*Q(jatom) - Q0(iatom)*Q0(jatom)
+!                   qq = (Q(iatom) - Q0(iatom))*(Q(jatom) - Q0(jatom))
+                    pfi%ewald = pfi%ewald + qq*factorf*sin(gdotb)*g
+                    pfj%ewald = pfj%ewald - qq*factorf*sin(gdotb)*g
+
+                    s%dewald(:,iatom,jatom) = s%dewald(:,iatom,jatom) - factor*sin(gdotb)*g
+                    s%dewald(:,jatom,iatom) = s%dewald(:,iatom,jatom) + factor*sin(gdotb)*g
                   end do
                 end do
               end if
@@ -832,6 +1092,8 @@
 ! ***********************************************************************
 ! Compute gamma2:
 ! ***********************************************************************
+! Initialize fewald2
+
 ! If we are doing only a cluster, then only the central cell is considered
 ! in the sum.
         if (s%icluster .eq. 1) then
@@ -849,8 +1111,17 @@
 ! Sum over atoms iatom and atoms jatom. Note that we sum over jatom .ge. iatom
 ! which yields an extra factor of two for iatom .ne. jatom.
               do iatom = 1, s%natoms
+
+                ! cut some lengthy notation
+                pfi=>s%forces(iatom)
+
                 do jatom = iatom, s%natoms
+
+                  ! cut some lengthy notation
+                  pfj=>s%forces(jatom)
+
                   factor = 1.0d0
+                  factorf = 2.0d0
                   if (jatom .eq. iatom) factor = 0.5d0
 
                   cvec = il1*a1vec + il2*a2vec + il3*a3vec
@@ -861,10 +1132,30 @@
                   if (z .gt. 0.0001d0) then
                     argument = kappa*z
 
-                    s%ewald(iatom,jatom) =                                   &
+                    s%ewald(iatom,jatom) =                                    &
      &                s%ewald(iatom,jatom) + factor*erfc(argument)/z
-                    s%ewald(jatom,iatom) =                                   &
+                    s%ewald(jatom,iatom) =                                    &
      &                s%ewald(jatom,iatom) + factor*erfc(argument)/z
+
+                    ! forces
+                    qq = Q(iatom)*Q(jatom) - Q0(iatom)*Q0(jatom)
+!                   qq = (Q(iatom) - Q0(iatom))*(Q(jatom) - Q0(jatom))
+                    pfi%ewald =                                               &
+     &                pfi%ewald + qq*factorf*cvec                             &
+     &                           *(2.0d0*exp(-argument**2)*kappa*z/sqrt(pi)   &
+     &                             + erfc(argument))/z**3
+                    pfj%ewald =                                               &
+     &                pfj%ewald - qq*factorf*cvec                             &
+     &                           *(2.0d0*exp(-argument**2)*kappa*z/sqrt(pi)   &
+     &                             + erfc(argument))/z**3
+
+                    ! forces
+                    s%dewald(:,iatom,jatom) = s%dewald(:,iatom,jatom)         &
+     &                - factor*cvec*(2.0d0*exp(-argument**2)*kappa*z/sqrt(pi) &
+     &                               + erfc(argument))/z**3
+                    s%dewald(:,jatom,iatom) = s%dewald(:,jatom,iatom)         &
+     &                + factor*cvec*(2.0d0*exp(-argument**2)*kappa*z/sqrt(pi) &
+     &                               + erfc(argument))/z**3
                   end if
                 end do
               end do
@@ -903,11 +1194,11 @@
 ! End Subroutine
 ! ===========================================================================
         return
-        end subroutine assemble_ewald
+        end subroutine Dassemble_ewald
 
 
 ! ===========================================================================
-! destroy_assemble_ewald
+! destroy_Dassemble_ewald
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
@@ -928,7 +1219,7 @@
 !
 ! Subroutine Declaration
 ! ===========================================================================
-        subroutine destroy_assemble_ewald (s)
+        subroutine destroy_Dassemble_ewald (s)
         implicit none
 
 ! Argument Declaration and Description
@@ -942,21 +1233,12 @@
 ! Variable Declaration and Description
 ! ===========================================================================
         integer iatom                             !< counter over atoms
-        integer ineigh                            !< counter over neighbors
 
 ! Procedure
 ! ===========================================================================
         do iatom = 1, s%natoms
-          do ineigh = 1, s%neighbors(iatom)%neighn
-            deallocate (s%ewaldsr(iatom)%neighbors(ineigh)%block)
-            deallocate (s%ewaldlr(iatom)%neighbors(ineigh)%block)
-          end do
-          deallocate (s%ewaldsr(iatom)%neighbors)
-          deallocate (s%ewaldlr(iatom)%neighbors)
+          deallocate (s%forces(iatom)%ewaldsr)
         end do
-        deallocate (s%ewald)
-        deallocate (s%ewaldsr)
-        deallocate (s%ewaldlr)
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -969,8 +1251,8 @@
 ! End Subroutine
 ! ===========================================================================
         return
-        end subroutine destroy_assemble_ewald
+        end subroutine destroy_Dassemble_ewald
 
 ! End Module
 ! ===========================================================================
-        end module M_assemble_ewald
+        end module M_Dassemble_ewald

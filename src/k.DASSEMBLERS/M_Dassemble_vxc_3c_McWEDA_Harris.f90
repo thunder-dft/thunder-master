@@ -455,7 +455,6 @@
                    n2 = n2 + l2 + 1
                    call lda_ceperley_alder (prhoS_in_neighbors%block(issh,jssh), exc_in, muxc_in,  &
      &                                      dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
-                       
                    rhop_a = rhoma_shell(:,issh,jssh)                    
                    rhop_b = rhomb_shell(:,issh,jssh)                     
                    rhop_c = rhomc_shell(:,issh,jssh)

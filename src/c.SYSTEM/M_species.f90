@@ -399,6 +399,7 @@
           do issh = 1, species(ispecies)%nssh
             read (12,*) species(ispecies)%shell(issh)%lssh
             read (12,*) species(ispecies)%shell(issh)%Qneutral
+            read (12,*) species(ispecies)%shell(issh)%Qin
             read (12,*) species(ispecies)%shell(issh)%rcutoff
 
 ! Use the cutoff radius for each shell as part of the name of the data files.

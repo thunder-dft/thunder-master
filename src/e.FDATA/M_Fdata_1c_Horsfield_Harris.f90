@@ -57,13 +57,11 @@
 
 ! Type Declaration
 ! ===========================================================================
-! one-center xc data for McWEDA
+! one-center xc data for Horsfield
         type T_vxc_1c
-          real, pointer :: E(:,:)              !< xc-energy (shells)
-          real, pointer :: dE(:,:,:)           !< 1st derivatives of energy
+          real E                               !< xc-energy (shells)
 
           real, pointer :: V(:, :)             !< Vxc potential
-          real, pointer :: dV(:, :, :)         !< 1st derivatives of Vxc
         end type T_vxc_1c
 
 ! module variables
@@ -118,12 +116,12 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer ispecies                  !< counter for number of species
+        integer ispecies                   !< counters for number of species
 
-        integer nssh                      !< counters for number of shells
-        integer issh, jssh, kssh
+        integer nssh                       !< counters for number of shells
+        integer issh, jssh
 
-        character (len=30) filename
+        character (len=32) filename
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -137,67 +135,16 @@
         do ispecies = 1, nspecies
 
           ! Open ouput file for this species pair
-          write (filename, '("/vxc_1c", ".", i2.2, ".dat")')                 &
-     &           species(ispecies)%nZ
-          open (11, file = trim(fdata_location)//trim(filename),             &
-     &          status = 'old')
+          write (filename, '("/vxc_1c", ".", i2.2, ".dat")') species(ispecies)%nZ
+          open (11, file = trim(fdata_location)//trim(filename), status = 'old')
 
           nssh = species(ispecies)%nssh
-          allocate (vxc_1c(ispecies)%E(nssh,nssh))
           allocate (vxc_1c(ispecies)%V(nssh,nssh))
 
           ! 0th order
-          do issh = 1, nssh
-            read (11,*) (vxc_1c(ispecies)%E(issh,jssh), jssh = 1, nssh)
-          end do
+          read (11,*) vxc_1c(ispecies)%E
           do issh = 1, nssh
             read (11,*) (vxc_1c(ispecies)%V(issh,jssh), jssh = 1, nssh)
-          end do
-          close (11)
-        end do
-
-! ***************************************************************************
-!                       R E A D    P O T E N T I A L S
-! ***************************************************************************
-        do ispecies = 1, nspecies
-
-          ! Open ouput file for this species pair
-          write (filename, '("/nuxcrho_1c", ".", i2.2, ".dat")')             &
-     &      species(ispecies)%nZ
-          open (11, file = trim(fdata_location)//trim(filename),             &
-     &            status = 'old')
-
-          nssh = species(ispecies)%nssh
-          allocate (vxc_1c(ispecies)%dV(nssh,nssh,nssh))
-
-          ! 1st and 2nd order diagonal terms
-          do kssh = 1,nssh
-            do issh = 1, nssh
-              read (11,*) (vxc_1c(ispecies)%dV(issh,jssh,kssh), jssh = 1, nssh)
-            end do
-          end do
-          close (11)
-        end do
-
-! ***************************************************************************
-!                       R E A D   E N E R G I E S
-! ***************************************************************************
-        do ispecies = 1, nspecies
-
-          ! Open ouput file for this species pair
-          write (filename, '("/excrho_1c", ".", i2.2, ".dat")')              &
-     &      species(ispecies)%nZ
-          open (11, file = trim(fdata_location)//trim(filename),             &
-     &            status = 'old')
-
-          nssh = species(ispecies)%nssh
-          allocate (vxc_1c(ispecies)%dE(nssh,nssh,nssh))
-
-          ! 1st and 2nd order diagonal terms
-          do kssh = 1,nssh
-            do issh = 1, nssh
-              read (11,*) (vxc_1c(ispecies)%dE(issh,jssh,kssh), jssh = 1, nssh)
-            end do
           end do
           close (11)
         end do
@@ -257,15 +204,13 @@
 ! Procedure
 ! ===========================================================================
         do ispecies = 1, nspecies
-          deallocate (vxc_1c(ispecies)%E)
-          deallocate (vxc_1c(ispecies)%dE)
           deallocate (vxc_1c(ispecies)%V)
-          deallocate (vxc_1c(ispecies)%dV)
         end do
+        deallocate (vxc_1c)
 
 ! Deallocate Arrays
 ! ===========================================================================
-        deallocate (vxc_1c)
+! None
 
 ! Format Statements
 ! ===========================================================================

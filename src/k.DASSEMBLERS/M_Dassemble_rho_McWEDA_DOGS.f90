@@ -1,19 +1,22 @@
 ! copyright info:
 !
-!                             @Copyright 2016
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
@@ -50,12 +53,18 @@
 !! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
          module M_Dassemble_rho_McWEDA
+
+! /GLOBAL
          use M_assemble_blocks
+
+! /SYSTEM
          use M_configuraciones
+         use M_rotations
+         use M_Drotations
+
+! /FDATA
          use M_Fdata_2c
          use M_Fdata_3c
-         use M_rotations
-         use M_Drotations 
         
 ! Type Declaration
 ! ===========================================================================
@@ -105,7 +114,7 @@
         integer iatom, ineigh           !< counter over atoms and neighbors
         integer in1, in2, in3, inu, imu !< species numbers
         integer jatom                   !< neighbor of iatom
-        integer interaction, isubtype   !< which interaction and subtype
+        integer interaction, isorp      !< which interaction and subtype
         integer num_neigh               !< number of neighbors
         integer matom                   !< matom is the self-interaction atom
         integer mbeta                   !< the cell containing neighbor of iatom
@@ -235,10 +244,10 @@
               allocate (vdbcxcm (3, norb_mu, norb_nu)); vdbcxcm = 0.0d0
               allocate (vdbcxcx (3, norb_mu, norb_nu)); vdbcxcx = 0.0d0
              
-              do isubtype = 1, species(in1)%nssh
-                Qin = s%atom(iatom)%shell(isubtype)%Qin
+              do isorp = 1, species(in1)%nssh
+                Qin = s%atom(iatom)%shell(isorp)%Qin
 
-                call getDMEs_Fdata_2c (in1, in3, interaction, isubtype, z,   &
+                call getDMEs_Fdata_2c (in1, in3, interaction, isorp, z,       &
      &                                 norb_mu, norb_nu, bcxcm, dbcxcm)
                             
 ! Note that if we are calculating the on-site matrix elements, then the
@@ -253,12 +262,12 @@
                   end do
                 end do
                 
-                call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcxcm,  &
+                call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcxcm,   &
      &                        vdbcxcm, vdbcxcx)
 
-                prho_in_neighbors%Dblock =                                   &
+                prho_in_neighbors%Dblock =                                    &
      &            prho_in_neighbors%Dblock + vdbcxcx*Qin
-                prho_bond_neighbors%Dblock =                                 &
+                prho_bond_neighbors%Dblock =                                  &
      &            prho_bond_neighbors%Dblock + vdbcxcx*Qin
               end do
 
@@ -266,10 +275,10 @@
 ! - right (iatom): <mu|(rho_mu + rho_nu)|nu> -> (right) <mu|(rho_nu)|nu>
               interaction = P_rho_ontopR
               in3 = in2
-              do isubtype = 1, species(in2)%nssh
-                Qin = s%atom(jatom)%shell(isubtype)%Qin
+              do isorp = 1, species(in2)%nssh
+                Qin = s%atom(jatom)%shell(isorp)%Qin
 
-                call getDMEs_Fdata_2c (in1, in2, interaction, isubtype, z,   &
+                call getDMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
      &                                 norb_mu, norb_nu, bcxcm, dbcxcm)
 
 ! Note the minus sign. d/dr1 = - eta * d/dd.
@@ -279,12 +288,12 @@
                   end do
                 end do
 
-                call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcxcm,  &
+                call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcxcm,   &
      &                        vdbcxcm, vdbcxcx)
 
-                prho_in_neighbors%Dblock =                                   &
+                prho_in_neighbors%Dblock =                                    &
      &            prho_in_neighbors%Dblock + vdbcxcx*Qin
-                prho_bond_neighbors%Dblock =                                 &
+                prho_bond_neighbors%Dblock =                                  &
      &            prho_bond_neighbors%Dblock + vdbcxcx*Qin
               end do
               deallocate (bcxcm, bcxcx, dbcxcm, vdbcxcm, vdbcxcx)
@@ -352,10 +361,10 @@
               allocate (vdbcxcm (3, norb_mu, norb_nu)); vdbcxcm = 0.0d0
               allocate (vdbcxcx (3, norb_mu, norb_nu)); vdbcxcx = 0.0d0
 
-              do isubtype = 1, species(in2)%nssh
-                Qin = s%atom(jatom)%shell(isubtype)%Qin
+              do isorp = 1, species(in2)%nssh
+                Qin = s%atom(jatom)%shell(isorp)%Qin
 
-                call getDMEs_Fdata_2c (in1, in2, interaction, isubtype, z,   &
+                call getDMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
      &                                 norb_mu, norb_nu, bcxcm, dbcxcm)
 
 ! Note the minus sign. d/dr1 = - eta * d/dd.
@@ -365,12 +374,12 @@
                   end do
                 end do
 
-                call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcxcm,  &
+                call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcxcm,   &
      &                        vdbcxcm, vdbcxcx)
 
-                prho_in_neighbors%Dblock =                                   &
+                prho_in_neighbors%Dblock =                                    &
      &            prho_in_neighbors%Dblock + vdbcxcx*Qin
-                prho_bond_neighbors%Dblock =                                 &
+                prho_bond_neighbors%Dblock =                                  &
      &            prho_bond_neighbors%Dblock + vdbcxcx*Qin
               end do
               deallocate (bcxcm, bcxcx, dbcxcm, vdbcxcm, vdbcxcx)
@@ -395,10 +404,10 @@
               allocate (vdbcxcm (3, norb_mu, norb_nu)); vdbcxcm = 0.0d0
               allocate (vdbcxcx (3, norb_mu, norb_nu)); vdbcxcx = 0.0d0
 
-              do isubtype = 1, species(in2)%nssh
-                Qin = s%atom(jatom)%shell(isubtype)%Qin
+              do isorp = 1, species(in2)%nssh
+                Qin = s%atom(jatom)%shell(isorp)%Qin
 
-                call getDMEs_Fdata_2c (in1, in2, interaction, isubtype, z,   &
+                call getDMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
      &                                 norb_mu, norb_nu, bcxcm, dbcxcm)
 
 ! Note the minus sign. d/dr1 = - eta * d/dd.
@@ -408,10 +417,10 @@
                   end do
                 end do
 
-                call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcxcm,  &
+                call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcxcm,   &
      &                        vdbcxcm, vdbcxcx)
 
-                prho_in_neighbors%Dblock =                                   &
+                prho_in_neighbors%Dblock =                                    &
      &            prho_in_neighbors%Dblock + vdbcxcx*Qin
               end do
               deallocate (bcxcm, bcxcx, dbcxcm, vdbcxcm, vdbcxcx)
@@ -476,21 +485,21 @@
         integer iatom, ineigh            !< counter over atoms and neighbors
         integer in1, in2, in3, inu, imu  !< species numbers
         integer jatom                    !< neighbor of iatom
-        integer interaction, isubtype    !< which interaction and subtype
+        integer interaction, isorp       !< which interaction and subtype
         integer num_neigh                !< number of neighbors
         integer matom                    !< matom is the self-interaction atom
         integer mbeta                    !< cell containing neighbor of iatom
           
-        integer norb_mu, norb_nu        !< size of the block for the pair
-        integer nssh_i, nssh_j         !< size of the block for the pair
+        integer norb_mu, norb_nu         !< size of the block for the pair
+        integer nssh_i, nssh_j           !< size of the block for the pair
 
         real z                           !< distance between r1 and r2
         real Qin
         
-        real, dimension (3) :: eta        !< vector part of epsilon eps(:,3)
-        real, dimension (3, 3) :: eps     !< the epsilon matrix
+        real, dimension (3) :: eta       !< vector part of epsilon eps(:,3)
+        real, dimension (3, 3) :: eps    !< the epsilon matrix
         real, dimension (3) :: r1, r2    !< positions of iatom and jatom
-        real, dimension (3) :: sighat     !< unit vector along r2 - r1  
+        real, dimension (3) :: sighat    !< unit vector along r2 - r1
 
 ! bcxcm = density matrix in molecular coordinates
 ! bcxcx = density matrix in crystal coordinates
@@ -594,23 +603,22 @@
               allocate (dbcxcm (nssh_i, nssh_j)); dbcxcm = 0.0d0
               allocate (vdbcxcm (3, nssh_i, nssh_j)); vdbcxcm = 0.0d0
 
-              do isubtype = 1, species(in1)%nssh
-                Qin = s%atom(iatom)%shell(isubtype)%Qin
+              do isorp = 1, species(in1)%nssh
+                Qin = s%atom(iatom)%shell(isorp)%Qin
 
-                call getDMEs_Fdata_2c (in1, in3, interaction, isubtype, z,   &
+                call getDMEs_Fdata_2c (in1, in3, interaction, isorp, z,       &
      &                                 nssh_i, nssh_j, bcxcm, dbcxcm)
 
 ! Note the minus sign. d/dr1 = - eta * d/dd.
-                
                 do inu = 1, nssh_j !norb_nu
                   do imu = 1, nssh_i !norb_mu
                     if (z .gt. 1.0d-3) vdbcxcm(:,imu,inu) = - eta(:)*dbcxcm(imu,inu)
                   end do
                 end do
 
-                pWrho_in_neighbors%Dblock =                                  &
+                pWrho_in_neighbors%Dblock =                                   &
      &            pWrho_in_neighbors%Dblock + vdbcxcm*Qin
-                pWrho_bond_neighbors%Dblock =                                &
+                pWrho_bond_neighbors%Dblock =                                 &
      &            pWrho_bond_neighbors%Dblock + vdbcxcm*Qin
               end do
 
@@ -619,10 +627,10 @@
               interaction = P_rhoS_ontopR
               in3 = in2
 
-              do isubtype = 1, species(in2)%nssh
-                Qin = s%atom(jatom)%shell(isubtype)%Qin
+              do isorp = 1, species(in2)%nssh
+                Qin = s%atom(jatom)%shell(isorp)%Qin
 
-                call getDMEs_Fdata_2c (in1, in2, interaction, isubtype, z,   &
+                call getDMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
      &                                 nssh_i, nssh_j, bcxcm, dbcxcm)
 
 ! Note the minus sign. d/dr1 = - eta * d/dd.
@@ -632,9 +640,9 @@
                   end do
                 end do
 
-                pWrho_in_neighbors%Dblock =                                  &
+                pWrho_in_neighbors%Dblock =                                   &
      &            pWrho_in_neighbors%Dblock + vdbcxcm*Qin
-                pWrho_bond_neighbors%Dblock =                                &
+                pWrho_bond_neighbors%Dblock =                                 &
      &            pWrho_bond_neighbors%Dblock + vdbcxcm*Qin
               end do
               deallocate (bcxcm, dbcxcm, vdbcxcm)
@@ -698,10 +706,10 @@
               allocate (dbcxcm (nssh_i, nssh_i)); dbcxcm = 0.0d0
               allocate (vdbcxcm (3, nssh_i, nssh_i)); vdbcxcm = 0.0d0
 
-              do isubtype = 1, species(in2)%nssh
-                Qin = s%atom(jatom)%shell(isubtype)%Qin
+              do isorp = 1, species(in2)%nssh
+                Qin = s%atom(jatom)%shell(isorp)%Qin
 
-                call getDMEs_Fdata_2c (in1, in2, interaction, isubtype, z,   &
+                call getDMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
      &                                 nssh_i, nssh_i, bcxcm, dbcxcm)
 
 ! Note the minus sign. d/dr1 = - eta * d/dd.
@@ -711,9 +719,9 @@
                   end do
                 end do
 
-                pWrho_in_neighbors%Dblock =                                  &
+                pWrho_in_neighbors%Dblock =                                   &
      &            pWrho_in_neighbors%Dblock + vdbcxcm*Qin
-                pWrho_bond_neighbors%Dblock =                                &
+                pWrho_bond_neighbors%Dblock =                                 &
      &            pWrho_bond_neighbors%Dblock + vdbcxcm*Qin
               end do
               deallocate (bcxcm, dbcxcm, vdbcxcm)
@@ -731,10 +739,10 @@
               allocate (dbcxcm (nssh_i, nssh_i)); dbcxcm = 0.0d0
               allocate (vdbcxcm (3, nssh_i, nssh_i)); vdbcxcm = 0.0d0
 
-              do isubtype = 1, species(in2)%nssh
-                Qin = s%atom(jatom)%shell(isubtype)%Qin
+              do isorp = 1, species(in2)%nssh
+                Qin = s%atom(jatom)%shell(isorp)%Qin
 
-                call getDMEs_Fdata_2c (in1, in2, interaction, isubtype, z,   &
+                call getDMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
      &                                 nssh_i, nssh_i, bcxcm, dbcxcm)
 
 ! Note the minus sign. d/dr1 = - eta * d/dd.
@@ -744,7 +752,7 @@
                   end do
                 end do
 
-                pWrho_in_neighbors%Dblock =                                  &
+                pWrho_in_neighbors%Dblock =                                   &
      &            pWrho_in_neighbors%Dblock + vdbcxcm*Qin
               end do
               deallocate (bcxcm, dbcxcm, vdbcxcm)

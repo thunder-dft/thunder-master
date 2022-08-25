@@ -90,13 +90,12 @@
 ! ============================================================================
 ! Code written by:
 ! James P. Lewis
-! Box 6315, 135 Willey St.
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 !
 ! Program Declaration
 ! ===========================================================================
@@ -126,10 +125,10 @@
         if (r .gt. rend) then
           Dsmoother = 0.0d0
         else if (r .lt. rbegin) then
-          Dsmoother = 1.0d0
+          Dsmoother = 0.0d0
         else
           ratio = (r - rbegin)/(rend - rbegin)
-          Dsmoother = 2.0d0*(1.0d0 - ratio**2)*(2.0d0*ratio)/(rend - rbegin)
+          Dsmoother = - 2.0d0*(1.0d0 - ratio**2)*(2.0d0*ratio)/(rend - rbegin)
 ! two methods - if you want newer method then uncomment these lines
 !         Dsmoother = 2.0d0*(scaler - 3)*ratio + 3.0d0*(2 - 2*scaler)*ratio**2 &
 !     &                + 4.0d0*scaler*ratio**3

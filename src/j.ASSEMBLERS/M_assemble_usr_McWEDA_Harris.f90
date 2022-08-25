@@ -41,8 +41,14 @@
 !!
 ! ===========================================================================
         module M_assemble_usr
+
+! /GLOBAL
         use M_assemble_blocks
+
+! /SYSTEM
         use M_configuraciones
+
+! /FDATA
         use M_Fdata_1c
         use M_Fdata_2c
 
@@ -59,7 +65,7 @@
 ! ===========================================================================
 ! Code written by:
 ! James P. Lewis
-! Unit 909 of Buidling 17W
+! Unit 909 of Building 17W
 ! 17 Science Park West Avenue
 ! Pak Shek Kok, New Territories 999077
 ! Hong Kong
@@ -89,7 +95,7 @@
 ! Variable Declaration and Description
 ! ===========================================================================
         integer iatom, ineigh             !< counter over atoms and neighbors
-        integer in1, in2, in3             !< species numbers
+        integer in1, in2                  !< species numbers
         integer jatom                     !< neighbor of iatom
         integer interaction, isubtype     !< which interaction and subtype
         integer logfile                   !< writing to which unit
@@ -170,7 +176,6 @@
 ! For these Harris interactions, there are no subtypes and isorp = 0
             isubtype = 0
             interaction = P_coulomb
-            in3 = in2
 
             allocate (coulomb (norb_mu, norb_nu))
             call getMEs_Fdata_2c (in1, in2, interaction, isubtype, z,         &
@@ -209,7 +214,7 @@
                 end do
               end do
               u0(iatom)%neighbors(ineigh)%E =                                 &
-     &         (P_eq2/2.0d0)*(Zi*Zj/z - u0(iatom)%neighbors(ineigh)%E)
+     &          (P_eq2/2.0d0)*(Zi*Zj/z - u0(iatom)%neighbors(ineigh)%E)
             end if
             deallocate (coulomb)
 

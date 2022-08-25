@@ -30,28 +30,35 @@
 
 ! Program Description
 ! ===========================================================================
-!       This is a module containing all of the assembler programs required
-! to assemble all of the matrix elements for the two-center interactions for
-! the Harris interactions.
-! It contains the following subroutines within the module:
-!
-!       M_assemble_3c.f90 - assemble a general 3c matrix
-!
-! For a complete list of the interactions see the files 2c.Z1.Z2.dir now
-! located in the Fdata directory.  This list will change depending on
-! the datafiles included there. This list is an output from running create.x
+!>       This is a module containing all of the assembler programs required
+!! to assemble all of the matrix elements for the two-center interactions for
+!! the Harris interactions.
+!! It contains the following subroutines within the module:
+!!
+!!       M_assemble_vna_3c.f90 - assemble Hartree 3c matrix elements
+!!
+!! For a complete list of the interactions see the files 2c.Z1.Z2.dir now
+!! located in the Fdata directory.  This list will change depending on
+!! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
         module M_assemble_3c
+        
+! /GLOBAL
         use M_assemble_blocks
+
+! /SYSTEM
         use M_configuraciones
-        use M_Fdata_3c
         use M_rotations
+
+! /FDATA
+        use M_Fdata_3c
 
 ! Type Declaration
 ! ===========================================================================
 
 ! module procedures
         contains
+
 
 ! ===========================================================================
 ! Subroutine Description
@@ -62,13 +69,12 @@
 ! ===========================================================================
 ! Code written by:
 ! James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Program Declaration
@@ -89,21 +95,21 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer ialpha, iatom, jatom     ! the three parties involved
-        integer ibeta, jbeta             ! cells for three atoms
-        integer ineigh, mneigh           ! counter over neighbors
-        integer in1, in2, indna          ! species numbers
-        integer interaction, isorp       ! which interaction and subtype
+        integer ialpha, iatom, jatom     !< the three parties involved
+        integer ibeta, jbeta             !< cells for three atoms
+        integer ineigh, mneigh           !< counter over neighbors
+        integer in1, in2, indna          !< species numbers
+        integer interaction, isorp       !< which interaction and subtype
 
-        integer norb_mu, norb_nu         ! size of the block for the pair
+        integer norb_mu, norb_nu         !< size of the block for the pair
 
-        real z                           ! distance between r1 and r2
-        real x, cost                     ! dnabc and angle
+        real z                           !< distance between r1 and r2
+        real x, cost                     !< dnabc and angle
 
-        real, dimension (3, 3) :: eps    ! the epsilon matrix
-        real, dimension (3) :: r1, r2, r3, r12  ! positions
-        real, dimension (3) :: sighat    ! unit vector along r2 - r1
-        real, dimension (3) :: rhat      ! unit vector along bc - r3
+        real, dimension (3, 3) :: eps    !< the epsilon matrix
+        real, dimension (3) :: r1, r2, r3, r12  !< positions
+        real, dimension (3) :: sighat    !< unit vector along r2 - r1
+        real, dimension (3) :: rhat      !< unit vector along bc - r3
 
         real, dimension (:, :), allocatable :: bcnam
         real, dimension (:, :), allocatable :: bcnax
@@ -120,6 +126,7 @@
 
 ! Allocate Arrays
 ! ===========================================================================
+! None
 
 ! Procedure
 ! ===========================================================================
@@ -184,12 +191,13 @@
 ! The rotated  matrix elements are stored in sx, where x means crytal
 ! coordinates.
               interaction = P_bcna
-              isorp = 0
 
 ! Allocate block arrays
               allocate (bcnam(norb_mu, norb_nu))
               allocate (bcnax(norb_mu, norb_nu))
 
+! Neutral atom case
+              isorp = 0
               call getMEs_Fdata_3c (in1, in2, indna, interaction, isorp, x,   &
      &                              z, norb_mu, norb_nu, cost, bcnam)
 

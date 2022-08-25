@@ -21,7 +21,6 @@
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -144,10 +143,10 @@
           real, allocatable :: vxc_off_site (:, :) ! atom case
           real, allocatable :: vxc_on_site (:, :)  ! atom case
 
-          !ewald forces
+          ! ewald forces
           real, dimension (3) :: ewald
+          real, dimension (3) :: ewaldlr
           real, allocatable :: ewaldsr (:, :)
-          real, allocatable :: ewaldlr (:, :)
 
           ! three-center force terms for Hartree interactions
           real, dimension (3) :: f3naa
@@ -163,6 +162,9 @@
           real, dimension (3) :: f3nla
           real, dimension (3) :: f3nlb
           real, dimension (3) :: f3nlc
+
+          ! total banc structure force
+          real, dimension (3) :: febs
 
           ! Short-range force (double-counting terms)
           real, dimension (3) :: usr
@@ -238,6 +240,7 @@
 
           ! ewald interactions
           real, pointer :: ewald (:, :)
+          real, pointer :: dewald (:, :, :)
           type (T_assemble_neighbors), pointer :: ewaldsr (:)
           type (T_assemble_neighbors), pointer :: ewaldlr (:)
 

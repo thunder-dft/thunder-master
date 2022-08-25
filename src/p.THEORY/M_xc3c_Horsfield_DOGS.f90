@@ -173,7 +173,6 @@
 
         include '../include/gridsizes.h'
 
-
 ! Argument Declaration and Description
 ! ===========================================================================
 ! Input
@@ -269,9 +268,9 @@
 
                 ! Test output file for this species triplet
                 itheta = 1
-                write (filename, '("/", "xc3c_", i2.2, "_", i2.2, ".", i2.2,  &
-     &                                         ".", i2.2, ".", i2.2, ".dat")')&
-     &                 itheta, ideriv, species(ispecies)%nZ,                  &
+                write (filename, '("/", "xc3c_", i2.2, "_", i2.2, ".", i2.2,   &
+     &                                         ".", i2.2, ".", i2.2, ".dat")') &
+     &                 itheta, ideriv, species(ispecies)%nZ,                   &
      &                                 species(jspecies)%nZ, species(kspecies)%nZ
                 inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
                 if (skip) cycle
@@ -320,21 +319,18 @@
      &                                                index_3c = 1, nME3c_max)
                   write (12,*) (pFdata_cell%mvalue_3c(index_3c),              &
      &                                                    index_3c = 1, nME3c_max)
-                end do
-              end do ! end loop over ideriv
-
-              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ,&
-     &                             species(kspecies)%nZ
+                end do ! end loop over itheta (defining files)
+                write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ,&
+     &                               species(kspecies)%nZ
 
 ! Open all the output files.
-              iounit = 12
-              do ideriv = ideriv_min, ideriv_max
+                iounit = 12
                 do itheta = 1, P_ntheta
                   iounit = iounit + 1
-                  write (filename, '("/", "xc3c_", i2.2, "_", i2.2, ".", i2.2,&
-     &                               ".", i2.2, ".", i2.2, ".dat")')          &
-     &                   itheta, ideriv, species(ispecies)%nZ,                &
-     &                   species(jspecies)%nZ, species(kspecies)%nZ
+                  write (filename, '("/", "xc3c_", i2.2, "_", i2.2, ".",      &
+     &                               i2.2, ".", i2.2, ".", i2.2, ".dat")')    &
+     &              itheta, ideriv, species(ispecies)%nZ,                     &
+     &              species(jspecies)%nZ, species(kspecies)%nZ
 
 ! Write out the data...
                   open (unit = (iounit),                                      &
@@ -347,7 +343,8 @@
 ! Begin the big loops over dbc and dna.
 ! ----------------------------------------------------------------------------
 ! Loop over all bondcharge distances.
-             do ibcba = 1, nbc_xc3c
+              do ibcba = 1, nbc_xc3c
+                if (skip) cycle
                 dbcx = float(ibcba - 1)*dbc/float(nbc_xc3c - 1)
 
 ! for all bondcharges-- we set b=dbcx/2.
@@ -688,7 +685,8 @@
 ! We always calculate LDA (iexc = 3) for the three-center interactions because
 ! doing gradient corrections for three-centers is a bug-a-boo and does not
 ! yield significant improvements.
-        iexc = 3
+! Find which exchange-correlation we are calcuating:
+        iexc = species_PP(ispecies)%iexc
 
 ! Establish drho for this one-center case.
         drho = min(species(ispecies)%rcutoffA_max,                            &

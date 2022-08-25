@@ -59,8 +59,9 @@
 ! ===========================================================================
 ! one-center xc data for McWEDA
         type T_vxc_1c
-          real, pointer :: E(:,:)              !< xc-energy (shells)
-          real, pointer :: dE(:,:,:)           !< 1st derivatives of energy
+          real E                               !< xc-energy (shells)
+
+          real, pointer :: dE(:)               !< 1st derivatives of energy
 
           real, pointer :: V(:, :)             !< Vxc potential
           real, pointer :: dV(:, :, :)         !< 1st derivatives of Vxc
@@ -120,8 +121,11 @@
 ! ===========================================================================
         integer ispecies                  !< counter for number of species
 
+        ! different derivative cases
+        integer ideriv, ideriv_min, ideriv_max
+
         integer nssh                      !< counters for number of shells
-        integer issh, jssh, kssh
+        integer issh, jssh
 
         character (len=30) filename
 
@@ -137,68 +141,40 @@
         do ispecies = 1, nspecies
 
           ! Open ouput file for this species pair
-          write (filename, '("/vxc_1c", ".", i2.2, ".dat")')                 &
-     &           species(ispecies)%nZ
-          open (11, file = trim(fdata_location)//trim(filename),             &
-     &          status = 'old')
+          write (filename, '("/vxc_1c", ".", i2.2, ".dat")') species(ispecies)%nZ
+          open (11, file = trim(fdata_location)//trim(filename), status = 'old')
 
           nssh = species(ispecies)%nssh
-          allocate (vxc_1c(ispecies)%E(nssh,nssh))
           allocate (vxc_1c(ispecies)%V(nssh,nssh))
 
           ! 0th order
-          do issh = 1, nssh
-            read (11,*) (vxc_1c(ispecies)%E(issh,jssh), jssh = 1, nssh)
-          end do
+          read (11,*) vxc_1c(ispecies)%E
           do issh = 1, nssh
             read (11,*) (vxc_1c(ispecies)%V(issh,jssh), jssh = 1, nssh)
           end do
-          close (11)
-        end do
+          read (11,*)
 
 ! ***************************************************************************
-!                       R E A D    P O T E N T I A L S
+!                    R E A D    D E R I V A T I V E   P I E C E S
 ! ***************************************************************************
-        do ispecies = 1, nspecies
+! Loop over the different derivative types. We already did ideriv=0 case.
+! Set ideriv_min = 1 and ideriv_max = 2 for one center case.
+          ideriv_min = 1
+          ideriv_max = 2
 
-          ! Open ouput file for this species pair
-          write (filename, '("/nuxcrho_1c", ".", i2.2, ".dat")')             &
-     &      species(ispecies)%nZ
-          open (11, file = trim(fdata_location)//trim(filename),             &
-     &            status = 'old')
+          ! allocate the derivative pieces
+          allocate (vxc_1c(ispecies)%dE(ideriv_min:ideriv_max))
+          allocate (vxc_1c(ispecies)%dV(ideriv_min:ideriv_max,nssh,nssh))
 
-          nssh = species(ispecies)%nssh
-          allocate (vxc_1c(ispecies)%dV(nssh,nssh,nssh))
+          do ideriv = ideriv_min, ideriv_max
 
-          ! 1st and 2nd order diagonal terms
-          do kssh = 1,nssh
+            ! 1st order derivative terms
+            read (11,*) vxc_1c(ispecies)%dE(ideriv)
             do issh = 1, nssh
-              read (11,*) (vxc_1c(ispecies)%dV(issh,jssh,kssh), jssh = 1, nssh)
+              read (11,*) (vxc_1c(ispecies)%dV(ideriv,issh,jssh), jssh = 1, nssh)
             end do
-          end do
-          close (11)
-        end do
-
-! ***************************************************************************
-!                       R E A D   E N E R G I E S
-! ***************************************************************************
-        do ispecies = 1, nspecies
-
-          ! Open ouput file for this species pair
-          write (filename, '("/excrho_1c", ".", i2.2, ".dat")')              &
-     &      species(ispecies)%nZ
-          open (11, file = trim(fdata_location)//trim(filename),             &
-     &            status = 'old')
-
-          nssh = species(ispecies)%nssh
-          allocate (vxc_1c(ispecies)%dE(nssh,nssh,nssh))
-
-          ! 1st and 2nd order diagonal terms
-          do kssh = 1,nssh
-            do issh = 1, nssh
-              read (11,*) (vxc_1c(ispecies)%dE(issh,jssh,kssh), jssh = 1, nssh)
-            end do
-          end do
+            read (11,*)
+          end do  ! end loop over ideriv
           close (11)
         end do
 
@@ -257,7 +233,6 @@
 ! Procedure
 ! ===========================================================================
         do ispecies = 1, nspecies
-          deallocate (vxc_1c(ispecies)%E)
           deallocate (vxc_1c(ispecies)%dE)
           deallocate (vxc_1c(ispecies)%V)
           deallocate (vxc_1c(ispecies)%dV)

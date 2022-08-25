@@ -1,6 +1,6 @@
 ! Definition of three-center interaction types.
         integer, parameter :: P_maxtype = 4     !< current max interactions
-        integer, parameter :: P_maxsubtype = 4  !< current max subtypes
+        integer, parameter :: P_maxsubtype = 6  !< current max subtypes
         integer, parameter :: P_maxtheta = 5    !< current max angles
 
         integer, parameter :: P_rho_3c = 1      ! density for McWEDA

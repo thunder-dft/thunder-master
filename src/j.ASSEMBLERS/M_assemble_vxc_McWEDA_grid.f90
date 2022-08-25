@@ -1,19 +1,22 @@
 ! copyright info:
 !
-!                             @Copyright 2008
+!                             @Copyright 2022
 !                           Fireball Committee
-! West Virginia University - James P. Lewis, Chair
-! Arizona State University - Otto F. Sankey
-! Universidad Autonoma de Madrid - Jose Ortega
+! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
+! Universidad de Madrid - Jose Ortega
 ! Academy of Sciences of the Czech Republic - Pavel Jelinek
+! Arizona State University - Otto F. Sankey
 
 ! Previous and/or current contributors:
 ! Auburn University - Jian Jun Dong
-! Caltech - Brandon Keith
+! California Institute of Technology - Brandon Keith
+! Czech Institute of Physics - Prokop Hapala
+! Czech Institute of Physics - Vladimír Zobač
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+! Synfuels China Technology Co., Ltd. - Pengju Ren
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
@@ -54,15 +57,23 @@
 ! the datafiles included there. This list is an output from running create.x
 ! ===========================================================================
         module M_assemble_vxc
+
+! /GLOBAL
+        use M_assemble_blocks
+
+! /SYSTEM
+        use M_configuraciones
+        use M_neighbors
+        use M_rotations
+
+! /ASSEMBLERS
         use M_assemble_rho_McWEDA
         use M_assemble_2c
-        use M_assemble_blocks
-        use M_configuraciones
+
+! /FDATA
         use M_Fdata_1c
         use M_Fdata_2c
         use M_Fdata_3c
-        use M_neighbors
-        use M_rotations
 
 ! Type Declaration
 ! ===========================================================================
@@ -90,7 +101,7 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine assemble_vxc (s)
+        subroutine assemble_vxc_2c (s)
         implicit none
 
 ! Argument Declaration and Description
@@ -151,12 +162,6 @@
             in2 = s%atom(jatom)%imass
             norb_nu = species(in2)%norb_max
             allocate (pvxc_neighbors%block(norb_mu, norb_nu))
-
-! ecuacion (16) PRB 71, 235101 (2005)
-!  vxc = vxc_bond + vxc_SN - vxc_SN_bond
-   !         pvxc_neighbors%block = vxc_SN(iatom)%neighbors(ineigh)%block     &
-   !  &                            + vxc_bond(iatom)%neighbors(ineigh)%block  &
-   !  &                            - vxc_SN_bond(iatom)%neighbors(ineigh)%block
           end do
         end do
 
