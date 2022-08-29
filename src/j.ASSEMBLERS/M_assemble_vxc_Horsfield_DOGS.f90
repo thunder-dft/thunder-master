@@ -326,6 +326,7 @@
 
 ! For the vxc_ontop case, the potential is in the first atom - left (iatom):
               interaction = P_vxc_ontop
+              write (*,*) ' P_vxc_ontop = ', P_vxc_ontop
               in3 = in2
               ideriv = 0
 
@@ -346,6 +347,7 @@
               dQ_factor(2) =  dQ(iatom)/(2.0d0*dqorb(in1))
               dQ_factor(3) = -dQ(jatom)/(2.0d0*dqorb(in2))
               dQ_factor(4) =  dQ(jatom)/(2.0d0*dqorb(in2))
+              write (*,*) 'iatom, ineigh, jatom, in1, in2 = ', iatom, ineigh, jatom, in1, in2
               do ideriv = ideriv_min, ideriv_max
                 call getMEs_Fdata_2c (in1, in2, interaction, ideriv, z,       &
      &                                norb_mu, norb_nu, bcxcm)

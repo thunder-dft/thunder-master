@@ -443,8 +443,8 @@
             prho_bond_shell =                                                  &
      &        s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,issh)
               call lda_ceperley_alder (prho_bond_shell, exc_bond,              &
-     &                                     muxc_bond, dexc_bond, d2exc_bond,   &
-     &                                     dmuxc_bond, d2muxc_bond)
+     &                                 muxc_bond, dexc_bond, d2exc_bond,       &
+     &                                 dmuxc_bond, d2muxc_bond)
 
 ! Calculate vxc_SN and vxc_SN_bond for (mu,nu)-block
 ! loop over orbitals in the iatom-shell (imu)
@@ -477,10 +477,10 @@
      &                                 dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
 
               prho_bond_shell =                                              &
-     &              s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,jssh)
+     &          s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,jssh)
               call lda_ceperley_alder (prho_bond_shell, exc_bond,            &
-     &                                     muxc_bond, dexc_bond, d2exc_bond, &
-     &                                     dmuxc_bond, d2muxc_bond)
+     &                                 muxc_bond, dexc_bond, d2exc_bond,     &
+     &                                 dmuxc_bond, d2muxc_bond)
 
 ! Calculate vxc_SN and vxc_SN_bond for (mu,nu)-block
 ! loop over orbitals in the iatom-shell (imu)
@@ -679,8 +679,7 @@
      &                              norb_mu, norb_nu, bcxcm)
               call rotate (in1, in3, eps, norb_mu, norb_nu, bcxcm, bcxcx)
               pvxc_bond_neighbors%block = bcxcx
-              deallocate (bcxcm)
-              deallocate (bcxcx)
+              deallocate (bcxcm, bcxcx)
             end if ! end if for r1 .eq. r2 case
           end do ! end loop over neighbors
         end do ! end loop over atoms

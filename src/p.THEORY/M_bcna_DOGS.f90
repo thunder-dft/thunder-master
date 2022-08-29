@@ -272,7 +272,6 @@
      &                                                    index_3c = 1, nME3c_max)
                 end do
               end do
-
               write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, &
      &                             species(kspecies)%nZ
 

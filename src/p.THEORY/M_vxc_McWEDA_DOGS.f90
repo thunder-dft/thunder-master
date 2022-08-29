@@ -1009,7 +1009,12 @@
      &                           i2.2, ".dat")')                             &
      &          isorp, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-              if (skip) cycle
+              if (skip) then
+                pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
+                pFdata_bundle%nFdata_cell_2c =                                &
+                  pFdata_bundle%nFdata_cell_2c + species(ispecies)%nssh
+                cycle
+              end if
               open (unit = 11, file = trim(Fdata_location)//trim(filename),  &
      &              status = 'unknown')
 
@@ -1302,7 +1307,12 @@
      &                           i2.2, ".dat")')                             &
      &          isorp, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-              if (skip) cycle
+              if (skip) then
+                pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
+                pFdata_bundle%nFdata_cell_2c =                                &
+                  pFdata_bundle%nFdata_cell_2c + species(jspecies)%nssh
+                cycle
+              end if
               open (unit = 11, file = trim(Fdata_location)//trim(filename),  &
      &              status = 'unknown')
 

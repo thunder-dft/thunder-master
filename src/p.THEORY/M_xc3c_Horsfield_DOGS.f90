@@ -251,38 +251,39 @@
 !               itemp   = itemp - (jspecies - 1)*(nspecies)
 !               ispecies = itemp
 
+              ! cut some lengthy notation with pointers
+              pFdata_bundle=>Fdata_bundle_3c(ispecies, jspecies, kspecies)
+              pFdata_bundle%nFdata_cell_3c = pFdata_bundle%nFdata_cell_3c + 1
+              nFdata_cell_3c = pFdata_bundle%nFdata_cell_3c
+              pFdata_cell=>pFdata_bundle%Fdata_cell_3c(nFdata_cell_3c)
+
+              call make_munu_3c (nFdata_cell_3c, ispecies, jspecies, kspecies)
+              nME3c_max = pFdata_cell%nME
+
+              allocate (qpl(P_ntheta, nME3c_max, ideriv_min:(ideriv_max - ideriv_min + 1)))
+              qpl = 0.0d0
+
+              ! Test output file for this species triplet
+              itheta = 1
+              ideriv = 1
+              write (filename, '("/", "xc3c_", i2.2, "_", i2.2, ".", i2.2,    &
+     &                                       ".", i2.2, ".", i2.2, ".dat")')  &
+     &           itheta, ideriv, species(ispecies)%nZ,                        &
+     &                           species(jspecies)%nZ, species(kspecies)%nZ
+              inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
+              if (skip) cycle
+
+              ! Set up grid loop control constants
+              rcutoff1 = species(ispecies)%rcutoffA_max
+              rcutoff2 = species(jspecies)%rcutoffA_max
+              rcutoff3 = species(kspecies)%rcutoffA_max
+              dbc = rcutoff1 + rcutoff2
+              dna = rcutoff3 + max(rcutoff1,rcutoff2)
+
+              pFdata_bundle%nFdata_cell_3c = pFdata_bundle%nFdata_cell_3c - 1
+
 ! Each ideriv evaluates +- dq changes in the density.
               do ideriv = ideriv_min, ideriv_max
-
-                ! cut some lengthy notation with pointers
-                pFdata_bundle=>Fdata_bundle_3c(ispecies, jspecies, kspecies)
-                pFdata_bundle%nFdata_cell_3c = pFdata_bundle%nFdata_cell_3c + 1
-                nFdata_cell_3c = pFdata_bundle%nFdata_cell_3c
-                pFdata_cell=>pFdata_bundle%Fdata_cell_3c(nFdata_cell_3c)
-
-                call make_munu_3c (nFdata_cell_3c, ispecies, jspecies, kspecies)
-                nME3c_max = pFdata_cell%nME
-
-                allocate (qpl(P_ntheta, nME3c_max, ideriv_min:(ideriv_max - ideriv_min + 1)))
-                qpl = 0.0d0
-
-                ! Test output file for this species triplet
-                itheta = 1
-                write (filename, '("/", "xc3c_", i2.2, "_", i2.2, ".", i2.2,   &
-     &                                         ".", i2.2, ".", i2.2, ".dat")') &
-     &                 itheta, ideriv, species(ispecies)%nZ,                   &
-     &                                 species(jspecies)%nZ, species(kspecies)%nZ
-                inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-                if (skip) cycle
-
-                ! Set up grid loop control constants
-                rcutoff1 = species(ispecies)%rcutoffA_max
-                rcutoff2 = species(jspecies)%rcutoffA_max
-                rcutoff3 = species(kspecies)%rcutoffA_max
-                dbc = rcutoff1 + rcutoff2
-                dna = rcutoff3 + max(rcutoff1,rcutoff2)
-
-                pFdata_bundle%nFdata_cell_3c = pFdata_bundle%nFdata_cell_3c - 1
                 do itheta = 1, P_ntheta
                   pFdata_bundle%nFdata_cell_3c = pFdata_bundle%nFdata_cell_3c + 1
 
@@ -320,11 +321,13 @@
                   write (12,*) (pFdata_cell%mvalue_3c(index_3c),              &
      &                                                    index_3c = 1, nME3c_max)
                 end do ! end loop over itheta (defining files)
-                write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ,&
-     &                               species(kspecies)%nZ
+              end do ! end loop over ideriv
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, &
+     &                            species(kspecies)%nZ
 
 ! Open all the output files.
-                iounit = 12
+              iounit = 12
+              do ideriv = ideriv_min, ideriv_max
                 do itheta = 1, P_ntheta
                   iounit = iounit + 1
                   write (filename, '("/", "xc3c_", i2.2, "_", i2.2, ".",      &
@@ -337,7 +340,7 @@
      &                  file = trim(Fdata_location)//trim(filename),          &
      &                  status = 'unknown')
                 end do
-              end do ! end loop over ideriv
+              end do  ! end ideriv loop
 
 ! ----------------------------------------------------------------------------
 ! Begin the big loops over dbc and dna.
@@ -373,10 +376,10 @@
                   do ideriv = ideriv_min, ideriv_max
                     do itheta = 1, P_ntheta
                       iounit = iounit + 1
-                      write (iounit,*)                                        &
+                      write (iounit,*)                                       &
      &                  (qpl(itheta,index_3c,ideriv), index_3c = 1, nME3c_max)
                     end do
-                  end do  ! end loop over ideriv
+                  end do  ! end isporp loop
                 end do  ! end of the dna loop
               end do  ! the end of the dbc loop
 
@@ -387,7 +390,7 @@
                   iounit = iounit + 1
                   close (unit = iounit)
                 end do
-              end do  ! end loop over ideriv
+              end do  ! end ideriv loop
 
 !         end if ! MPI which node end if
 !       end do ! end loop over isuperloop
