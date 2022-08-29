@@ -226,6 +226,7 @@
 ! - right (iatom): <mu|(rho_mu + rho_nu)|nu> -> (right) <mu|(rho_nu)|nu>
               interaction = P_rho_ontopR
               in3 = in2
+
               do isorp = 1, species(in2)%nssh
                 Qneutral = species(in2)%shell(isorp)%Qneutral
                 call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
@@ -252,13 +253,16 @@
           r1 = s%atom(iatom)%ratom
           in1 = s%atom(iatom)%imass
           norb_mu = species(in1)%norb_max
-          num_neigh = s%neighbors(iatom)%neighn
 
           ! cut some lengthy notation
-          prho_in=>s%rho_in(iatom); prho_in_neighbors=>prho_in%neighbors(matom)
-          prho_bond=>s%rho_bond(iatom); prho_bond_neighbors=>prho_bond%neighbors(matom)
+          prho_in=>s%rho_in(iatom)
+          prho_in_neighbors=>prho_in%neighbors(matom)
+
+          prho_bond=>s%rho_bond(iatom)
+          prho_bond_neighbors=>prho_bond%neighbors(matom)
 
 ! Loop over the neighbors of each iatom.
+          num_neigh = s%neighbors(iatom)%neighn
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
@@ -319,6 +323,7 @@
                 call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,        &
      &                                norb_mu, norb_nu, bcxcm)
                 call rotate (in1, in3, eps, norb_mu, norb_nu, bcxcm, bcxcx)
+
                 prho_in_neighbors%block =                                     &
      &            prho_in_neighbors%block + bcxcx*Qneutral
               end do
@@ -659,7 +664,6 @@
      &            pWrho_bond_neighbors%block + bcxcm*Qneutral
               end do
               deallocate (bcxcm)
-
             end if ! end if for r1 .eq. r2 case
           end do ! end loop over neighbors
         end do ! end loop over atoms
@@ -675,29 +679,31 @@
           r1 = s%atom(iatom)%ratom
           in1 = s%atom(iatom)%imass
           nssh_i = species(in1)%nssh
-          num_neigh = s%neighbors(iatom)%neighn
 
           ! cut some lengthy notation
           prho_in_weighted=>s%rho_in_weighted(iatom)
           pWrho_in_neighbors=>prho_in_weighted%neighbors(matom)
+
           prho_bond_weighted=>s%rho_bond_weighted(iatom)
+          pWrho_bond_neighbors=>prho_bond_weighted%neighbors(matom)
 
 ! Loop over the neighbors of each iatom.
+          num_neigh = s%neighbors(iatom)%neighn
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
 
-            ! cut some more lengthy notation
-            pWrho_bond_neighbors=>prho_bond_weighted%neighbors(matom)
+            ! cut some lengthy notation
+!           pWrho_in_neighbors=>prho_in_weighted%neighbors(ineigh)
+!           pWrho_bond_neighbors=>prho_bond_weighted%neighbors(ineigh)
 
 ! Calculate the distance between the two centers.
             z = distance (r1, r2)
 
             if (iatom .eq. jatom .and. mbeta .eq. 0) then
-
-! one center case
+! one center case : calculate both rho_in and rho_bond
               interaction = P_rhoS_atom
               in3 = in1
 
@@ -706,12 +712,12 @@
 
               do isorp = 1, species(in2)%nssh
                 Qneutral = species(in2)%shell(isorp)%Qneutral
-                call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
+                call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,        &
      &                                nssh_i, nssh_i, bcxcm)
 
-                pWrho_in_neighbors%block =                                   &
+                pWrho_in_neighbors%block =                                    &
      &            pWrho_in_neighbors%block + bcxcm*Qneutral
-                pWrho_bond_neighbors%block =                                 &
+                pWrho_bond_neighbors%block =                                  &
      &            pWrho_bond_neighbors%block + bcxcm*Qneutral
               end do
               deallocate (bcxcm)
@@ -727,10 +733,10 @@
 
               do isorp = 1, species(in2)%nssh
                 Qneutral = species(in2)%shell(isorp)%Qneutral
-                call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,    &
+                call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,        &
      &                                nssh_i, nssh_i, bcxcm)
 
-                pWrho_in_neighbors%block =                                   &
+                pWrho_in_neighbors%block =                                    &
      &            pWrho_in_neighbors%block + bcxcm*Qneutral
               end do
               deallocate (bcxcm)

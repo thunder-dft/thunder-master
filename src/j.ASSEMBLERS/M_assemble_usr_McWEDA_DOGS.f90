@@ -384,7 +384,7 @@
           do issh = 1, species(in1)%nssh
             l1 = species(in1)%shell(issh)%lssh
             n1 = n1 + l1 + 1
-            q_mu = s%atom(iatom)%shell(issh)%Qin/(2*l1 +1)
+            q_mu = s%atom(iatom)%shell(issh)%Qin/(2*l1+1)
             prho_in_shell =                                                    &
      &        s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,issh)
             call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,           &
@@ -392,9 +392,9 @@
 
             prho_bond_shell =                                                  &
      &        s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,issh)
-              call lda_ceperley_alder (prho_bond_shell, exc_bond,              &
-     &                                 muxc_bond, dexc_bond, d2exc_bond,       &
-     &                                 dmuxc_bond, d2muxc_bond)
+            call lda_ceperley_alder (prho_bond_shell, exc_bond,                &
+     &                               muxc_bond, dexc_bond, d2exc_bond,         &
+     &                               dmuxc_bond, d2muxc_bond)
 
 ! Set the xc-submatrices
 ! loop over orbitals in the iatom-shell

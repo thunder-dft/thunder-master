@@ -146,12 +146,12 @@
 ! Calculate rho_in (density) matrix elements
         write (logfile,*) ' Calling rho (density) input assemblers. '
         call assemble_rho_2c (s)
-!       call assemble_rho_3c (s)
+        call assemble_rho_3c (s)
 
 ! calculate average_rho matrix elements
 ! See PRB 71, 235101 (2005), Eqs. (19), (22) and (25)
         call assemble_rho_weighted_2c (s)
-!       call assemble_rho_weighted_3c (s)
+        call assemble_rho_weighted_3c (s)
 
 ! calculate  XC-potential matrix elements
 ! See PRB 71, 235101 (2005), Eqs. (16), (21) and (24)
@@ -667,7 +667,6 @@
                   end if
                 end do
               end do
-
             else
 
 ! Get the matrix from the data files - which is the matrix in molecular
