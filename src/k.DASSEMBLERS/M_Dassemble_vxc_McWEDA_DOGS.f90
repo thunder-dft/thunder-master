@@ -480,9 +480,13 @@
 ! SPECIAL LOOP: we want to minimize the number of calls to lda-function
 ! we only need to call lda_ceperley-adler for each pair of shells
 ! but then we need to calculate the (mu,nu)-block of matrix elements
+
+! Diagonal terms -
 ! Loop over shells i-atom
               n1 = 0
               do issh = 1, species(in1)%nssh
+!               write (*,*) ' issh = ', issh
+
 ! n1 : counter used to determine orbitals imu
                 l1 = species(in1)%shell(issh)%lssh
                 n1 = n1 + l1 + 1
@@ -491,16 +495,19 @@
                 prho_in_shell =                                                &
      &           s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,issh)
                 Dprho_in_shell = vdbcxcm(:,issh,issh)
+!               write (*,*) ' Dprho_in_shell = ', issh, Dprho_in_shell
                 call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,       &
      &                                   dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
 
-!               prho_bond_shell =                                              &
-!    &           s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,issh)
-!               Dprho_bond_shell=                                              &
-!    &           s%rho_bond_weighted(iatom)%neighbors(matom)%Dblock(:,issh,issh)
-!               call lda_ceperley_alder (prho_bond_shell, exc_bond, muxc_bond, &
-!    &                                   dexc_bond, d2exc_bond, dmuxc_bond,    &
-!    &                                   d2muxc_bond)
+                prho_bond_shell =                                              &
+     &           s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,issh)
+!               Dprho_bond_shell = vdbcxcm(:,issh,issh)
+                Dprho_bond_shell =                                             &
+     &           s%rho_bond_weighted(iatom)%neighbors(matom)%Dblock(:,issh,issh)
+!               write (*,*) ' Dprho_bond_shell = ', issh, Dprho_bond_shell
+                call lda_ceperley_alder (prho_bond_shell, exc_bond, muxc_bond, &
+     &                                   dexc_bond, d2exc_bond, dmuxc_bond,    &
+     &                                   d2muxc_bond)
 
 ! Calculate vxc_SN and vxc_SN_bond for (mu,nu)-block
 ! loop over orbitals in the iatom-shell (imu)
@@ -508,9 +515,11 @@
                   imu = n1 + m1
                   prho_in = s%rho_in(iatom)%neighbors(matom)%block(imu,imu)
                   Dprho_in = s%rho_in(iatom)%neighbors(matom)%Dblock(:,imu,imu)
+!                 write (*,*) ' Dprho_in = ', Dprho_in
      
-!                 prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,imu)
-!                 Dprho_bond = s%rho_bond(iatom)%neighbors(matom)%Dblock(:,imu,imu)
+                  prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,imu)
+                  Dprho_bond = s%rho_bond(iatom)%neighbors(matom)%Dblock(:,imu,imu)
+!                 write (*,*) ' Dprho_bond = ', Dprho_bond
 
 ! calculate GSN for rho_in
                   pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh)        &
@@ -520,11 +529,63 @@
 
 ! calculate GSN for rho_bond ("atomic" correction)
 ! Use "+" here because the energy contribution for the bond-part is "-"
-!                 pfi%vxc_on_site(:,ineigh)= pfi%vxc_on_site(:,ineigh)         &
-!    &              + pRho_neighbors_matom%block(imu,imu)                      &
-!    &               *(dmuxc_bond*Dprho_bond_shell                             &
+                  pfi%vxc_on_site(:,ineigh)= pfi%vxc_on_site(:,ineigh)         &
+     &              + pRho_neighbors_matom%block(imu,imu)                      &
+     &               *(dmuxc_bond*Dprho_bond                                   &
 !    &                 + Dprho_bond_shell*d2muxc_bond*(prho_bond - prho_bond_shell))
+     &                 + Dprho_in_shell*d2muxc_bond*(prho_bond - prho_bond_shell))
                 end do ! m1 = -l1, l1
+
+! Off-diagonal terms
+! Loop over shells ineigh
+                n2 = 0
+                do jssh = 1, species(in1)%nssh
+! n2 : counter used to determine orbitals inu
+                  l2 = species(in1)%shell(jssh)%lssh
+                  n2 = n2 + l2 + 1
+
+! Call lda-function for rho_in
+                  prho_in_shell =                                             &
+     &             s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,jssh)
+                  Dprho_in_shell = vdbcxcm(:,issh,jssh)
+                  call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,    &
+     &                                     dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
+
+                  prho_bond_shell =                                           &
+     &             s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,jssh)
+                  Dprho_bond_shell=                                           &
+     &             s%rho_bond_weighted(iatom)%neighbors(matom)%Dblock(:,issh,jssh)
+!                 call lda_ceperley_alder (prho_bond_shell, exc_bond, muxc_bond,&
+!    &                                     dexc_bond, d2exc_bond, dmuxc_bond, d2muxc_bond)
+
+! Calculate vxc_SN and vxc_SN_bond for (mu,nu)-block
+! loop over orbitals in the iatom-shell (imu)
+                  do m1 = -l1, l1
+                    imu = n1 + m1
+! loop over orbitals in the ineigh-shell (inu)
+                    do m2 = -l2, l2
+                      inu = n2 + m2
+                      if (imu .ne. inu) then
+                        prho_in = s%rho_in(iatom)%neighbors(matom)%block(imu,inu)
+                        Dprho_in = s%rho_in(iatom)%neighbors(matom)%Dblock(:,imu,inu)
+
+                        prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,inu)
+                        Dprho_bond(:) = s%rho_bond(iatom)%neighbors(matom)%Dblock(:,imu,inu)
+
+! calculate GSN for rho_in
+                        pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh) &
+     &                    - pRho_neighbors_matom%block(imu,inu)               &
+     &                     *(Dprho_in_shell*d2muxc_in*prho_in + dmuxc_in*Dprho_in)
+
+                        pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh) &
+     &                    + pRho_neighbors_matom%block(imu,imu)               &
+!    &                     *(Dprho_bond_shell*d2muxc_in*prho_in + dmuxc_in*Dprho_bond)
+     &                     *(Dprho_in_shell*d2muxc_in*prho_in + dmuxc_in*Dprho_bond)
+                     end if ! imu .eq. inu
+                    end do !do m2 = -l2, l2
+                  end do !do m1 = -l1, l1
+                  n2 = n2 + l2
+                end do  ! do jssh = 1, nssh(in1)
 
                 n1 = n1 + l1
               end do  ! do issh = 1, nssh(in1)
