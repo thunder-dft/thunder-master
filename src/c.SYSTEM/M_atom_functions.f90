@@ -610,7 +610,6 @@
             else
               rcutoff = species(ispecies)%shell(issh)%rcutoff
             end if
-            write (ilogfile,*) ' issh, rcutoff = ', issh, rcutoff
 
 ! Perform some checks
             if (abs(rcutoff_in - rcutoff) .gt. 1.0d-5) then

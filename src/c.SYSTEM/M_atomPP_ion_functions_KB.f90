@@ -474,10 +474,8 @@
 
 ! Procedure
 ! ===========================================================================
-
 ! Initialize Z_val and alpha
-        Z_val = species_PP(ispecies)%Z_val
-
+        Z_val = species_PP_ion(ispecies)%Z_val
         alpha = species_PP_ion(ispecies)%alpha
 
 ! We calculate vc and vnl from the values given in the ppfile.
@@ -630,6 +628,10 @@
         h = species_PP_ion(ispecies)%shell_PP(issh)%dr
         imid = int(r/h) + 1
         mesh = species_PP_ion(ispecies)%shell_PP(issh)%mesh
+        if (imid .gt. mesh) then
+          write (*,*) ' WARNING: past mesh - set imid = mesh '
+          imid = mesh
+        end if
 
 ! This is correct, for example, there are just not enought points to do this
 ! with hydrogen

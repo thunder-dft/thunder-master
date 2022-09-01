@@ -26,8 +26,8 @@ THEORY = McWEDA
 
 # Choose HARRIS, DOGS, or KS (Kohn-Sham)
 # Note that the KS code only does LDA for now as it uses McWEDA routines. 
-SCF = HARRIS
-#SCF = DOGS
+#SCF = HARRIS
+SCF = DOGS
 #SCF = KS
 
 # Choose the DIAGONALIZATION Method - GAMMA, KPOINTS, or MDET (also GAMMA)

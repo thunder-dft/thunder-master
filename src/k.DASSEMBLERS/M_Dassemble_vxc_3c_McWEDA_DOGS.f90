@@ -418,26 +418,29 @@
               allocate (vdxcXc(3, nssh_i, nssh_j)); vdxcXc = 0.0d0
               
               do isorp = 1, species(in3)%nssh
-                Qin = s%atom(ialpha)%shell(isorp)%Qin
+                Qin= species(in3)%shell(isorp)%Qin
                                 
                 bcxcm = 0.0d0; dpbcxcm = 0.0d0
                 dxbcxcm = 0.0d0; dybcxcm = 0.0d0
-                call getDMEs_Fdata_3c (in1, in2, in3, P_rhoS_3c, isorp, x,    &
-     &                                 z, nssh_i, nssh_j, cost, rhat, sighat, &
+                call getDMEs_Fdata_3c (in1, in2, in3, P_rhoS_3c, isorp, x,   &
+     &                                 z, nssh_i, nssh_j, cost, rhat, sighat,&
      &                                 bcxcm, dpbcxcm, dxbcxcm, dybcxcm)
 
                 do issh = 1, species(in1)%nssh
                    do jssh = 1, species(in2)%nssh
-                     vdxcMa(:,issh,jssh) = rhat(:)*dxbcxcm(issh,jssh)         &
+                     vdxcMa(:,issh,jssh) = rhat(:)*dxbcxcm(issh,jssh)        &
      &                                    + amt(:)*dpbcxcm(issh,jssh)
                      bmt(:) = (cost*sighat(:) - rhat(:))/z
 
                      vdxcMb(:,issh,jssh) = - sighat(:)*dybcxcm(issh,jssh)    &
      &                                      + bmt(:)*dpbcxcm(issh,jssh)      &
      &                                      - vdxcMa(:,issh,jssh)/2.0d0
-                     vdxcMc(:,issh,jssh) = - vdxcMa(:,issh,jssh) - vdxcMb(:,issh,jssh)
                    end do ! jssh
                 end do ! issh
+
+! Determine vdxcMc from Newton's Laws:
+                vdxcMc = - vdxcMa - vdxcMb
+
                 rhoma_shell = rhoma_shell + vdxcMa*Qin
                 rhomb_shell = rhomb_shell + vdxcMb*Qin
                 rhomc_shell = rhomc_shell + vdxcMc*Qin
@@ -460,7 +463,6 @@
                    n2 = n2 + l2 + 1
                    call lda_ceperley_alder (prhoS_in_neighbors%block(issh,jssh), exc_in, muxc_in,  &
      &                                      dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
-                       
                    rhop_a = rhoma_shell(:,issh,jssh)                    
                    rhop_b = rhomb_shell(:,issh,jssh)                     
                    rhop_c = rhomc_shell(:,issh,jssh)
@@ -472,32 +474,28 @@
 ! loop over orbitals in the ineigh-shell (inu)
                      do m2 = -l2, l2
                        inu = n2 + m2
-                       mxca(:,imu,inu) = mxca(:,imu,inu)                       &
-             &          - rhop_a*d2muxc_in*(prho_in_neighbors%block(imu,inu)   &
-             &          - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu)) &
-             &          - dmuxc_in*rhoxa(:,imu,inu)
+                       mxca(:,imu,inu) = dmuxc_in*rhoxa(:,imu,inu)             &
+             &          + rhop_a*d2muxc_in*(prho_in_neighbors%block(imu,inu)   &
+             &                              - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu))
              
-                       mxcb(:,imu,inu) = mxcb(:,imu,inu)                       &
-             &          - rhop_b*d2muxc_in*(prho_in_neighbors%block(imu,inu)   &
-             &          - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu)) &
-             &          - dmuxc_in*rhoxb(:,imu,inu)
-             
-                       mxcc(:,imu,inu) = mxcc(:,imu,inu)                       &
-             &          - rhop_c*d2muxc_in*(prho_in_neighbors%block(imu,inu)   &
-             &          - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu)) &
-             &          - dmuxc_in*rhoxc(:,imu,inu)
+                       mxcb(:,imu,inu) = dmuxc_in*rhoxb(:,imu,inu)             &
+             &          + rhop_b*d2muxc_in*(prho_in_neighbors%block(imu,inu)   &
+             &                              - prhoS_in_neighbors%block(issh,jssh)*poverlap_neighbors%block(imu,inu))
                      end do !** m2 = -l2, l2
                    end do !** m1 = -l1, l1
                    n2 = n2 + l2
                 end do ! jssh = 1, species(in2)%nssh
                 n1 = n1 + l1
               end do ! issh = 1, species(in1)%nss
+
+! Determine mxcc from Newton's Laws:
+              mxcc = - mxca - mxcb
               
               do inu = 1, norb_nu
                 do imu = 1, norb_mu
-                  pfalpha%f3xca = pfalpha%f3xca + pRho_neighbors%block(imu,inu)*mxca(:,imu,inu)
-                  pfi%f3xcb = pfi%f3xcb + pRho_neighbors%block(imu,inu)*mxcb(:,imu,inu)
-                  pfj%f3xcc = pfj%f3xcc + pRho_neighbors%block(imu,inu)*mxcc(:,imu,inu)
+                  pfalpha%f3xca = pfalpha%f3xca - pRho_neighbors%block(imu,inu)*mxca(:,imu,inu)
+                  pfi%f3xcb = pfi%f3xcb - pRho_neighbors%block(imu,inu)*mxcb(:,imu,inu)
+                  pfj%f3xcc = pfj%f3xcc - pRho_neighbors%block(imu,inu)*mxcc(:,imu,inu)
                 end do !imu , norb_mu
               end do !inu =1, norb_nu
             end if ! if (mneigh .ne. 0)

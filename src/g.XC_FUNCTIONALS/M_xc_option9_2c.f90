@@ -618,7 +618,6 @@
 ! The notation used for our variables is similar to the original
 ! notation used by Lee, Yang and Parr. (Physical Review B 37 785 (1988))
 ! Initialize pi
-
         Cf = 0.3d0*(3.0d0*pi**2)**t23
 
 ! Here the option to calculate the potential is evaluated
