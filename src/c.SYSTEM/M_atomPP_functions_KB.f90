@@ -535,7 +535,6 @@
 
 ! Procedure
 ! ===========================================================================
-
 ! Initialize Z_val and alpha
         Z_val = species_PP(ispecies)%Z_val
         alpha = species_PP(ispecies)%alpha

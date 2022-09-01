@@ -946,12 +946,12 @@
 ! Input:
         integer l
         integer m
-        integer n               !number of nodes
+        integer n               ! number of nodes
 
 ! Output:
-        integer iyl (0:n)       !array of l-values
+        integer iyl (0:n)       ! array of l-values
 
-        complex cl(0:n)      !array of coefficients
+        complex cl(0:n)      ! array of coefficients
 
 ! Local Parameters and Data Declaration
 ! ===========================================================================
