@@ -152,12 +152,12 @@
 !       real aln
         real dec
         real dex
-        real drvexc
-        real ecp
-        real ex
-        real exc
-        real fx
-        real fxc
+!       real drvexc
+!       real ecp
+!       real ex
+!       real exc
+!       real fx
+!       real fxc
 !       real rh
 !       real rs
 !       real x
@@ -563,7 +563,7 @@
 !       real gsfermik
 !       real h
         real r
-        real rs
+!       real rs
 !       real sfermik
 !       real t
 !       real uu

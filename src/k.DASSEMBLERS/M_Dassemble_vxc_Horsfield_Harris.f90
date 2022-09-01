@@ -211,7 +211,6 @@
 ! vdbcxcm = vectorized derivative of Hartree matrix in molecular coordinates
 ! vdbcxcx = vectorized derivative of Hartree matrix in crystal coordinates
         real, dimension (:, :), allocatable :: bcxcm
-        real, dimension (:, :), allocatable :: bcxcx
         real, dimension (:, :), allocatable :: dbcxcm
         real, dimension (:, :, :), allocatable :: vdbcxcm
         real, dimension (:, :, :), allocatable :: vdbcxcx
@@ -288,7 +287,6 @@
             if (iatom .eq. jatom .and. mbeta .eq. 0) then
 
 ! Do nothing here - special case. Interaction already calculated in atm case.
-
             else
 
 ! Get the matrix from the data files - which is the matrix in molecular
@@ -307,7 +305,6 @@
               in3 = in2
 
 ! bcxcm = Hartree matrix in molecular coordinates
-! bcxcx = Hartree matrix in crystal coordinates
 ! dbcxcm = derivative of Hartree matrix in molecular coordinates
 ! vdbcxcm = vectorized derivative of Hartree matrix in molecular coordinates
 ! vdbcxcx = vectorized derivative of Hartree matrix in crystal coordinates
@@ -403,7 +400,6 @@
 ! vdbcxcm = vectorized derivative of Hartree matrix in molecular coordinates
 ! vdbcxcx = vectorized derivative of Hartree matrix in crystal coordinates
             allocate (bcxcm (norb_mu, norb_nu)); bcxcm = 0.0d0
-            allocate (bcxcx (norb_mu, norb_nu)); bcxcx = 0.0d0
             allocate (dbcxcm (norb_mu, norb_nu)); dbcxcm = 0.0d0
             allocate (vdbcxcm (3, norb_mu, norb_nu)); vdbcxcm = 0.0d0
             allocate (vdbcxcx (3, norb_mu, norb_nu)); vdbcxcx = 0.0d0
@@ -428,6 +424,7 @@
 
             call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcxcm,       &
      &                    vdbcxcm, vdbcxcx)
+
 ! Notice the explicit negative sign, this makes it force like.
             do inu = 1, norb_mu
               do imu = 1, norb_mu
@@ -435,7 +432,7 @@
       &           - pRho_neighbors_matom%block(imu,inu)*vdbcxcx(:,imu,inu)
                end do
             end do
-            deallocate (bcxcm, bcxcx, dbcxcm, vdbcxcm, vdbcxcx)
+            deallocate (bcxcm, dbcxcm, vdbcxcm, vdbcxcx)
           end do ! end loop over neighbors
         end do ! end loop over atoms
 
