@@ -493,9 +493,11 @@
                   if (imu .ne. inu) then
                     prho_in = s%rho_in(iatom)%neighbors(matom)%block(imu,inu)
                     prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,inu)
-! calculate GSN for rho_in
 
+! calculate GSN for rho_in
                     pvxc_SN_neighbors%block(imu,inu) = dmuxc_in*prho_in
+
+! calculate GSN for rho_bond ("atomic" correction)
                     pvxc_SN_bond_neighbors%block(imu,inu) = dmuxc_bond*prho_bond
                   end if ! imu .eq. inu
                 end do !do m2 = -l2, l2

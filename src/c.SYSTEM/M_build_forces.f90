@@ -186,11 +186,13 @@
         integer iatom, ineigh, matom !< counter over atoms/neighbors
         integer in1, in2             !< species number
         integer jatom, num_neigh     !< counters over neighbors
+        integer logfile              !< writing to which unit
         integer mbeta                !< the cell containing neighbor of iatom
         integer norb_mu, norb_nu     !< size of the (mu, nu) block for pair
         integer ix                   !< counter over dimensions
         integer imu, inu             !< counter over MEs
 
+        real maxf, minf, rms         !< for calculating the RMS force
         real sumT
 
         ! forces
@@ -217,6 +219,10 @@
 
 ! Procedure
 ! ===========================================================================
+! Initialize logfile
+        logfile = s%logfile
+
+! ***************************************************************************
 !       T W O - C E N T E R   B A N D - S T R U C T U R E   F O R C E S
 ! ***************************************************************************
 
@@ -544,9 +550,24 @@
           pfi%ftot = pfi%ftot + pfi%usr
         end do ! end loop over atoms
 
+! Calculate the RMS force and MAX force
+        rms = 0.0d0
+        do iatom = 1, s%natoms
+          ! cut some lengthy notation
+          pfi=>s%forces(iatom)
+          rms = rms + pfi%ftot(1)**2 + pfi%ftot(2)**2 + pfi%ftot(3)**2
+          maxf = max(maxf, maxval(pfi%ftot))
+          minf = abs(minval(pfi%ftot))
+          if (minf .gt. maxf) maxf = minf
+        end do
+        rms = sqrt(rms/(3*s%natoms))
+        write (logfile,*)
+        write (logfile,400) maxf, rms
+        write (logfile,*)
+
 ! Format Statements
 ! ===========================================================================
-! None
+400     format (2x, ' Cartesian Forces:  Max = ', f16.8, '    RMS = ', f16.8)
 
 ! End Subroutine
 ! ===========================================================================
