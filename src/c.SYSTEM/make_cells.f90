@@ -115,6 +115,7 @@
         if (t%icluster .eq. 1) then
           allocate (t%xl (0:0))
           t%xl(0)%a = 0.0d0
+          mbeta_max = 0
           return
         end if
 

@@ -636,7 +636,7 @@
 
         real, dimension (3, 3) :: eps       !< the epsilon matrix
         real, dimension (3) :: r1, r2, rna  !< positions - iatom, jatom, ialpha
-        real, dimension (3) :: r12, r21     !< vectors
+        real, dimension (3) :: r21, rnabc   !< vectors
         real, dimension (3) :: sighat       !< unit vector along r2 - r1
         real, dimension (3) :: rhat         !< unit vector along bc - rna
 
@@ -775,14 +775,14 @@
                 sighat(2) = 0.0d0
                 sighat(3) = 1.0d0
               else
-                sighat = (r2 - r1)/z
+                sighat = r21/z
               end if
 
 ! ****************************************************************************
 ! Find rnabc = vector pointing from center of bondcharge to rna
 ! This gives us the distance dnabc.
-              r12 = 0.5d0*(r1 + r2)
-              x = distance (r12, rna)
+              rnabc = rna - (r1 + r21/2.0d0)
+              x = sqrt(rnabc(1)**2 + rnabc(2)**2 + rnabc(3)**2)
 
               ! unit vector in rnabc direction.
               if (x .lt. 1.0d-05) then
@@ -797,7 +797,7 @@
 
 ! dera3 = depsA = deps/dratm in the 3-center system
 ! der13 = depsB = deps/dr1 in the 3-center system
-              call Depsilon_3c (r1, r2, r21, z, rna, rhat, eps, depsA, depsB)
+              call Depsilon_3c (r1, r2, r21, z, rna, rnabc, eps, depsA, depsB)
 
 ! The first piece will be the force with respect to atom 3.
               if (x .gt. 1.0d-5) then

@@ -114,14 +114,13 @@
         logfile = s%logfile
 
         write (logfile,*)
-!       write (logfile,*) ' Welcome to neighbors - determine neighbor mapping. '
+        write (logfile,*) ' Welcome to neighbors - determine neighbor mapping. '
         if (ifix_neighbors .eq. 1) then
           call read_NEIGHBORS (s)
         else
           call find_neigh_max (s)
           call find_neighbors (s)
         end if
-
         call find_common_max (s)
         call find_common_neighbors (s)
 

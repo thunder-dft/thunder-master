@@ -426,6 +426,7 @@
 ! we only need to call lda_ceperley-adler for each pair of shells
 ! but then we need to calculate the (mu,nu)-block of matrix elements
 
+! Diagonal terms -
 ! Loop over shells i-atom
           n1 = 0
           do issh = 1, species(in1)%nssh
@@ -461,6 +462,48 @@
               pvxc_SN_bond_neighbors%block(imu,imu) =                         &
      &          muxc_bond + dmuxc_bond*(prho_bond - prho_bond_shell)
             end do
+
+! Off-diagonal terms -
+! Loop over shells ineigh
+            n2 = 0
+            do jssh = 1, species(in1)%nssh
+
+! n2 : counter used to determine orbitals inu
+              l2 = species(in1)%shell(jssh)%lssh
+              n2 = n2 + l2 + 1
+
+! Call lda-function for rho_in
+              prho_in_shell =                                                 &
+     &          s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,jssh)
+              call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,        &
+     &                                 dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
+
+              prho_bond_shell =                                               &
+     &              s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,jssh)
+              call lda_ceperley_alder (prho_bond_shell, exc_bond,             &
+     &                                 muxc_bond, dexc_bond, d2exc_bond,      &
+     &                                 dmuxc_bond, d2muxc_bond)
+
+! Calculate vxc_SN and vxc_SN_bond for (mu,nu)-block
+! loop over orbitals in the iatom-shell (imu)
+              do m1 = -l1, l1
+                imu = n1 + m1
+! loop over orbitals in the ineigh-shell (inu)
+                do m2 = -l2, l2
+                  inu = n2 + m2
+                  if (imu .ne. inu) then
+                    prho_in = s%rho_in(iatom)%neighbors(matom)%block(imu,inu)
+                    prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,inu)
+! calculate GSN for rho_in
+
+                    pvxc_SN_neighbors%block(imu,inu) = dmuxc_in*prho_in
+                    pvxc_SN_bond_neighbors%block(imu,inu) = dmuxc_bond*prho_bond
+                  end if ! imu .eq. inu
+                end do !do m2 = -l2, l2
+              end do !do m1 = -l1, l1
+
+              n2 = n2 + l2
+            end do  ! do jssh = 1, nssh(in1)
 
             n1 = n1 + l1
           end do  ! do issh = 1, nssh(in1)

@@ -362,7 +362,10 @@
 ! Here the first and second derivatives of the density is computed.
           if ((r - dr) .gt. 1.0d-5) then
             rhop = (density_pdr - density_mdr)/(2.0d0*dr)
+            rhop = rhop/(4.0d0*4.0d0*atan(1.0d0))
+
             rhopp = (density_pdr - 2.0d0*density + density_mdr)/dr**2
+            rhopp = rhopp/(4.0d0*4.0d0*atan(1.0d0))
           else
 
 ! At the endpoint do a forward difference. First, we need the point at r+2dr.

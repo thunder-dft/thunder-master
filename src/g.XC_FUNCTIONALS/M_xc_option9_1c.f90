@@ -149,19 +149,8 @@
 ! ===========================================================================
         integer ix
 
-!       real aln
         real dec
         real dex
-!       real drvexc
-!       real ecp
-!       real ex
-!       real exc
-!       real fx
-!       real fxc
-!       real rh
-!       real rs
-!       real x
-!       real zeta
 
         real, dimension (2) :: cpot
         real, dimension (2) :: d
@@ -308,8 +297,6 @@
 
 ! Procedure
 ! ===========================================================================
-! Initialize
-
 ! If r is really small, then set to manageably small number.
         r = rin
         if (rin .lt. 1.0d-4) r = 1.0d-4
