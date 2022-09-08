@@ -21,7 +21,6 @@
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -267,9 +266,8 @@
 
 ! Procedure
 ! ===========================================================================
-! Convert density to Angstrom units.
+! Initialize
         rho = rho_in
-
         if (rho .le. epsilon) then
           epsx = 0.d0
           potx = 0.d0

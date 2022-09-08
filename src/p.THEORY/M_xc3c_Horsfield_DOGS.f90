@@ -662,6 +662,7 @@
         real density_2c_p, density_2c_pp
         real dnuxc_2c, dnuxcs_2c
         real exc_2c, vxc_2c, dexc_2c
+        real d2exc_2c, d2nuxc_2c
 
 ! Value of density and corresponding derivatives at the point r, z
 ! Exchange-correlation potential and energies for three-center density
@@ -669,6 +670,7 @@
         real density_3c_p, density_3c_pp
         real dnuxc_3c, dnuxcs_3c
         real exc_3c, vxc_3c, dexc_3c
+        real d2exc_3c, d2nuxc_3c
 
         real xc_fraction                ! fraction of exact exchange
 
@@ -706,8 +708,8 @@
 ! Evaluate the density for the one-center - in1
         call rho_1c (ispecies, r1, drho, density, density_p, density_pp)
         density_2c = density
-        density_2c_p = density_p
-        density_2c_pp = density_pp
+!       density_2c_p = density_p
+!       density_2c_pp = density_pp
 
 ! One-center piece: vxc[n2(r2)]
 ! Compute the exchange correlation potential for the one-center case
@@ -715,8 +717,8 @@
 ! Evaluate the density for the one-center - in1
         call rho_1c (jspecies, r2, drho, density, density_p, density_pp)
         density_2c = density_2c + density
-        density_2c_p = density_2c_p + density_p
-        density_2c_pp = density_2c_pp + density_pp
+!       density_2c_p = density_2c_p + density_p
+!       density_2c_pp = density_2c_pp + density_pp
 
 ! One-center piece: vxc[n3(r1)]
 ! Compute the exchange correlation potential for the one-center case
@@ -724,34 +726,38 @@
 ! Evaluate the density for the one-center - in1
         call rho_1c (kspecies, r3, drho, density, density_p, density_pp)
         density_3c = density_2c + density
-        density_3c_p = density_2c_p + density_p
-        density_3c_pp = density_2c_pp + density_pp
+!       density_3c_p = density_2c_p + density_p
+!       density_3c_pp = density_2c_pp + density_pp
 
 ! Three-center-piece: vxc_3c[n1(r1) + n2(r2) + n3(r3)]
 ! Compute the exchange correlation potential for the three-center case
 ! ***************************************************************************
 ! The total three-center density is the sum of the three.
 ! Note that rin, densp, and denspp are not used in the LDA limits.
-        rin = r1/P_abohr
-        density_3c = density_3c*P_abohr**3
-        density_3c_p = density_3c_p*P_abohr**4
-        density_3c_pp = density_3c_pp*P_abohr**5
-        call get_potxc_1c (iexc, xc_fraction, rin, density_3c, density_3c_p,  &
-     &                     density_3c_pp, exc_3c, vxc_3c, dnuxc_3c, dnuxcs_3c,&
-     &                     dexc_3c)
+!       rin = r1/P_abohr
+!       density_3c = density_3c*P_abohr**3
+!       density_3c_p = density_3c_p*P_abohr**4
+!       density_3c_pp = density_3c_pp*P_abohr**5
+        call lda_ceperley_alder (density_3c, exc_3c, vxc_3c,              &
+     &                           dexc_3c, d2exc_3c, dnuxc_3c, d2nuxc_3c)
+!       call get_potxc_1c (iexc, xc_fraction, rin, density_3c, density_3c_p,  &
+!    &                     density_3c_pp, exc_3c, vxc_3c, dnuxc_3c, dnuxcs_3c,&
+!    &                     dexc_3c)
 
 ! Two-center-piece: vxc_2c[n1(r1) + n2(r2)]
 ! Compute the exchange correlation potential for the three-center case
 ! ***************************************************************************
 ! The total two-center density is the sum of the two - dens1 + dens2.
 ! Note that rin, densp, and denspp are not used in the LDA limits.
-        rin = r1/P_abohr
-        density_2c = density_2c*P_abohr**3
-        density_2c_p = density_2c_p*P_abohr**4
-        density_2c_pp = density_2c_pp*P_abohr**5
-        call get_potxc_1c (iexc, xc_fraction, rin, density_2c, density_2c_p,  &
-     &                     density_2c_pp, exc_2c, vxc_2c, dnuxc_2c, dnuxcs_2c,&
-     &                     dexc_2c)
+!       rin = r1/P_abohr
+!       density_2c = density_2c*P_abohr**3
+!       density_2c_p = density_2c_p*P_abohr**4
+!       density_2c_pp = density_2c_pp*P_abohr**5
+        call lda_ceperley_alder (density_2c, exc_2c, vxc_2c,              &
+     &                           dexc_2c, d2exc_2c, dnuxc_2c, d2nuxc_2c)
+!       call get_potxc_1c (iexc, xc_fraction, rin, density_2c, density_2c_p,  &
+!    &                     density_2c_pp, exc_2c, vxc_2c, dnuxc_2c, dnuxcs_2c,&
+!    &                     dexc_2c)
 
 ! Answers are in Hartrees convert to eV.
         dvxc_3c = P_Hartree*(vxc_3c - vxc_2c)

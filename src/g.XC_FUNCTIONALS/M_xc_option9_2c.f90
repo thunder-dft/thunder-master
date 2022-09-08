@@ -145,17 +145,10 @@
 ! ===========================================================================
         integer ix
 
-!       real aln
-!       real exc                     ! exchange-correlation energy
-!       real ecp                     ! correlation potential
         real ex                      ! exchange potential
         real dec, dex                ! derivative of correlation and exchange
         real drvexc
         real fx
-!       real fxc
-!       real rs
-!       real x
-!       real zeta
 
 ! density and derivatives - spin cases
         real, dimension (2) :: d, dp, dpp, dz, dzz, dpz
@@ -303,8 +296,6 @@
 
 ! Procedure
 ! ===========================================================================
-! Initialize
-
 ! If r is really small, then set to manageably small number.
         r = rin
         if (rin .lt. 1.0d-4) r = 1.0d-4
@@ -429,19 +420,7 @@
 
 ! Local Variable Declaration and Description
 ! ===========================================================================
-! Value of density and corresponding derivatives at the point r, z
         real density
-!       real density_p, density_pp
-!       real density_p11, density_p12, density_p22
-!       real density_pz
-
-! inputs
-!       real alfc, h, rs, t, uu, vv, ww
-!       real zet, ztp, fk, sk, g
-
-! answers
-!       real ec, ecrs, eczet, vcdn, vcup, dvcdn, dvcup
-
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -449,8 +428,6 @@
 
 ! Procedure
 ! ===========================================================================
-! Initialize
-
 ! LSDA
         density = rho(1) + rho(2)
         cen = 0.0d0
