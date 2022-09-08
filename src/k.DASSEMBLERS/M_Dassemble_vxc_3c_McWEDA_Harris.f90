@@ -134,9 +134,10 @@
         real x, cost                     !< dnabc and angle
 
         real, dimension (3, 3) :: eps     !< the epsilon matrix
-        real, dimension (3) :: r1, r2, r3, r12, r21   !< positions
+        real, dimension (3) :: r1, r2, rna  !< positions - iatom, jatom, ialpha
+        real, dimension (3) :: r21, rnabc   !< vectors
         real, dimension (3) :: sighat     !< unit vector along r2 - r1
-        real, dimension (3) :: rhat       !< unit vector along bc - r3
+        real, dimension (3) :: rhat       !< unit vector along bc - rna
         real, dimension (3) :: amt
         real, dimension (3) :: bmt
         
@@ -215,7 +216,7 @@
 ! Loop over the atoms in the central cell.
         do ialpha = 1, s%natoms
           in3 = s%atom(ialpha)%imass
-          r3 = s%atom(ialpha)%ratom
+          rna = s%atom(ialpha)%ratom
           pfalpha=>s%forces(ialpha)
 
           ! loop over the common neighbor pairs of ialpha
@@ -249,7 +250,7 @@
               pRho_neighbors=>pdenmat%neighbors(mneigh) ! rho_3c
 
 ! SET-UP STUFF
-! ***************************************************************************
+! ****************************************************************************
 ! Find r21 = vector pointing from r1 to r2, the two ends of the bondcharge.
 ! This gives us the distance dbc (or y value in the 2D grid).
               r21 = r2 - r1
@@ -261,14 +262,14 @@
                 sighat(2) = 0.0d0
                 sighat(3) = 1.0d0
               else
-                sighat = (r2 - r1)/z
+                sighat = r21/z
               end if
 
-! ***************************************************************************
-! Find rnabc = vector pointing from center of bondcharge to r3
-! This gives us the distance dnabc (or x value in the 2D grid).
-              r12 = 0.5d0*(r1 + r2)
-              x = distance (r12, r3)
+! ****************************************************************************
+! Find rnabc = vector pointing from center of bondcharge to rna
+! This gives us the distance dnabc.
+              rnabc = rna - (r1 + r21/2.0d0)
+              x = sqrt(rnabc(1)**2 + rnabc(2)**2 + rnabc(3)**2)
 
               ! unit vector in rnabc direction.
               if (x .lt. 1.0d-05) then
@@ -276,12 +277,14 @@
                 rhat(2) = 0.0d0
                 rhat(3) = 0.0d0
               else
-                rhat = (r3 - 0.5d0*(r1 + r2))/x
+                rhat = (rna - 0.5d0*(r1 + r2))/x
               end if
               cost = dot_product(sighat, rhat)
-
               call epsilon_function (rhat, sighat, eps)
-              call Depsilon_3c (r1, r2, r21, z, r3, rhat, eps, depsA, depsB)
+
+! dera3 = depsA = deps/dratm in the 3-center system
+! der13 = depsB = deps/dr1 in the 3-center system
+              call Depsilon_3c (r1, r2, r21, z, rna, rnabc, eps, depsA, depsB)
 
 ! Get the matrix from the data files - which is the matrix in molecular
 ! coordinates, stored in bcxcm. where m means molecular coordinates.

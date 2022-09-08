@@ -438,7 +438,8 @@
         real x, cost                     !< dnabc and angle
 
         real, dimension (3, 3) :: eps    !< the epsilon matrix
-        real, dimension (3) :: r1, r2, r3, r12  !< positions
+        real, dimension (3) :: r1, r2, rna  !< positions - iatom, jatom, ialpha
+        real, dimension (3) :: r21, rnabc   !< vectors
         real, dimension (3) :: sighat    !< unit vector along r2 - r1
         real, dimension (3) :: rhat      !< unit vector along bc - r3
 
@@ -464,7 +465,7 @@
 ! Loop over the atoms in the central cell.
         do ialpha = 1, s%natoms
           indna = s%atom(ialpha)%imass
-          r3 = s%atom(ialpha)%ratom
+          rna = s%atom(ialpha)%ratom
 
           ! loop over the common neigbor pairs of ialpha
           do ineigh = 1, s%neighbors(ialpha)%ncommon
@@ -489,6 +490,7 @@
 ! ****************************************************************************
 ! Find r21 = vector pointing from r1 to r2, the two ends of the bondcharge.
 ! This gives us the distance dbc (or y value in the 2D grid).
+              r21 = r2 - r1
               z = distance (r1, r2)
 
               ! unit vector in sigma direction.
@@ -497,14 +499,14 @@
                 sighat(2) = 0.0d0
                 sighat(3) = 1.0d0
               else
-                sighat = (r2 - r1)/z
+                sighat = r21/z
               end if
 
 ! ****************************************************************************
-! Find rnabc = vector pointing from center of bondcharge to r3
+! Find rnabc = vector pointing from center of bondcharge to rna
 ! This gives us the distance dnabc (or x value in the 2D grid).
-              r12 = 0.5d0*(r1 + r2)
-              x = distance (r12, r3)
+              rnabc = rna - (r1 + r21/2.0d0)
+              x = sqrt(rnabc(1)**2 + rnabc(2)**2 + rnabc(3)**2)
 
               ! unit vector in rnabc direction.
               if (x .lt. 1.0d-05) then
@@ -512,7 +514,7 @@
                 rhat(2) = 0.0d0
                 rhat(3) = 0.0d0
               else
-                rhat = (r3 - 0.5d0*(r1 + r2))/x
+                rhat = rnabc/x
               end if
               cost = dot_product(sighat, rhat)
               call epsilon_function (rhat, sighat, eps)

@@ -126,7 +126,7 @@ ifneq (,$(findstring HORSFIELD, ${THEORY}))
 # Note that McWEDA is the default for compiling. 
 # Set THEORY = HORSFIELD if you want to compile the Horsfield subroutines. 
 # ****************************************************************************
-CREATE = M_overlap.o M_Goverlap.o M_kinetic.o M_Coulomb.o M_dipole_z.o M_vna_Harris.o M_vna_DOGS.o M_vnl_KB.o M_vxc_Horsfield_Harris.o M_vxc_Horsfield_DOGS.o M_bcna_Harris.o M_bcna_DOGS.o M_xc3c_Horsfield_Harris.o M_xc3c_Horsfield_DOGS.o
+CREATE = M_overlap.o M_Goverlap.o M_kinetic.o M_Coulomb.o M_dipole_z.o M_vna_Harris.o M_vna_DOGS.o M_vnl_KB.o M_vxc_Horsfield_Harris.o M_vxc_Horsfield_DOGS.o M_bcna_Harris.o M_bcna_DOGS.o lda_ceperley_alder.o M_xc3c_Horsfield_Harris.o M_xc3c_Horsfield_DOGS.o
 # ****************************************************************************
 # Here we choose how to do the SCF
 # No SCF - choose HARRIS in include/OPTIONS

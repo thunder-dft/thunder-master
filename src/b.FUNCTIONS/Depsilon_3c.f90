@@ -97,7 +97,7 @@
         crossa(1) = r21(2)*rnabc(3) - r21(3)*rnabc(2)
         crossa(2) = r21(3)*rnabc(1) - r21(1)*rnabc(3)
         crossa(3) = r21(1)*rnabc(2) - r21(2)*rnabc(1)
-        crossmag = sqrt(crossa(1)*crossa(1) + crossa(2)*crossa(2)   &
+        crossmag = sqrt(crossa(1)*crossa(1) + crossa(2)*crossa(2)             &
      &                  + crossa(3)*crossa(3))
 
 ! Crossmag cannot be zero for what follows. However, this should rarely happen
@@ -124,13 +124,13 @@
         do ix = 1, 3
          do imu = 1, 3
           dera3(ix,imu,3) = 0.0d0
-          sum = xlevi(ix,imu,1)*(r2(1) - r1(1))  &
-     &        + xlevi(ix,imu,2)*(r2(2) - r1(2))  &
+          sum = xlevi(ix,imu,1)*(r2(1) - r1(1))                               &
+     &        + xlevi(ix,imu,2)*(r2(2) - r1(2))                               &
      &        + xlevi(ix,imu,3)*(r2(3) - r1(3))
-          dera3(ix,imu,2) =  &
-     &     (1.0d0/crossmag)*(sum - (eps3(imu,2)/crossmag)  &
-     &     *((r1mag2 + r2mag2 - 2.0d0*r1dotr2)*ratm(ix)  &
-     &       + (r1dotr2 - r1mag2 - r2dotratm + r1dotratm)*r2(ix)  &
+          dera3(ix,imu,2) =                                                   &
+     &     (1.0d0/crossmag)*(sum - (eps3(imu,2)/crossmag)                     &
+     &     *((r1mag2 + r2mag2 - 2.0d0*r1dotr2)*ratm(ix)                       &
+     &       + (r1dotr2 - r1mag2 - r2dotratm + r1dotratm)*r2(ix)              &
      &       + (r1dotr2 - r2mag2 + r2dotratm - r1dotratm)*r1(ix)))
          end do
         end do
