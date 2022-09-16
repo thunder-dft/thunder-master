@@ -760,7 +760,8 @@
 !    &                     dexc_2c)
 
 ! Answers are in Hartrees convert to eV.
-        dvxc_3c = P_Hartree*(vxc_3c - vxc_2c)
+!       dvxc_3c = P_Hartree*(vxc_3c - vxc_2c)
+        dvxc_3c = vxc_3c - vxc_2c
 
 ! Deallocate Arrays
 ! ===========================================================================

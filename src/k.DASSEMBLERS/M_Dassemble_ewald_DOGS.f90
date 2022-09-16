@@ -110,7 +110,7 @@
         integer ialpha, iatom, jatom   !< the three parties involved
         integer ibeta, jbeta           !< cells for three atoms
         integer ineigh, mneigh         !< counter over neighbors
-        integer in1, in2, in3          !< species numbers
+        integer in1, in2, indna        !< species numbers
         integer issh                   !< counter over shells
 
         integer num_neigh              !< number of neighbors
@@ -129,7 +129,8 @@
         real, allocatable :: Q0 (:)       !< total neutral atom charge, i.e. Ztot
         real, allocatable :: Q (:)        !< total charge on atom
 
-        real, dimension (3) :: r1, r2, rna, r12  !< positions
+        real, dimension (3) :: r1, r2, rna  !< positions - iatom, jatom, ialpha
+        real, dimension (3) :: r21, rnabc   !< vectors
         real, dimension (3) :: sighat   !< unit vector along r2 - r1
         real, dimension (3) :: rhatA1    !< unit vector along rna - r1
         real, dimension (3) :: rhatA2    !< unit vector along rna - r2
@@ -358,7 +359,7 @@
 !****************************************************************************
 ! Loop over the atoms in the central cell.
         do ialpha = 1, s%natoms
-          in3 = s%atom(ialpha)%imass
+          indna = s%atom(ialpha)%imass
           rna = s%atom(ialpha)%ratom
 
           ! cut some lengthy notation
@@ -405,8 +406,8 @@
 
 ! Find rnabc = vector pointing from center of bondcharge to rna
 ! This gives us the distance dnabc (or x value in the 2D grid).
-              r12 = 0.5d0*(r1 + r2)
-              x = distance (r12, rna)
+              rnabc = rna - (r1 + r21/2.0d0)
+              x = sqrt(rnabc(1)**2 + rnabc(2)**2 + rnabc(3)**2)
 
 ! Find other distances -
               distance_13 = distance (rna, r1)
@@ -907,8 +908,8 @@
 
 ! Allocate Arrays
 ! ===========================================================================
-        allocate (s%ewald (s%natoms, s%natoms))
-        allocate (s%dewald (3, s%natoms, s%natoms))
+        allocate (s%ewald (s%natoms, s%natoms)); s%ewald = 0.0d0
+        allocate (s%dewald (3, s%natoms, s%natoms)); s%dewald = 0.0d0
 
         ! needed for charge transfer bits
         allocate (Q0 (s%natoms))

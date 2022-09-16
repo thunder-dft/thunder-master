@@ -250,7 +250,6 @@
                   do imu = 1, norb_mu
                     mmu = imu + s%iblock_slot(iatom)
                     step1 = phase*conjg(s%kpoints(ikpoint)%c(mmu,iband))
-
                     do inu = 1, norb_nu
                       nnu = inu + s%iblock_slot(jatom)
                       step2 = step1*s%kpoints(ikpoint)%c(nnu,iband)

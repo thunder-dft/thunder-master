@@ -178,10 +178,8 @@
         lrwork = rwork(1)
         deallocate (rwork)
         allocate(rwork(lrwork))
-
         call dsyev ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
      &               rwork, lrwork, info)
-
 ! NOTE: After calling dsyev, Smatrix now becomes the eigenvectors of the
 ! diagonalized Smatrix!
 
