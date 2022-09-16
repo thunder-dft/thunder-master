@@ -484,6 +484,8 @@
 ! Read in ioptimize flag
           read (12,*) species(ispecies)%ioptimize
           if (species(ispecies)%ioptimize .eq. 1) then
+            write (ilogfile,*)
+            write (ilogfile,*) ' Reading confinement potentials '
             do issh = 1, species(ispecies)%nssh
               read (12,*) species(ispecies)%shell(issh)%V0
               read (12,*) species(ispecies)%shell(issh)%r0
