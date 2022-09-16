@@ -272,7 +272,7 @@
                 rhat(2) = 0.0d0
                 rhat(3) = 0.0d0
               else
-                rhat = (rna - 0.5d0*(r1 + r2))/x
+                rhat = rnabc/x
               end if
               cost = dot_product(sighat, rhat)
               call epsilon_function (rhat, sighat, eps)
