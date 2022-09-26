@@ -552,6 +552,7 @@
 
 ! Calculate the RMS force and MAX force
         rms = 0.0d0
+        maxf = -999.0d0
         do iatom = 1, s%natoms
           ! cut some lengthy notation
           pfi=>s%forces(iatom)
