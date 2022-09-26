@@ -591,7 +591,10 @@
 
         real xmass_total
 
+        character (len = 25) :: slogfile
+
         logical match
+        logical read_kpoints
 
         interface
           function magnitude (a)
@@ -625,20 +628,7 @@
           read (inpfile,*) s%lattice(ix)%a
           write (logfile,101) s%lattice(ix)%a
         end do
-
         call make_cells (s)
-
-        ! Reading kpoints
-        write (logfile,*)
-        write (logfile,'(A)') 'K-point vectors from input file '
-        write (logfile,'(A)') '------------------------------- '
-        ! Reading number of kpoints
-        read (inpfile,*) s%nkpoints
-        allocate (s%kpoints (s%nkpoints))
-        do ikpoint = 1, s%nkpoints
-          read (inpfile,*) s%kpoints(ikpoint)%k, s%kpoints(ikpoint)%weight
-          write (logfile,102) s%kpoints(ikpoint)%k, s%kpoints(ikpoint)%weight
-        end do
 
         ! read atom coordinates
         do iatom = 1, s%natoms
@@ -660,6 +650,38 @@
             stop
           end if
         end do
+        close (unit = inpfile)
+
+! Open the kpoints file for this structure
+! If the .kpoints file exists, then use these kpoints.
+! THe the .kpoints file does not exist, then assume gamma point calculation.
+        slogfile = s%basisfile(:len(trim(s%basisfile))-4)
+        slogfile = trim(slogfile)//'.kpoints'
+        inquire (file = slogfile, exist = read_kpoints)
+
+        ! Reading kpoints
+        if (read_kpoints) then
+          write (logfile,*)
+          write (logfile,'(A)') 'K-point vectors from input file '
+          write (logfile,'(A)') '------------------------------- '
+          ! Reading number of kpoints
+          open (unit = inpfile, file = slogfile, status = 'unknown')
+          read (inpfile,*) s%nkpoints
+          allocate (s%kpoints (s%nkpoints))
+          do ikpoint = 1, s%nkpoints
+            read (inpfile,*) s%kpoints(ikpoint)%k, s%kpoints(ikpoint)%weight
+            write (logfile,102) s%kpoints(ikpoint)%k, s%kpoints(ikpoint)%weight
+          end do
+        else ! we do gamma point only
+          write (logfile,*)
+          write (logfile,'(A)') 'K-point vectors is Gamma default '
+          write (logfile,'(A)') '-------------------------------- '
+          s%nkpoints = 1
+          allocate (s%kpoints (s%nkpoints))
+          s%kpoints(1)%k = 0.0d0
+          s%kpoints(1)%weight = 1.0d0
+          write (logfile,102) s%kpoints(1)%k, s%kpoints(1)%weight
+        end if
 
         ! Calculate the center of mass
         s%rcm = 0.0d0

@@ -631,10 +631,10 @@
         tkinetic = 0.0d0
         do iatom = 1, s%natoms
           in1 = s%atom(iatom)%imass
-          tkinetic = tkinetic                                                  &
-     &      + (0.5d0/P_fovermp)*species(in1)%xmass                             &
-     &       *(s%atom(iatom)%vatom(1)**2 + s%atom(iatom)%vatom(2)**2           &
-     &                                     + s%atom(iatom)%vatom(3)**2)
+          tkinetic = tkinetic                                                 &
+     &      + (0.5d0/P_fovermp)*species(in1)%xmass                            &
+     &       *(s%atom(iatom)%vatom(1)**2 + s%atom(iatom)%vatom(2)**2          &
+     &                                   + s%atom(iatom)%vatom(3)**2)
         end do
         tkinetic = tkinetic/s%natoms
         T_instantaneous = (2.0d0/3.0d0)*tkinetic*P_kconvert
@@ -800,14 +800,13 @@
             s%atom(iatom)%xdot(1,:) = s%atom(iatom)%vatom
             s%atom(iatom)%xdot(2,:) = P_fovermp*s%forces(iatom)%ftot/xmass
           end do
-        else
-          do iatom = 1, s%natoms
-            in1 = s%atom(iatom)%imass
-            xmass = species(in1)%xmass
-            acceleration = P_fovermp*s%forces(iatom)%ftot/xmass
-            difference(:,iatom) = acceleration - s%atom(iatom)%xdot(2,:)
-          end do
         end if
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          xmass = species(in1)%xmass
+          acceleration = P_fovermp*s%forces(iatom)%ftot/xmass
+          difference(:,iatom) = acceleration - s%atom(iatom)%xdot(2,:)
+        end do
 
 ! Gear (often fifth-order)
         do iorder = 0, ngear
