@@ -614,8 +614,6 @@
         inpfile = s%inpfile
 
 ! Read in the positions file.
-        write (logfile,'(A)') 'Atom coordinates from the structure input '
-        write (logfile,'(A)') '----------------------------------------- '
         open (unit = inpfile, file = s%basisfile, status = 'old')
         read (inpfile,*) s%natoms, s%icluster
         allocate (s%atom(s%natoms))
@@ -1089,8 +1087,6 @@
           deallocate (s%kpoints(ikpoint)%eigen)
           deallocate (s%kpoints(ikpoint)%foccupy)
           deallocate (s%kpoints(ikpoint)%ioccupy)
-          deallocate (s%kpoints(ikpoint)%c)
-          deallocate (s%kpoints(ikpoint)%c_Lowdin)
         end do
         deallocate (s%kpoints)
 

@@ -654,19 +654,18 @@
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
-!>       This routine deallocates the arrays containing the assemble_2c
+!>       This routine deallocates the arrays containing the assemble_2c_DOGS
 !! information.
 !
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
 !
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
+! Phone: +852 6612 9539 (mobile)
 ! ===========================================================================
 !
 ! Subroutine Declaration
@@ -684,16 +683,16 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, ineigh             !< counter over atoms and neighbors
+        integer iatom                             !< counter over atoms
+        integer ineigh                            !< counter over neighbors
 
 ! Procedure
 ! ===========================================================================
         do iatom = 1, s%natoms
-          do ineigh=1, s%neighbors(iatom)%neighn
+          do ineigh = 1, s%neighbors(iatom)%neighn
             deallocate (s%overlap(iatom)%neighbors(ineigh)%block)
             deallocate (s%kinetic(iatom)%neighbors(ineigh)%block)
             deallocate (s%vna(iatom)%neighbors(ineigh)%block)
-            deallocate (s%vna(iatom)%neighbors(ineigh)%blocko)
           end do
           deallocate (s%overlap(iatom)%neighbors)
           deallocate (s%kinetic(iatom)%neighbors)

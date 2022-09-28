@@ -748,6 +748,63 @@
         end subroutine Dassemble_vxc_3c
 
 
+! ===========================================================================
+! destroy_Dassemble_vxc
+! ===========================================================================
+! Subroutine Description
+! ===========================================================================
+!>       This routine deallocates the arrays containing the Dassemble_2c
+!! information.
+!
+! ===========================================================================
+! Code written by:
+! James P. Lewis
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
+!
+! Phone: +852 6612 9539 (mobile)
+! ===========================================================================
+!
+! Subroutine Declaration
+! ===========================================================================
+        subroutine destroy_Dassemble_vxc (s)
+        implicit none
+
+! Argument Declaration and Description
+! ===========================================================================
+        type(T_structure), target :: s           !< the structure to be used.
+
+! Parameters and Data Declaration
+! ===========================================================================
+! None
+
+! Variable Declaration and Description
+! ===========================================================================
+        integer iatom                             !< counter over atoms
+
+! Procedure
+! ===========================================================================
+        do iatom = 1, s%natoms
+          deallocate (s%forces(iatom)%vxc_on_site)
+          deallocate (s%forces(iatom)%vxc_off_site)
+        end do
+
+! Deallocate Arrays
+! ===========================================================================
+! None
+
+! Format Statements
+! ===========================================================================
+! None
+
+! End Subroutine
+! ===========================================================================
+        return
+        end subroutine destroy_Dassemble_vxc
+
+
 ! End Module
 ! ===========================================================================
         end module M_Dassemble_vxc
