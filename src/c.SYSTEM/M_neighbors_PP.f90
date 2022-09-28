@@ -1611,7 +1611,7 @@
 
 ! Procedure
 ! ===========================================================================
-        do iatom=1, s%natoms
+        do iatom = 1, s%natoms
           deallocate (s%neighbors_PP(iatom)%iatom_common_b)
           deallocate (s%neighbors_PP(iatom)%iatom_common_j)
           deallocate (s%neighbors_PP(iatom)%jatom_common_b)

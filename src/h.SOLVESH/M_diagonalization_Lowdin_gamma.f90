@@ -102,20 +102,17 @@
 ! Variable Declaration and Description
 ! ===========================================================================
          if (iscf_iteration .eq. 1) then
-           !cut some lengthy notation
+           ! cut some lengthy notation
            pkpoint=>s%kpoints(ikpoint)
            allocate (pkpoint%S12matrix (s%norbitals, s%norbitals))
            pkpoint%S12matrix = 0.0d0
          end if
 
+         allocate (Hmatrix (s%norbitals, s%norbitals)); Hmatrix = 0.0d0
          if (iscf_iteration .eq. 1 .and. ikpoint .eq. 1) then
            allocate (eigen(s%norbitals))
-
-           allocate (Smatrix (s%norbitals, s%norbitals))
-           allocate (Hmatrix (s%norbitals, s%norbitals))
+           allocate (Smatrix (s%norbitals, s%norbitals)); Smatrix = 0.0d0
          end if
-         Smatrix = 0.0d0
-         Hmatrix = 0.0d0
 
 ! End subroutine
 ! ===========================================================================
@@ -170,14 +167,14 @@
 ! Initialize logfile
         logfile = s%logfile
         write (logfile,*)
-        write (logfile,*) ' Call diagonalizer '
+        write (logfile,*) ' Call diagonalizer for Smatrix '
 
         ! first find optimal length of rwork
         call dsyev ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
      &               rwork, -1, info)
         lrwork = rwork(1)
         deallocate (rwork)
-        allocate(rwork(lrwork))
+        allocate (rwork(lrwork))
         call dsyev ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
      &               rwork, lrwork, info)
 ! NOTE: After calling dsyev, Smatrix now becomes the eigenvectors of the
@@ -385,6 +382,7 @@
 ! Deallocate Arrays
 ! ===========================================================================
         deallocate (rwork)
+        deallocate (Hmatrix)
 
 ! Format Statements
 ! ===========================================================================

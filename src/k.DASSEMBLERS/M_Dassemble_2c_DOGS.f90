@@ -1223,11 +1223,13 @@
 ! Procedure
 ! ===========================================================================
         do iatom = 1, s%natoms
-          do ineigh=1, s%neighbors(iatom)%neighn
+          do ineigh = 1, s%neighbors(iatom)%neighn
             deallocate (s%overlap(iatom)%neighbors(ineigh)%Dblock)
             deallocate (s%kinetic(iatom)%neighbors(ineigh)%Dblock)
-            deallocate (s%vna(iatom)%neighbors(ineigh)%Dblock)
+            deallocate (s%dipole_z(iatom)%neighbors(ineigh)%Dblock)
           end do
+          deallocate (s%forces(iatom)%vna_atom)
+          deallocate (s%forces(iatom)%vna_ontop)
         end do
 
 ! Deallocate Arrays

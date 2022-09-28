@@ -1237,6 +1237,7 @@
 
 ! Procedure
 ! ===========================================================================
+        deallocate (s%ewald)
         deallocate (s%dewald)
         do iatom = 1, s%natoms
           deallocate (s%forces(iatom)%ewaldsr)

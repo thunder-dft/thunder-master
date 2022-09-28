@@ -851,6 +851,7 @@
 ! Deallocate Arrays
 ! ===========================================================================
 ! None
+
 ! Format Statements
 ! ===========================================================================
 100     format (70('='))
@@ -905,7 +906,6 @@
 ! ===========================================================================
         deallocate (eigen)
         deallocate (Smatrix)
-        deallocate (Hmatrix)
 
         do ikpoint = 1, s%nkpoints
           deallocate (s%kpoints(ikpoint)%S12matrix)

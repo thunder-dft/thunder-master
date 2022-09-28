@@ -970,18 +970,26 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom                             !< counter over atoms
-        integer ineigh                            !< counter over neighbors
+        integer iatom                            !< counter over atoms
+        integer ineigh                           !< counter over neighbors
 
 ! Procedure
 ! ===========================================================================
         do iatom = 1, s%natoms
           do ineigh = 1, s%neighbors(iatom)%neighn
             deallocate (s%denmat(iatom)%neighbors(ineigh)%block)
+            deallocate (s%capemat(iatom)%neighbors(ineigh)%block)
+          end do
+          do ineigh = 1, s%neighbors_PPp(iatom)%neighn
+            deallocate (s%denmat_PP(iatom)%neighbors(ineigh)%block)
           end do
           deallocate (s%denmat(iatom)%neighbors)
+          deallocate (s%denmat_PP(iatom)%neighbors)
+          deallocate (s%capemat(iatom)%neighbors)
         end do
         deallocate (s%denmat)
+        deallocate (s%denmat_PP)
+        deallocate (s%capemat)
 
 ! Deallocate Arrays
 ! ===========================================================================
