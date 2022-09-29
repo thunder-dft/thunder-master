@@ -48,6 +48,8 @@
 ! Module Declaration
 ! ===========================================================================
         module M_charges
+
+! \SYSTEM
         use M_species
         use M_configuraciones
 

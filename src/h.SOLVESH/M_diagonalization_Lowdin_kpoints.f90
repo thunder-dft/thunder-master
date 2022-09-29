@@ -106,20 +106,17 @@
 ! Allocate Arrays
 ! ===========================================================================
          if (iscf_iteration .eq. 1) then
-           !cut some lengthy notation
+           ! cut some lengthy notation
            pkpoint=>s%kpoints(ikpoint)
            allocate (pkpoint%S12matrix (s%norbitals, s%norbitals))
            pkpoint%S12matrix = 0.0d0
          end if
 
+         allocate (Hmatrix (s%norbitals, s%norbitals)); Hmatrix = 0.0d0
          if (iscf_iteration .eq. 1 .and. ikpoint .eq. 1) then
            allocate (eigen(s%norbitals))
-
-           allocate (Smatrix (s%norbitals, s%norbitals))
-           allocate (Hmatrix (s%norbitals, s%norbitals))
+           allocate (Smatrix (s%norbitals, s%norbitals)); Smatrix = 0.0d0
          end if
-         Smatrix = 0.0d0
-         Hmatrix = 0.0d0
 
 ! Deallocate Arrays
 ! ===========================================================================
