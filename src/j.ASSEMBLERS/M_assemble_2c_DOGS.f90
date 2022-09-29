@@ -868,6 +868,7 @@
             deallocate (s%kinetic(iatom)%neighbors(ineigh)%block)
             deallocate (s%dipole_z(iatom)%neighbors(ineigh)%block)
             deallocate (s%vna(iatom)%neighbors(ineigh)%block)
+            deallocate (s%vna(iatom)%neighbors(ineigh)%blocko)
           end do
           deallocate (s%overlap(iatom)%neighbors)
           deallocate (s%kinetic(iatom)%neighbors)

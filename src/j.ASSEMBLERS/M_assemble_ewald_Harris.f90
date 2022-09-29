@@ -244,17 +244,19 @@
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
-!>       This is a dummy routine.
+!>       This routine deallocates the arrays containing the assemble_2c_DOGS
+!! information.
 !
 ! ===========================================================================
 ! Code written by:
-! James P. Lewis
-! Unit 909 of Buidling 17W
-! 17 Science Park West Avenue
-! Pak Shek Kok, New Territories 999077
-! Hong Kong
+!> @author James P. Lewis
+! Box 6315, 209 Hodges Hall
+! Department of Physics
+! West Virginia University
+! Morgantown, WV 26506-6315
 !
-! Phone: +852 6612 9539 (mobile)
+! (304) 293-3422 x1409 (office)
+! (304) 293-5732 (FAX)
 ! ===========================================================================
 !
 ! Subroutine Declaration
@@ -272,21 +274,20 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, ineigh, matom    !< counter over atoms and neighbors
+        integer iatom                             !< counter over atoms
+        integer ineigh                            !< counter over neighbors
 
 ! Procedure
 ! ===========================================================================
         do iatom = 1, s%natoms
           do ineigh = 1, s%neighbors(iatom)%neighn
-            deallocate (s%ewaldsr(iatom)%neighbors(ineigh)%blocko)
-            deallocate (s%ewaldlr(iatom)%neighbors(ineigh)%blocko)
+            deallocate (s%ewaldsr(iatom)%neighbors(ineigh)%block)
+            deallocate (s%ewaldlr(iatom)%neighbors(ineigh)%block)
           end do
-          matom = s%neigh_self(iatom)
-          deallocate (s%ewaldsr(iatom)%neighbors(matom)%block)
-          deallocate (s%ewaldlr(iatom)%neighbors(matom)%block)
           deallocate (s%ewaldsr(iatom)%neighbors)
           deallocate (s%ewaldlr(iatom)%neighbors)
         end do
+        deallocate (s%ewald)
         deallocate (s%ewaldsr)
         deallocate (s%ewaldlr)
 
