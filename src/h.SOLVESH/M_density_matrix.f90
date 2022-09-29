@@ -970,11 +970,17 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom                            !< counter over atoms
-        integer ineigh                           !< counter over neighbors
+        integer iatom, ineigh              !< counter over atoms and neighbors
+        integer ikpoint                    !< counter of band and kpoint
 
 ! Procedure
 ! ===========================================================================
+        ! destroy the coefficients now at the end of their use
+        do ikpoint = 1, s%nkpoints
+          deallocate (s%kpoints(ikpoint)%c)
+        end do
+
+        ! destroy the density matrix pieces - forces are already evaluated
         do iatom = 1, s%natoms
           do ineigh = 1, s%neighbors(iatom)%neighn
             deallocate (s%denmat(iatom)%neighbors(ineigh)%block)
