@@ -163,9 +163,12 @@ endif
 # ****************************************************************************
 # BEGIN                   DIAGONALIZATION COMPILED ROUTINES
 # ****************************************************************************
-# ************************* GAMMA, KPOINTS, MDET, or KS **********************
-ifneq (,$(findstring GAMMA, ${DIAGONALIZATION}))
+# **************************** GAMMA - DEFAULT PACKAGES **********************
 SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix.o
+
+# ************************* GAMMA, KPOINTS, MDET, or KS **********************
+ifneq (,$(findstring GAMMAD, ${DIAGONALIZATION}))
+SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix.o
 endif
 ifneq (,$(findstring KPOINTS, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_kpoints.o M_kspace_Lowdin.o M_density_matrix.o
@@ -221,7 +224,7 @@ lightning-grid.x: $(OBJECTS_LIGHTNING) lightning-grid.o
 	$(F90) -o lightning-grid.x $(FFLAGS) $(OMP) $(OBJECTS_LIGHTNING) lightning-grid.o $(LFLAGS) $(LFLAGS_FFT)
 	
 fireball.x: $(OBJECTS_FIREBALL) fireball.o
-	$(F90) -o fireball.x $(FFLAGS) $(OBJECTS_FIREBALL) fireball.o $(LFLAGS)
+	$(F90) -o fireball.x $(FFLAGS) $(OMP) $(OBJECTS_FIREBALL) fireball.o $(LFLAGS) 
 
 fireball-MDET.x: $(OBJECTS_MDET) fireball-MDET.o
 	$(F90) -o fireball-MDET.x $(FFLAGS) $(OBJECTS_MDET) fireball-MDET.o $(LFLAGS)
@@ -415,6 +418,8 @@ M_kspace_Lowdin.o : h.SOLVESH/M_kspace_Lowdin.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_diagonalization_Lowdin_gamma.o : h.SOLVESH/M_diagonalization_Lowdin_gamma.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_diagonalization_Lowdin_gammad.o : h.SOLVESH/M_diagonalization_Lowdin_gammad.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^		
 M_diagonalization_Lowdin_kpoints.o : h.SOLVESH/M_diagonalization_Lowdin_kpoints.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_diagonalization_kpoints.o : h.SOLVESH/M_diagonalization_kpoints.f90
@@ -492,7 +497,7 @@ M_Dassemble_PP_3c.o : k.DASSEMBLERS/M_Dassemble_PP_3c.f90
 M_Dassemble_3c_Harris.o : k.DASSEMBLERS/M_Dassemble_3c_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Dassemble_3c_DOGS.o : k.DASSEMBLERS/M_Dassemble_3c_DOGS.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(OMP) -c $^
 M_Dassemble_vxc_Horsfield_Harris.o : k.DASSEMBLERS/M_Dassemble_vxc_Horsfield_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Dassemble_vxc_Horsfield_DOGS.o : k.DASSEMBLERS/M_Dassemble_vxc_Horsfield_DOGS.f90
