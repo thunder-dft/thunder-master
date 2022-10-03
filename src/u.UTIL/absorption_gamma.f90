@@ -349,6 +349,8 @@
 ! transitions from HOMO to other excited states, state iband.
 ! If the answer was read into a file, then write to file, else calculate it.
           write (logfile, *)
+          write (logfile,*) ' Starting from energy state = ', ihomo + ilevel,&
+     &                      ' energy = ', t%kpoints(1)%eigen(ihomo + ilevel)
 !$omp parallel private (itransition, iband, ir, l, m, iz, iy, ix, xtemp)     &
 !$omp          private (zntegral, yntegral, xntegral, z, y, x, r_dipole)     &
 !$omp          private (iatom, r1, in1, norb_mu, num_neigh, ineigh, mbeta)   &
@@ -356,7 +358,7 @@
 !$omp          private (inu, nnu, n2, r2max, l2, m2, r1p, r1pin)             &
 !$omp          private (imu, mmu, n1, r1max, l1, m1, r2p, r2pin)
 !$omp do
-          write (logfile,*) ' Starting from energy state = ', ihomo + ilevel, ' energy = ', t%kpoints(1)%eigen(ihomo + ilevel)
+
           do itransition = 1, ntransitions
             write (logfile, *) ' Working on itransition = ', itransition
             iband = t%kpoints(1)%transition(ilevel, itransition)%imap

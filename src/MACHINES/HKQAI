@@ -9,7 +9,7 @@ ifneq (,$(findstring HKQAI,${MACHINE}))
 				#-p -inline-level=0
 		endif
 		ifneq (,$(findstring TRUE,${OPENMP}))
-			OMP = -openmp
+			OMP = -qopenmp -fpp -auto
 		endif
 	endif
 

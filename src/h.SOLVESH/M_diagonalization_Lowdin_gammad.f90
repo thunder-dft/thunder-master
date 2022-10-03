@@ -147,18 +147,22 @@
 ! If lam < overtol then it is considered zero and otherwise if lam > overtol
 ! For zero lam, then there is a linear dependency problem and we need to
 ! only consider a submatrix.
-        integer info                        !< error information
-        integer lrwork                      !< size of the working array
-        integer logfile                     !< writing to which unit
-        integer mineig                      !< minimum non-zero eigenvalue
-        integer imu, jmu                    !< counters over eigenstates
+        integer info                    !< error information
+        integer liwork                  !< size of the integer working array
+        integer lrwork                  !< size of the working array
+        integer logfile                 !< writing to which unit
+        integer mineig                  !< minimum non-zero eigenvalue
+        integer imu, jmu                !< counters over eigenstates
 
-        double precision, allocatable :: rwork (:)   ! working vector
+        integer, allocatable :: iwork (:)           ! integer working vector
+        double precision, allocatable :: rwork (:)  ! real working vector
 
 ! Allocate Arrays
 ! ===========================================================================
         lrwork = 1
+        liwork = 1
         allocate (rwork(lrwork))
+        allocate (iwork(liwork))
 
 ! Procedure
 ! ===========================================================================
@@ -168,15 +172,21 @@
         logfile = s%logfile
         write (logfile,*)
         write (logfile,*) ' Call diagonalizer for Smatrix '
+        write (logfile,*) ' Using divide and conquer packages here '
 
         ! first find optimal length of rwork
-        call dsyev ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
-     &               rwork, -1, info)
+!       call dsyev ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
+!    &               rwork, -1, info)
+        call dsyevd ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
+     &               rwork, -1, iwork, -1, info)
         lrwork = rwork(1)
-        deallocate (rwork)
-        allocate (rwork(lrwork))
-        call dsyev ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
-     &               rwork, lrwork, info)
+        liwork = iwork(1)
+        deallocate (rwork, iwork)
+        allocate (rwork(lrwork)); allocate (iwork(liwork))
+!       call dsyev ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
+!    &               rwork, lrwork, info)
+        call dsyevd ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
+     &               rwork, lrwork, iwork, liwork, info)
 ! NOTE: After calling dsyev, Smatrix now becomes the eigenvectors of the
 ! diagonalized Smatrix!
 
@@ -226,7 +236,7 @@
 
 ! Deallocate Arrays
 ! ===========================================================================
-        deallocate (rwork)
+        deallocate (iwork, rwork)
 
 ! Format Statements
 ! ===========================================================================
@@ -266,13 +276,15 @@
 ! Variable Declaration and Description
 ! ===========================================================================
         integer info                   ! error information
-        integer lrwork                 ! size of the working array
+        integer lrwork                 ! size of the working real array
+        integer liwork                 ! size of the working integer array
         integer imu                    ! counters over eigenstates
 
         double precision a0, a1
         real sqlami        ! square root of overlap eigenvalues
 
-        double precision, allocatable :: rwork (:)        ! working vector
+        integer, allocatable :: iwork (:)           ! integer working vector
+        double precision, allocatable :: rwork (:)  ! real working vector
 
         character (len = 25) :: slogfile
 
@@ -281,7 +293,9 @@
 ! Allocate Arrays
 ! ===========================================================================
         lrwork = 1
+        liwork = 1
         allocate (rwork(lrwork))
+        allocate (iwork(liwork))
 
 ! Procedure
 ! ===========================================================================
@@ -346,14 +360,19 @@
 ! ****************************************************************************
 ! Eigenvectors are needed to calculate the charges and for forces!
         ! first find optimal length of rwork
-        call dsyev ('V', 'U', s%norbitals, Hmatrix, s%norbitals, eigen,      &
-     &               rwork, -1, info)
+!       call dsyev ('V', 'U', s%norbitals, Hmatrix, s%norbitals, eigen,      &
+!    &               rwork, -1, info)
+        call dsyevd ('V', 'U', s%norbitals, Hmatrix, s%norbitals, eigen,      &
+     &               rwork, -1, iwork, -1, info)
         lrwork = rwork(1)
-        deallocate (rwork)
-        allocate (rwork(lrwork))
+        liwork = iwork(1)
+        deallocate (rwork, iwork)
+        allocate (rwork(lrwork)); allocate (iwork(liwork))
 
-        call dsyev ('V', 'U', s%norbitals, Hmatrix, s%norbitals, eigen,      &
-     &               rwork, lrwork, info)
+!       call dsyev ('V', 'U', s%norbitals, Hmatrix, s%norbitals, eigen,      &
+!    &               rwork, lrwork, info)
+        call dsyevd ('V', 'U', s%norbitals, Hmatrix, s%norbitals, eigen,      &
+     &               rwork, lrwork, iwork, liwork, info)
 
 ! INFORMATION FOR THE LOWDIN CHARGES
 ! ****************************************************************************
@@ -381,7 +400,7 @@
 
 ! Deallocate Arrays
 ! ===========================================================================
-        deallocate (rwork)
+        deallocate (iwork, rwork)
         deallocate (Hmatrix)
 
 ! Format Statements

@@ -103,6 +103,9 @@
 ! /SOLVESH
         use M_density_matrix
 
+! /OMP
+        use OMP_LIB
+
 ! Type Declaration
 ! ===========================================================================
 ! None
@@ -281,6 +284,7 @@
           rna = s%atom(ialpha)%ratom
 
           ! cut some lengthy notation
+          nullify (pfalpha)
           pfalpha=>s%forces(ialpha)
 
           ! loop over the common neighbor pairs of ialp
@@ -300,9 +304,11 @@
               norb_nu = species(in2)%norb_max
 
               ! cut lengthy notation
+              nullify (pfi, pfj)
               pfi=>s%forces(iatom); pfj=>s%forces(jatom)
 
               ! density matrix
+              nullify (pdenmat, pRho_neighbors)
               pdenmat=>s%denmat(iatom); pRho_neighbors=>pdenmat%neighbors(mneigh)
 
 ! SET-UP STUFF
@@ -368,19 +374,19 @@
      &                               z, norb_mu, norb_nu, cost, rhat, sighat, &
      &                               bcnam, dpbcnam, dxbcnam, dybcnam)
 
+! ***************************************************************************
+! Now consider the components of the different forces which is determined
+! by whether or not the force is with respect to atom 3 or atom 1.
+              nullify (pFdata_bundle, pFdata_cell)
+              pFdata_bundle => Fdata_bundle_3c(in1, in2, indna)
+              pFdata_cell =>                                                  &
+     &          pFdata_bundle%Fdata_cell_3c(pFdata_bundle%index_3c(interaction,isorp,1))
+
               allocate (f3naMa(3,norb_mu,norb_nu)); f3naMa = 0.0d0
               allocate (f3naMb(3,norb_mu,norb_nu)); f3naMb = 0.0d0
               allocate (f3naXa(3,norb_mu,norb_nu)); f3naXa = 0.0d0
               allocate (f3naXb(3,norb_mu,norb_nu)); f3naXb = 0.0d0
               allocate (f3naXc(3,norb_mu,norb_nu)); f3naXc = 0.0d0
-
-! ***************************************************************************
-! Now consider the components of the different forces which is determined
-! by whether or not the force is with respect to atom 3 or atom 1.
-              pFdata_bundle => Fdata_bundle_3c(in1, in2, indna)
-              pFdata_cell =>                                                  &
-     &          pFdata_bundle%Fdata_cell_3c(pFdata_bundle%index_3c(interaction,isorp,1))
-
               ! loop over matrix elements
               do iindex = 1, pFdata_cell%nME
                 imu = pFdata_cell%mu_3c(iindex)
@@ -388,6 +394,7 @@
 
 ! Now recover f3naMa which is a three-dimensional array
                 f3naMa(:,imu,inu) = rhat*dxbcnam(imu,inu) + amt*dpbcnam(imu,inu)
+
 
 ! Now recover f3naMb which is a three-dimensional array
                 f3naMb(:,imu,inu) = - sighat*dybcnam(imu,inu)                 &
