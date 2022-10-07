@@ -148,10 +148,7 @@
 
 ! Deallocate Arrays
 ! ===========================================================================
-! At this point we can deallocate the Lowdin coefficients
-        do ikpoint = 1, s%nkpoints
-          deallocate (s%kpoints(ikpoint)%c_Lowdin)
-        end do
+! None
 
 ! Format Statements
 ! ===========================================================================

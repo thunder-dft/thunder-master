@@ -337,6 +337,7 @@
 
 ! Procedure
 ! ===========================================================================
+        nullify (pFdata_bundle, pFdata_cell)
         pFdata_bundle => Fdata_bundle_2c(ispecies,jspecies)
         pFdata_cell =>                                                       &
       &   pFdata_bundle%Fdata_cell_2c(pFdata_bundle%index_2c(iint,isub))
@@ -398,10 +399,11 @@
           inu = pFdata_cell%nu_2c(iindex)
           hmbox(imu,inu) = Fdata(iindex)
         end do
+        nullify (pFdata_bundle, pFdata_cell)
 
 ! Deallocate Arrays
 ! ===========================================================================
-! None
+        deallocate (Fdata)
 
 ! Format Statements
 ! ===========================================================================
@@ -486,6 +488,7 @@
 
 ! Procedure
 ! ===========================================================================
+        nullify (pFdata_bundle, pFdata_cell)
         pFdata_bundle => Fdata_bundle_2c(ispecies,jspecies)
         pFdata_cell =>                                                       &
       &   pFdata_bundle%Fdata_cell_2c(pFdata_bundle%index_2c(iint,isub))
@@ -580,6 +583,7 @@
           inu = pFdata_cell%nu_2c(iindex)
           Dhmbox(imu,inu) = dFdatadx(iindex)
         end do
+        nullify (pFdata_bundle, pFdata_cell)
 
 ! Deallocate Arrays
 ! ===========================================================================

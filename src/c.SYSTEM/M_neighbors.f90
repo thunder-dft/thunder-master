@@ -63,6 +63,8 @@
 ! Module Declaration
 ! ===========================================================================
         module M_neighbors
+
+! /SYSTEM
         use M_configuraciones
 
 ! Type Declaration
@@ -981,6 +983,7 @@
 
           deallocate (s%neighbors(iatom)%neigh_j)
           deallocate (s%neighbors(iatom)%neigh_b)
+          deallocate (s%neighbors(iatom)%neigh_back)
         end do
 
         deallocate (s%neighbors)

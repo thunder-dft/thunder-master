@@ -63,6 +63,7 @@
         double precision, allocatable :: eigen (:)
 
 ! define matrices
+        double precision, allocatable :: S12matrix (:, :)
         double precision, allocatable :: Smatrix (:, :)
         double precision, allocatable :: Hmatrix (:, :)
 
@@ -104,7 +105,7 @@
          if (iscf_iteration .eq. 1) then
            ! cut some lengthy notation
            pkpoint=>s%kpoints(ikpoint)
-           allocate (pkpoint%S12matrix (s%norbitals, s%norbitals))
+           allocate (s%kpoints(ikpoint)%S12matrix (s%norbitals, s%norbitals))
            pkpoint%S12matrix = 0.0d0
          end if
 
@@ -325,7 +326,7 @@
             Smatrix(:,imu) = Smatrix(:,imu)*sqlami
           end do
           call dgemm ('N', 'C', s%norbitals, s%norbitals, s%norbitals_new,  &
-     &                a1, Smatrix, s%norbitals, Smatrix, s%norbitals, a0,    &
+     &                a1, Smatrix, s%norbitals, Smatrix, s%norbitals, a0,   &
      &                pkpoint%S12matrix, s%norbitals)
         end if
 

@@ -243,27 +243,27 @@
 !             u0(iatom)%neighbors(ineigh)%E = 0.0d0
               do issh = 1, species(in1)%nssh
                 do jssh = 1, species(in2)%nssh
-                   pfi%usr = pfi%usr                                          &
-      &              + (P_eq2/2.0d0)*s%atom(iatom)%shell(issh)%Qin            &
-      &                *s%atom(jatom)%shell(jssh)%Qin*vdcoulomb(:,issh,jssh)
-                   pfj%usr = pfj%usr                                          &
-      &              - (P_eq2/2.0d0)*s%atom(iatom)%shell(issh)%Qin            &
-      &                *s%atom(jatom)%shell(jssh)%Qin*vdcoulomb(:,issh,jssh)
+!                  pfi%usr = pfi%usr                                          &
+!     &              + (P_eq2/2.0d0)*s%atom(iatom)%shell(issh)%Qin            &
+!     &                *s%atom(jatom)%shell(jssh)%Qin*vdcoulomb(:,issh,jssh)
+!                  pfj%usr = pfj%usr                                          &
+!     &              - (P_eq2/2.0d0)*s%atom(iatom)%shell(issh)%Qin            &
+!     &                *s%atom(jatom)%shell(jssh)%Qin*vdcoulomb(:,issh,jssh)
                 end do
               end do
-              pfi%usr = pfi%usr - (P_eq2/2.0d0)*eta(:)*(Zi*Zj/z**2)
-              pfj%usr = pfj%usr + (P_eq2/2.0d0)*eta(:)*(Zi*Zj/z**2)
+!             pfi%usr = pfi%usr - (P_eq2/2.0d0)*eta(:)*(Zi*Zj/z**2)
+!             pfj%usr = pfj%usr + (P_eq2/2.0d0)*eta(:)*(Zi*Zj/z**2)
 
               ! force due dcorksr
-              dcorksr(:) = - (P_eq2/2.0d0)*eta(:)*(Zi*Zj - Q(iatom)*Q(jatom))/z**2
-              pfi%usr = pfi%usr - dcorksr
-              pfj%usr = pfj%usr + dcorksr
+!             dcorksr(:) = - (P_eq2/2.0d0)*eta(:)*(Zi*Zj - Q(iatom)*Q(jatom))/z**2
+!             pfi%usr = pfi%usr - dcorksr
+!             pfj%usr = pfj%usr + dcorksr
             end if
             deallocate (coulomb, dcoulomb, vdcoulomb)
           end do ! end loop over neighbors
 
           ! add in ewald contributions
-          pfi%usr = pfi%usr - (P_eq2/2.0d0)*pfi%ewald
+!         pfi%usr = pfi%usr - (P_eq2/2.0d0)*pfi%ewald
         end do ! end loop over atoms
 
 ! Deallocate Arrays
@@ -410,73 +410,6 @@
 ! call epsilon_function (R1, sighat, spe), then eps(ix,3) = eta(ix).
             eta(:) = eps(:,3)
 
-! Initialize
-            de_xc_sn = 0.d0; de_vxc_sn = 0.0d0
-            de_xc_bond_sn = 0.0d0; de_vxc_bond_sn = 0.0d0
-
-! SPECIAL LOOP: we want to minimize the number of calls to lda-function
-! we only need to call lda_ceperley-adler for each pair of shells
-! but then we need to calculate the (mu,nu)-block of matrix elements
-! Loop over shells i-atom
-            n1 = 0
-            do issh = 1, species(in1)%nssh
-
-! n1 : counter used to determine orbitals imu
-              l1 = species(in1)%shell(issh)%lssh
-              n1 = n1 + l1 + 1
-              q_mu = s%atom(iatom)%shell(issh)%Qin/(2*l1+1)
-
-! Call lda-function for rho_in
-              prho_in_shell =                                                  &
-     &          s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,issh)
-              Dprho_in_shell =                                                 &
-                s%rho_in_weighted(iatom)%neighbors(matom)%Dblock(:,issh,issh)
-              call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,         &
-     &                                 dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
-                  
-              prho_bond_shell =                                                &
-     &          s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,issh)
-              Dprho_bond_shell(:) =                                            &
-                s%rho_bond_weighted(iatom)%neighbors(matom)%Dblock(:,issh,issh)
-              call lda_ceperley_alder (prho_bond_shell, exc_bond,              &
-     &                                 muxc_bond, dexc_bond, d2exc_bond,       &
-     &                                 dmuxc_bond, d2muxc_bond)
-
-! Calculate vxc_SN and vxc_SN_bond for (mu,nu)-block
-! loop over orbitals in the iatom-shell (imu)
-              do m1 = -l1, l1
-                imu = n1 + m1
-                prho_in = s%rho_in(iatom)%neighbors(matom)%block(imu,imu)
-                Dprho_in = s%rho_in(iatom)%neighbors(matom)%Dblock(:,imu,imu)
-
-                prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,imu)
-                Dprho_bond(:) = s%rho_bond(iatom)%neighbors(matom)%Dblock(:,imu,imu)
-
-! calculate SN part forces
-! exc_sn : xc-energy from second term on the right in Eq. (16): PRB 71, 235101 (2005)
-! e_vxc_sn : energy already included in the band-structure through vxc_sn
-                de_xc_sn = de_xc_sn + q_mu*(dexc_in*Dprho_in_shell             &
-     &            + Dprho_in_shell*d2exc_in*(prho_in - prho_in_shell)          &
-     &            + dexc_in*(Dprho_in - Dprho_in_shell))
-                de_vxc_sn = de_vxc_sn + q_mu*(dmuxc_in*Dprho_in_shell          &
-     &            + Dprho_in_shell*d2muxc_in*(prho_in - prho_in_shell)         &
-     &            + dmuxc_in*(Dprho_in - Dprho_in_shell))
-
-! calculate SN-AT part ("atomic" correction) forces
-! exc_sn_bond : xc-energy from third term on the right in Eq. (16): PRB 71, 235101 (2005)
-! e_vxc_bond_sn : energy already included in the band-structure through vxc_sn_bond
-               de_xc_bond_sn = de_xc_bond_sn                                   &
-     &           + q_mu*(dexc_bond*Dprho_bond_shell                            &
-     &           + Dprho_bond_shell*d2exc_bond*(prho_bond - prho_bond_shell)   &
-     &           + dexc_bond*(Dprho_bond - Dprho_bond_shell))
-               de_vxc_bond_sn = de_vxc_bond_sn                                 &
-     &           + q_mu*(dmuxc_bond*Dprho_bond_shell                           &
-     &           + Dprho_bond_shell*d2muxc_bond*(prho_bond - prho_bond_shell)  &
-     &           + dmuxc_bond*(Dprho_bond - Dprho_bond_shell))
-              end do ! end loop m1 = -l1, l1
-              n1 = n1 + l1
-            end do  ! do issh = 1, nssh(in1)
-
 !           Find forces for uxcdcc
 !           uxcdcc = uxcdc_bond + uxcdc_sn - uxcdc_bond_sn
 
@@ -491,6 +424,73 @@
 ! SPECIAL CASE: SELF-INTERACTION - NO FORCE
 
             else
+! SPECIAL LOOP: we want to minimize the number of calls to lda-function
+! we only need to call lda_ceperley-adler for each pair of shells
+! but then we need to calculate the (mu,nu)-block of matrix elements
+
+! Initialize
+              de_xc_sn = 0.d0; de_vxc_sn = 0.0d0
+              de_xc_bond_sn = 0.0d0; de_vxc_bond_sn = 0.0d0
+
+! Loop over shells i-atom
+              n1 = 0
+              do issh = 1, species(in1)%nssh
+
+! n1 : counter used to determine orbitals imu
+                l1 = species(in1)%shell(issh)%lssh
+                n1 = n1 + l1 + 1
+                q_mu = s%atom(iatom)%shell(issh)%Qin/(2*l1+1)
+
+! Call lda-function for rho_in
+                prho_in_shell =                                                  &
+     &            s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,issh)
+                Dprho_in_shell =                                                 &
+                  s%rho_in_weighted(iatom)%neighbors(matom)%Dblock(:,issh,issh)
+                call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,         &
+     &                                   dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
+                  
+                prho_bond_shell =                                                &
+     &            s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,issh)
+                Dprho_bond_shell(:) =                                            &
+                  s%rho_bond_weighted(iatom)%neighbors(matom)%Dblock(:,issh,issh)
+                call lda_ceperley_alder (prho_bond_shell, exc_bond,              &
+     &                                   muxc_bond, dexc_bond, d2exc_bond,       &
+     &                                   dmuxc_bond, d2muxc_bond)
+
+! Calculate vxc_SN and vxc_SN_bond for (mu,nu)-block
+! loop over orbitals in the iatom-shell (imu)
+                do m1 = -l1, l1
+                  imu = n1 + m1
+                  prho_in = s%rho_in(iatom)%neighbors(matom)%block(imu,imu)
+                  Dprho_in = s%rho_in(iatom)%neighbors(matom)%Dblock(:,imu,imu)
+
+                  prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,imu)
+                  Dprho_bond(:) = s%rho_bond(iatom)%neighbors(matom)%Dblock(:,imu,imu)
+
+! calculate SN part forces
+! exc_sn : xc-energy from second term on the right in Eq. (16): PRB 71, 235101 (2005)
+! e_vxc_sn : energy already included in the band-structure through vxc_sn
+                  de_xc_sn = de_xc_sn + q_mu*(dexc_in*Dprho_in_shell             &
+     &              + Dprho_in_shell*d2exc_in*(prho_in - prho_in_shell)          &
+     &              + dexc_in*(Dprho_in - Dprho_in_shell))
+                  de_vxc_sn = de_vxc_sn + q_mu*(dmuxc_in*Dprho_in_shell          &
+     &              + Dprho_in_shell*d2muxc_in*(prho_in - prho_in_shell)         &
+     &              + dmuxc_in*(Dprho_in - Dprho_in_shell))
+
+! calculate SN-AT part ("atomic" correction) forces
+! exc_sn_bond : xc-energy from third term on the right in Eq. (16): PRB 71, 235101 (2005)
+! e_vxc_bond_sn : energy already included in the band-structure through vxc_sn_bond
+                 de_xc_bond_sn = de_xc_bond_sn                                   &
+     &             + q_mu*(dexc_bond*Dprho_bond_shell                            &
+     &             + Dprho_bond_shell*d2exc_bond*(prho_bond - prho_bond_shell)   &
+     &             + dexc_bond*(Dprho_bond - Dprho_bond_shell))
+                 de_vxc_bond_sn = de_vxc_bond_sn                                 &
+     &             + q_mu*(dmuxc_bond*Dprho_bond_shell                           &
+     &             + Dprho_bond_shell*d2muxc_bond*(prho_bond - prho_bond_shell)  &
+     &             + dmuxc_bond*(Dprho_bond - Dprho_bond_shell))
+                end do ! end loop m1 = -l1, l1
+                n1 = n1 + l1
+              end do  ! do issh = 1, nssh(in1)
 
 ! BONAFIDE TWO ATOM CASE
               pfi%usr = pfi%usr - ((de_xc_sn - de_vxc_sn) + (de_xc_bond_sn - de_vxc_bond_sn))/2.0d0

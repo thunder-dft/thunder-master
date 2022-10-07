@@ -136,6 +136,7 @@
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
           ! cut some lengthy notation
+          nullify (poverlap)
           poverlap=>s%overlap(iatom)
 
           r1 = s%atom(iatom)%ratom
@@ -147,6 +148,7 @@
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
             ! cut some more lengthy notation
+            nullify (pS_neighbors)
             pS_neighbors=>poverlap%neighbors(ineigh)
 
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
@@ -189,8 +191,7 @@
      &                            norb_mu, norb_nu, sm)
             call rotate (in1, in3, eps, norb_mu, norb_nu, sm, sx)
             pS_neighbors%block = sx
-            deallocate (sm)
-            deallocate (sx)
+            deallocate (sm, sx)
           end do ! end loop over neighbors
         end do ! end loop over atoms
 
@@ -280,6 +281,7 @@
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
           ! cut some lengthy notation
+          nullify (pkinetic)
           pkinetic=>s%kinetic(iatom)
 
           r1 = s%atom(iatom)%ratom
@@ -291,6 +293,7 @@
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
             ! cut some more lengthy notation
+            nullify (pK_neighbors)
             pK_neighbors=>pkinetic%neighbors(ineigh)
 
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
@@ -422,6 +425,7 @@
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
           ! cut some lengthy notation
+          nullify (pdipole_z)
           pdipole_z=>s%dipole_z(iatom)
 
           r1 = s%atom(iatom)%ratom
@@ -433,6 +437,7 @@
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
             ! cut some more lengthy notation
+            nullify (pdip_neighbors)
             pdip_neighbors=>pdipole_z%neighbors(ineigh)
 
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
@@ -471,14 +476,12 @@
 
             allocate (dipm (norb_mu, norb_nu))
             allocate (dipx (norb_mu, norb_nu))
-
             call getMEs_Fdata_2c (in1, in2, interaction, isorp, z,           &
      &                            norb_mu, norb_nu, dipm)
             call rotate (in1, in3, eps, norb_mu, norb_nu, dipm, dipx)
             pdip_neighbors%block = dipx
 
-            deallocate (dipm)
-            deallocate (dipx)
+            deallocate (dipm, dipx)
           end do ! end loop over neighbors
         end do ! end loop over atoms
 
@@ -592,11 +595,12 @@
           norb_mu = species(in1)%norb_max
 
           ! cut some lengthy notation
+          nullify (pvna)
           pvna=>s%vna(iatom)
 
 ! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
-          allocate (pvna%neighbors(num_neigh))
+          allocate (s%vna(iatom)%neighbors(num_neigh))
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
@@ -604,12 +608,13 @@
             in2 = s%atom(jatom)%imass
 
             ! cut some more lengthy notation
+            nullify (pvna_neighbors)
             pvna_neighbors=>pvna%neighbors(ineigh)
 
 ! Allocate block size
             norb_nu = species(in2)%norb_max
-            allocate (pvna_neighbors%block(norb_mu, norb_nu))
-            allocate (pvna_neighbors%blocko(norb_mu, norb_nu))
+            allocate (s%vna(iatom)%neighbors(ineigh)%block(norb_mu, norb_nu))
+            allocate (s%vna(iatom)%neighbors(ineigh)%blocko(norb_mu, norb_nu))
             pvna_neighbors%block = 0.0d0
             pvna_neighbors%blocko = 0.0d0
 
@@ -691,8 +696,7 @@
                 pvna_neighbors%blocko = pvna_neighbors%blocko + dQ*bcnax*P_eq2
               end do ! isorp
 
-              deallocate (bcnam)
-              deallocate (bcnax)
+              deallocate (bcnam, bcnax)
             end if ! end if for r1 .eq. r2 case
           end do ! end loop over neighbors
         end do ! end loop over atoms
@@ -710,7 +714,9 @@
           matom = s%neigh_self(iatom)
 
           ! cut some lengthy notation
+          nullify (pvna, pvna_neighbors)
           pvna=>s%vna(iatom); pvna_neighbors=>pvna%neighbors(matom)
+          nullify (poverlap, pS_neighbors)
           poverlap=>s%overlap(iatom); pS_neighbors=>poverlap%neighbors(matom)
 
 ! Loop over the neighbors of each iatom.
@@ -824,6 +830,67 @@
 
 
 ! ===========================================================================
+! destroy_assemble_vna
+! ===========================================================================
+! Subroutine Description
+! ===========================================================================
+!>       This routine deallocates the arrays containing the assemble_2c_DOGS
+!! information.
+!
+! ===========================================================================
+! Code written by:
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
+!
+! Phone: +852 6612 9539 (mobile)
+! ===========================================================================
+!
+! Subroutine Declaration
+! ===========================================================================
+        subroutine destroy_assemble_vna (s)
+        implicit none
+
+! Argument Declaration and Description
+! ===========================================================================
+        type(T_structure), target :: s           !< the structure to be used.
+
+! Parameters and Data Declaration
+! ===========================================================================
+! None
+
+! Variable Declaration and Description
+! ===========================================================================
+        integer iatom, ineigh             !< counter over atoms and neighbors
+
+! Procedure
+! ===========================================================================
+        do iatom = 1, s%natoms
+          do ineigh = 1, s%neighbors(iatom)%neighn
+            deallocate (s%vna(iatom)%neighbors(ineigh)%block)
+            deallocate (s%vna(iatom)%neighbors(ineigh)%blocko)
+          end do
+          deallocate (s%vna(iatom)%neighbors)
+        end do
+        deallocate (s%vna)
+
+! Deallocate Arrays
+! ===========================================================================
+! None
+
+! Format Statements
+! ===========================================================================
+! None
+
+! End Subroutine
+! ===========================================================================
+        return
+        end subroutine destroy_assemble_vna
+
+
+! ===========================================================================
 ! destroy_assemble_2c
 ! ===========================================================================
 ! Subroutine Description
@@ -857,8 +924,7 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom                             !< counter over atoms
-        integer ineigh                            !< counter over neighbors
+        integer iatom, ineigh             !< counter over atoms and neighbors
 
 ! Procedure
 ! ===========================================================================
@@ -867,18 +933,14 @@
             deallocate (s%overlap(iatom)%neighbors(ineigh)%block)
             deallocate (s%kinetic(iatom)%neighbors(ineigh)%block)
             deallocate (s%dipole_z(iatom)%neighbors(ineigh)%block)
-            deallocate (s%vna(iatom)%neighbors(ineigh)%block)
-            deallocate (s%vna(iatom)%neighbors(ineigh)%blocko)
           end do
           deallocate (s%overlap(iatom)%neighbors)
           deallocate (s%kinetic(iatom)%neighbors)
           deallocate (s%dipole_z(iatom)%neighbors)
-          deallocate (s%vna(iatom)%neighbors)
         end do
         deallocate (s%overlap)
         deallocate (s%kinetic)
         deallocate (s%dipole_z)
-        deallocate (s%vna)
 
 ! Deallocate Arrays
 ! ===========================================================================

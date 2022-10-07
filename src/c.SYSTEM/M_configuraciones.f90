@@ -1089,7 +1089,6 @@
           deallocate (s%kpoints(ikpoint)%ioccupy)
         end do
         deallocate (s%kpoints)
-
         deallocate (structures)
 
 ! Deallocate Arrays

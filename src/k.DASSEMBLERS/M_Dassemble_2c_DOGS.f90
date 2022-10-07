@@ -160,6 +160,7 @@
           num_neigh = s%neighbors(iatom)%neighn
 
           ! cut some lengthy notation
+          nullify (poverlap)
           poverlap=>s%overlap(iatom)
 
 ! Loop over the neighbors of each iatom.
@@ -170,11 +171,12 @@
             in2 = s%atom(jatom)%imass
 
             ! cut some more lengthy notation
+            nullify (pS_neighbors)
             pS_neighbors=>poverlap%neighbors(ineigh)
 
 ! Allocate the block size
             norb_nu = species(in2)%norb_max
-            allocate (pS_neighbors%Dblock(3, norb_mu, norb_nu))
+            allocate (s%overlap(iatom)%neighbors(ineigh)%Dblock(3, norb_mu, norb_nu))
             pS_neighbors%Dblock = 0.0d0
 
 ! SET-UP STUFF
@@ -245,7 +247,9 @@
 ! Store the derivitive, rotate vector matrix.
 			pS_neighbors%Dblock = vdsx
             deallocate (sm, sx, dsm, vdsm, vdsx)
+            nullify (pS_neighbors)
           end do ! end loop over neighbors
+          nullify (poverlap)
         end do ! end loop over atoms
 
 ! Deallocate Arrays
@@ -353,6 +357,7 @@
           num_neigh = s%neighbors(iatom)%neighn
 
           ! cut some lengthy notation
+          nullify (pkinetic)
           pkinetic=>s%kinetic(iatom)
 
 ! Loop over the neighbors of each iatom.
@@ -363,11 +368,12 @@
             in2 = s%atom(jatom)%imass
 
             ! cut some more lengthy notation
+            nullify (pK_neighbors)
             pK_neighbors=>pkinetic%neighbors(ineigh)
 
 ! Allocate block size
             norb_nu = species(in2)%norb_max
-            allocate (pK_neighbors%Dblock(3, norb_mu, norb_nu))
+            allocate (pkinetic%neighbors(ineigh)%Dblock(3, norb_mu, norb_nu))
             pK_neighbors%Dblock = 0.0d0
 
 ! SET-UP STUFF
@@ -438,7 +444,9 @@
 ! Store the derivitive, rotate vector matrix.
 			pK_neighbors%Dblock = vdtx
             deallocate (tm, tx, dtm, vdtm, vdtx)
+            nullify (pK_neighbors)
           end do ! end loop over neighbors
+          nullify (pkinetic)
         end do ! end loop over atoms
 
 ! Deallocate Arrays
@@ -542,6 +550,7 @@
           num_neigh = s%neighbors(iatom)%neighn
 
           ! cut some lengthy notation
+          nullify (pdipole_z)
           pdipole_z=>s%dipole_z(iatom)
 
 ! Loop over the neighbors of each iatom.
@@ -552,11 +561,12 @@
             in2 = s%atom(jatom)%imass
 
             ! cut some more lengthy notation
+            nullify (pdip_neighbors)
             pdip_neighbors=>pdipole_z%neighbors(ineigh)
 
 ! Allocate the block size
             norb_nu = species(in2)%norb_max
-            allocate (pdip_neighbors%Dblock(3, norb_mu, norb_nu))
+            allocate (pdipole_z%neighbors(ineigh)%Dblock(3, norb_mu, norb_nu))
             pdip_neighbors%Dblock = 0.0d0
 
 ! SET-UP STUFF
@@ -626,7 +636,9 @@
 ! Store the derivitive, rotate vector matrix.
 			pdip_neighbors%Dblock = vddipx
             deallocate (dipm, ddipm, vddipm, vddipx)
+            nullify (pdip_neighbors)
           end do ! end loop over neighbors
+          nullify (pdipole_z)
         end do ! end loop over atoms
 
 ! Deallocate Arrays
@@ -762,8 +774,8 @@
         do iatom = 1, s%natoms
           pfi=>s%forces(iatom)
           num_neigh = s%neighbors(iatom)%neighn
-          allocate (pfi%vna_atom (3, num_neigh)); pfi%vna_atom = 0.0d0
-          allocate (pfi%vna_ontop (3, num_neigh)); pfi%vna_ontop = 0.0d0
+          allocate (s%forces(iatom)%vna_atom (3, num_neigh)); pfi%vna_atom = 0.0d0
+          allocate (s%forces(iatom)%vna_ontop (3, num_neigh)); pfi%vna_ontop = 0.0d0
         end do
 
 ! Procedure
@@ -778,6 +790,7 @@
           norb_mu = species(in1)%norb_max
 
           ! cut some lengthy notation
+          nullify (pfi, pdenmat)
           pdenmat=>s%denmat(iatom)
           pfi=>s%forces(iatom)
 
@@ -791,6 +804,7 @@
             norb_nu = species(in2)%norb_max
 
             ! cut some more lengthy notation
+            nullify (pRho_neighbors)
             pRho_neighbors=>pdenmat%neighbors(ineigh)
 
 ! SET-UP STUFF
@@ -983,7 +997,9 @@
               end do ! end loop over isorp
               deallocate (bcnam, dbcnam, vdbcnam, vdbcnax)
             end if ! end if for r1 .eq. r2 case
+            nullify (pRho_neighbors)
           end do ! end loop over neighbors
+          nullify (pfi, pdenmat)
         end do ! end loop over atoms
 
 ! FORCES - ATM CASE

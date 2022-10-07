@@ -2,22 +2,13 @@
 ifneq (,$(findstring HKQAI,${MACHINE}))
 	ifneq (,$(findstring ifort,${COMPILER}))
 		F90 = ifort
-		FFLAGS = -O3 -r8 -fpp -ipo -fpe0 -ftz -align #-p -inline-level=0
+		FFLAGS = -O3 -r8 -fpp -ipo -fpe0 -ftz -align 
 		ifneq (,$(findstring DEBUG,${MODE}))
 			FFLAGS = -g -traceback -C -check arg_temp_created -r8 \
 				-debug all -check all -warn all,noexternal -fpe0
-				#-p -inline-level=0
 		endif
 		ifneq (,$(findstring TRUE,${OPENMP}))
 			OMP = -qopenmp -fpp -auto
-		endif
-	endif
-
-	ifneq (,$(findstring gfortran,${COMPILER}))
-		F90 = gfortran -std=f2008
-		FFLAGS = -static -O3 -fdefault-real-8
-		ifneq (,$(findstring DEBUG, ${MODE}))
-			FFLAGS = -static -fdefault-real-8 -g -fbounds-check -Wall
 		endif
 	endif
 

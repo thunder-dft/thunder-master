@@ -1630,7 +1630,6 @@
           deallocate (s%neighbors_PPp(iatom)%neigh_j)
           deallocate (s%neighbors_PPp(iatom)%neigh_b)
         end do
-
         deallocate (s%neighbors_PP)
         deallocate (s%neighbors_PP_self)
         deallocate (s%neighbors_PPx)

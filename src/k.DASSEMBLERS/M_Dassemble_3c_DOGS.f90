@@ -103,9 +103,6 @@
 ! /SOLVESH
         use M_density_matrix
 
-! /OMP
-        use OMP_LIB
-
 ! Type Declaration
 ! ===========================================================================
 ! None
@@ -400,6 +397,7 @@
                 f3naMb(:,imu,inu) = - sighat*dybcnam(imu,inu)                 &
      &            + bmt*dpbcnam(imu,inu) - f3naMa(:,imu,inu)/2.0d0
               end do ! end loop over matrix elements
+              nullify (pFdata_bundle, pFdata_cell)
 
 ! ***************************************************************************
 ! Convert to Crystal Coordinates
@@ -448,8 +446,11 @@
               deallocate (bcnam, dpbcnam, dxbcnam, dybcnam)
               deallocate (f3naMa, f3naMb)
               deallocate (f3naXa, f3naXb, f3naXc)
+              nullify (pfi, pfj)
+              nullify (pdenmat, pRho_neighbors)
             end if ! if (mneigh .ne. 0)
           end do ! end loop over neighbors
+          nullify (pfalpha)
         end do ! end loop over atoms
 
 ! ****************************************************************************
@@ -470,6 +471,7 @@
           rna = s%atom(ialpha)%ratom
 
           ! cut some lengthy notation
+          nullify (pfalpha)
           pfalpha=>s%forces(ialpha)
 
           ! loop over the common neighbor pairs of ialp
@@ -489,13 +491,17 @@
               norb_nu = species(in2)%norb_max
 
               ! cut lengthy notation
+              nullify (pfi, pfj)
               pfi=>s%forces(iatom); pfj=>s%forces(jatom)
 
               ! density matrix
+              nullify (pdenmat, pRho_neighbors)
               pdenmat=>s%denmat(iatom); pRho_neighbors=>pdenmat%neighbors(mneigh)
 
               ! interactions for smoothing part
+              nullify (poverlap, pS_neighbors)
               poverlap=>s%overlap(iatom); pS_neighbors=>poverlap%neighbors(mneigh)
+              nullify (pdipole_z, pdip_neighbors)
               pdipole_z=>s%dipole_z(iatom); pdip_neighbors=>pdipole_z%neighbors(mneigh)
 
 ! SET-UP STUFF
@@ -689,6 +695,7 @@
 ! ***************************************************************************
 ! Now consider the components of the different forces which is determined
 ! by whether or not the force is with respect to atom 3 or atom 1.
+                nullify (pFdata_bundle, pFdata_cell)
                 pFdata_bundle => Fdata_bundle_3c(in1, in2, indna)
                 pFdata_cell =>                                                &
      &            pFdata_bundle%Fdata_cell_3c(pFdata_bundle%index_3c(interaction,isorp,1))
@@ -705,6 +712,7 @@
                   f3naMb(:,imu,inu) = - sighat*dybcnam(imu,inu)               &
      &              + bmt*dpbcnam(imu,inu) - f3naMa(:,imu,inu)/2.0d0
                 end do ! end loop over matrix elements
+                nullify (pFdata_bundle, pFdata_cell)
 
 ! ***************************************************************************
 ! Convert to Crystal Coordinates
@@ -756,15 +764,19 @@
       &                  - dstnC(:)*emnpl(imu,inu) + (1.0d0 - stinky)*demnplC(:,imu,inu))
                   end do
                 end do
-
                 deallocate (bcnam, bcnax, dpbcnam, dxbcnam, dybcnam)
                 deallocate (f3naMa, f3naMb)
                 deallocate (f3naXa, f3naXb, f3naXc)
               end do ! end loop over isorp
+              nullify (pfi, pfj)
+              nullify (pdenmat, pRho_neighbors)
+              nullify (poverlap, pS_neighbors)
+              nullify (pdipole_z, pdip_neighbors)
             end if ! if (mneigh .ne. 0)
             deallocate (sterm, spterm, dterm, dpterm, emnpl)
             deallocate (DemnplA, DemnplB, DemnplC)
           end do ! end loop over neighbors
+          nullify (pfalpha)
         end do ! end loop over atoms
 
 ! Deallocate Arrays

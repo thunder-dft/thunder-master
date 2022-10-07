@@ -4,10 +4,6 @@ SHELL = /bin/bash
 # Choose the COMPILER
 COMPILER = ifort
 
-# Choose the Linear Algebra libraries
-#LINALG = LAPACK
-LINALG = MKL
-
 # Do you use DEBUG or Optimization Mode? (DEBUG/OPT)
 MODE = OPT
 #MODE = DEBUG

@@ -173,8 +173,11 @@
               norb_nu = species(in2)%norb_max
 
               ! cut some lengthy notation
+              nullify (pvna, pvna_neighbors)
               pvna=>s%vna(iatom); pvna_neighbors=>pvna%neighbors(mneigh)
+              nullify (poverlap, pS_neighbors)
               poverlap=>s%overlap(iatom); pS_neighbors=>poverlap%neighbors(mneigh)
+              nullify (pdipole_z, pdip_neighbors)
               pdipole_z=>s%dipole_z(iatom); pdip_neighbors=>pdipole_z%neighbors(mneigh)
 
 ! SET-UP STUFF
@@ -299,6 +302,9 @@
               end do
               deallocate (bcnam, bcnax)
               deallocate (sterm, dterm, emnpl)
+              nullify (pvna, pvna_neighbors)
+              nullify (poverlap, pS_neighbors)
+              nullify (pdipole_z, pdip_neighbors)
             end if
           end do ! end loop over neighbors
         end do ! end loop over atoms

@@ -555,8 +555,8 @@
      &             s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,jssh)
                   Dprho_bond_shell=                                           &
      &             s%rho_bond_weighted(iatom)%neighbors(matom)%Dblock(:,issh,jssh)
-!                 call lda_ceperley_alder (prho_bond_shell, exc_bond, muxc_bond,&
-!    &                                     dexc_bond, d2exc_bond, dmuxc_bond, d2muxc_bond)
+                  call lda_ceperley_alder (prho_bond_shell, exc_bond, muxc_bond,&
+     &                                     dexc_bond, d2exc_bond, dmuxc_bond, d2muxc_bond)
 
 ! Calculate vxc_SN and vxc_SN_bond for (mu,nu)-block
 ! loop over orbitals in the iatom-shell (imu)
@@ -579,8 +579,8 @@
 
                         pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh) &
      &                    + pRho_neighbors_matom%block(imu,imu)               &
-!    &                     *(Dprho_bond_shell*d2muxc_in*prho_in + dmuxc_in*Dprho_bond)
-     &                     *(Dprho_in_shell*d2muxc_in*prho_in + dmuxc_in*Dprho_bond)
+!    &                     *(Dprho_bond_shell*d2muxc_bond*prho_bond + dmuxc_bond*Dprho_bond)
+     &                     *(Dprho_in_shell*d2muxc_bond*prho_bond + dmuxc_bond*Dprho_bond)
                      end if ! imu .eq. inu
                     end do !do m2 = -l2, l2
                   end do !do m1 = -l1, l1

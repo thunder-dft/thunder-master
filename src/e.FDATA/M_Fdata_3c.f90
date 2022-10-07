@@ -505,6 +505,7 @@
             hmbox(imu,inu) = Fdata(iindex)*sint
           end if
         end do
+        nullify (pFdata_bundle, pFdata_cell)
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -830,6 +831,7 @@
             Dyhmbox(imu,inu) = DyFdata(iindex)*sint
           end if
         end do
+        nullify (pFdata_bundle, pFdata_cell)
 
 ! Deallocate Arrays
 ! ===========================================================================
