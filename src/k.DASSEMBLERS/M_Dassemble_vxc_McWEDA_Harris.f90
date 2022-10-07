@@ -441,10 +441,9 @@
 ! call epsilon_function (R1, sighat, spe), then eps(ix,3) = eta(ix).
             eta(:) = eps(:,3)
 
-!           write (*,*) ' iatom, ineigh, jatom = ', iatom, ineigh, jatom
-
 ! If r1 .eq. r2, then this is a case of a self-interaction or "on-site" term;
 ! therefore, we do not calculate here.
+!           write (*,*) ' iatom, ineigh, jatom = ', iatom, ineigh, jatom
             if (iatom .eq. jatom .and. mbeta .eq. 0) then
 
 ! Do nothing here - the forces are zero in this case.

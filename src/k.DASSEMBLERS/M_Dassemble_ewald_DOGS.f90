@@ -172,8 +172,9 @@
 ! We build the ewald forces here, so we allocate and initialize
         do iatom = 1, s%natoms
           num_neigh = s%neighbors(iatom)%neighn
+          nullify (pfi)
           pfi=>s%forces(iatom)
-          allocate (pfi%ewaldsr (3, num_neigh)); pfi%ewaldsr = 0.0d0
+          allocate (s%forces(iatom)%ewaldsr (3, num_neigh)); pfi%ewaldsr = 0.0d0
         end do
 
         ! needed for charge transfer bits
@@ -205,16 +206,16 @@
           norb_mu = species(in1)%norb_max
 
           ! cut some lengthy notation
-          poverlap=>s%overlap(iatom)
-
-          ! cut some more lengthy notation
-          pS_neighbors=>poverlap%neighbors(matom)
+          nullify (poverlap, pS_neighbors)
+          poverlap=>s%overlap(iatom); pS_neighbors=>poverlap%neighbors(matom)
 
           ! density matrix
+          nullify (pdenmat, pRho_neighbors)
           pdenmat=>s%denmat(iatom)
           pRho_neighbors_matom=>pdenmat%neighbors(matom)
 
           ! cut some lengthy notation
+          nullify (pfi)
           pfi=>s%forces(iatom)
 
 ! Loop over the neighbors of each iatom.
@@ -260,6 +261,9 @@
               end do
             end if
           end do ! end loop over neighbors
+          nullify (pfi)
+          nullify (poverlap, pS_neighbors)
+          nullify (pdenmat, pRho_neighbors)
         end do ! end loop over atoms
 
 ! T W O - C E N T E R   O V E R L A P   O N T O P   D I P O L E    P I E C E
@@ -271,13 +275,16 @@
           norb_mu = species(in1)%norb_max
 
           ! cut some lengthy notation
+          nullify (poverlap, pdipole_z)
           poverlap=>s%overlap(iatom)
           pdipole_z=>s%dipole_z(iatom)
 
           ! density matrix
+          nullify (pdenmat)
           pdenmat=>s%denmat(iatom)
 
           ! force on iatom
+          nullify (pfi)
           pfi=>s%forces(iatom)
 
 ! Loop over the neighbors of each iatom.
@@ -290,10 +297,12 @@
             norb_nu = species(in2)%norb_max
 
             ! cut some more lengthy notation
+            nullify (pS_neighbors, pdip_neighbors)
             pS_neighbors=>poverlap%neighbors(ineigh)
             pdip_neighbors=>pdipole_z%neighbors(ineigh)
 
             ! density matrix
+            nullify (pRho_neighbors)
             pRho_neighbors=>pdenmat%neighbors(ineigh)
 
 ! SET-UP STUFF
@@ -351,7 +360,12 @@
               deallocate (sterm, spterm)
               deallocate (dterm, dpterm)
             end if
+            nullify (pRho_neighbors)
+            nullify (pS_neighbors, pdip_neighbors)
           end do ! end loop over neighbors
+          nullify (pfi)
+          nullify (poverlap, pdipole_z)
+          nullify (pdenmat)
         end do ! end loop over atoms
 
 !****************************************************************************
@@ -363,6 +377,7 @@
           rna = s%atom(ialpha)%ratom
 
           ! cut some lengthy notation
+          nullify (pfalpha)
           pfalpha=>s%forces(ialpha)
 
           ! loop over the common neigbor pairs of ialp
@@ -382,12 +397,16 @@
               norb_nu = species(in2)%norb_max
 
               ! cut lengthy notation
+              nullify (pfi, pfj)
               pfi=>s%forces(iatom); pfj=>s%forces(jatom)
 
               ! density matrix
+              nullify (pdenmat, pRho_neighbors)
               pdenmat=>s%denmat(iatom); pRho_neighbors=>pdenmat%neighbors(mneigh)
 
+              nullify (poverlap, pS_neighbors)
               poverlap=>s%overlap(iatom); pS_neighbors=>poverlap%neighbors(mneigh)
+              nullify (pdipole_z, pdip_neighbors)
               pdipole_z=>s%dipole_z(iatom); pdip_neighbors=>pdipole_z%neighbors(mneigh)
 
 ! SET-UP STUFF
@@ -486,7 +505,12 @@
               deallocate (dterm, dpterm)
               deallocate (demnplA, demnplB, demnplC)
             end if
+            nullify (pdenmat, pRho_neighbors)
+            nullify (poverlap, pS_neighbors)
+            nullify (pdipole_z, pdip_neighbors)
           end do ! end loop over neighbors
+          nullify (pfalpha)
+          nullify (pfi, pfj)
         end do ! end loop over atoms
 
 ! Deallocate Arrays
@@ -648,10 +672,12 @@
           norb_mu = species(in1)%norb_max
 
           ! cut some lengthy notation
+          nullify (poverlap, pdipole_z)
           poverlap=>s%overlap(iatom)
           pdipole_z=>s%dipole_z(iatom)
 
           ! density matrix
+          nullify (pdenmat, pfi)
           pdenmat=>s%denmat(iatom)
           pfi=>s%forces(iatom)
 
@@ -665,10 +691,12 @@
             norb_nu = species(in2)%norb_max
 
             ! cut some more lengthy notation
+            nullify (pS_neighbors, pdip_neighbors)
             pS_neighbors=>poverlap%neighbors(ineigh)
             pdip_neighbors=>pdipole_z%neighbors(ineigh)
 
             ! density matrix - neighbors
+            nullify (pRho_neighbors, pfj)
             pRho_neighbors=>pdenmat%neighbors(ineigh)
             pfj=>s%forces(jatom)
 
@@ -769,6 +797,7 @@
             do katom = 1, s%natoms
 
               ! force on jatom
+              nullify (pfk)
               pfk=>s%forces(katom)
 
               if (katom .ne. iatom .and. katom .ne. jatom) then
@@ -786,7 +815,11 @@
             end do ! end loop over katom
             deallocate (sterm, spterm)
             deallocate (dterm, dpterm)
+            nullify (pS_neighbors, pdip_neighbors)
+            nullify (pRho_neighbors, pfj)
           end do ! end loop over neighbors
+          nullify (pdenmat, pfi)
+          nullify (poverlap, pdipole_z)
         end do ! end loop over atoms
 
 ! Deallocate Arrays
@@ -1057,11 +1090,13 @@
                 do iatom = 1, s%natoms
 
                   ! cut some lengthy notation
+                  nullify (pfi)
                   pfi=>s%forces(iatom)
 
                   do jatom = iatom, s%natoms
 
                     ! cut some lengthy notation
+                    nullify (pfj)
                     pfj=>s%forces(jatom)
 
                     factor = 1.0d0*stuff
@@ -1115,11 +1150,13 @@
               do iatom = 1, s%natoms
 
                 ! cut some lengthy notation
+                nullify (pfi)
                 pfi=>s%forces(iatom)
 
                 do jatom = iatom, s%natoms
 
                   ! cut some lengthy notation
+                  nullify (pfj)
                   pfj=>s%forces(jatom)
 
                   factor = 1.0d0
@@ -1238,7 +1275,6 @@
 
 ! Procedure
 ! ===========================================================================
-        deallocate (s%ewald)
         deallocate (s%dewald)
         do iatom = 1, s%natoms
           deallocate (s%forces(iatom)%ewaldsr)

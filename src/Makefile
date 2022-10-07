@@ -497,7 +497,7 @@ M_Dassemble_PP_3c.o : k.DASSEMBLERS/M_Dassemble_PP_3c.f90
 M_Dassemble_3c_Harris.o : k.DASSEMBLERS/M_Dassemble_3c_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Dassemble_3c_DOGS.o : k.DASSEMBLERS/M_Dassemble_3c_DOGS.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(OMP) -c $^
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Dassemble_vxc_Horsfield_Harris.o : k.DASSEMBLERS/M_Dassemble_vxc_Horsfield_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Dassemble_vxc_Horsfield_DOGS.o : k.DASSEMBLERS/M_Dassemble_vxc_Horsfield_DOGS.f90
@@ -615,7 +615,7 @@ M_xc3c_Horsfield_DOGS.o : p.THEORY/M_xc3c_Horsfield_DOGS.f90
 # u.UTIL
 # *****************************************************************************
 absorption_gamma.o : u.UTIL/absorption_gamma.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(OMP) -c $^
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 dos_gamma.o : u.UTIL/dos_gamma.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 dos_kpoints.o : u.UTIL/dos_kpoints.f90
@@ -653,7 +653,7 @@ create_Horsfield.o : x.DRIVERS/create_Horsfield.f90
 create_McWEDA.o : x.DRIVERS/create_McWEDA.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^ 
 fireball.o : x.DRIVERS/fireball.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(OMP) -c $^
 fireball-MDET.o : x.DRIVERS/fireball-MDET.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 lightning.o : x.DRIVERS/lightning.f90

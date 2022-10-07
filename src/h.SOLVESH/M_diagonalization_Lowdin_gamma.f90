@@ -104,7 +104,7 @@
          if (iscf_iteration .eq. 1) then
            ! cut some lengthy notation
            pkpoint=>s%kpoints(ikpoint)
-           allocate (pkpoint%S12matrix (s%norbitals, s%norbitals))
+           allocate (s%kpoints(ikpoint)%S12matrix (s%norbitals, s%norbitals))
            pkpoint%S12matrix = 0.0d0
          end if
 

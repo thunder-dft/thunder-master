@@ -205,7 +205,10 @@
 ! loop over atoms in central cell
         do iatom = 1, s%natoms
           ! cut some lengthy notation
+          nullify (pHamiltonian)
           pHamiltonian=>s%Hamiltonian(iatom)
+
+          nullify (pkinetic, pvna, pewaldsr, pewaldlr, pvxc)
           pkinetic=>s%kinetic(iatom)
           pvna=>s%vna(iatom)
           pewaldsr=>s%ewaldsr(iatom)
@@ -215,12 +218,16 @@
           in1 = s%atom(iatom)%imass
           norb_mu = species(in1)%norb_max
           num_neigh = s%neighbors(iatom)%neighn
-          allocate(pHamiltonian%neighbors(num_neigh))
+          allocate(s%Hamiltonian(iatom)%neighbors(num_neigh))
 
 ! Now loop over all neighbors ineigh of iatom.
           do ineigh = 1, num_neigh
             ! cut some lengthy notation
+            nullify (pH_neighbors)
             pH_neighbors=>pHamiltonian%neighbors(ineigh)
+
+            nullify (pK_neighbors, pvna_neighbors)
+            nullify (pSR_neighbors, pLR_neighbors, pvxc_neighbors)
             pK_neighbors=>pkinetic%neighbors(ineigh)
             pvna_neighbors=>pvna%neighbors(ineigh)
             pSR_neighbors=>pewaldsr%neighbors(ineigh)
@@ -230,12 +237,16 @@
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             in2 = s%atom(jatom)%imass
             norb_nu = species(in2)%norb_max
-            allocate(pH_neighbors%block(norb_mu, norb_nu))
-
+            allocate(s%Hamiltonian(iatom)%neighbors(ineigh)%block(norb_mu, norb_nu))
             pH_neighbors%block = pK_neighbors%block + pvna_neighbors%block     &
         &                       + pvna_neighbors%blocko + pvxc_neighbors%block &
         &                       - pSR_neighbors%block + pLR_neighbors%block
+            nullify (pH_neighbors)
+            nullify (pK_neighbors, pvna_neighbors)
+            nullify (pSR_neighbors, pLR_neighbors, pvxc_neighbors)
           end do
+          nullify (pHamiltonian)
+          nullify (pkinetic, pvna, pewaldsr, pewaldlr, pvxc)
         end do
 
 ! Format Statements
@@ -898,9 +909,8 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom                             !< counter over atoms
-        integer ikpoint                           !< counter over kpoints
-        integer ineigh                            !< counter over neighbors
+        integer iatom, ineigh             !< counter over atoms and neighbors
+        integer ikpoint                   !< counter over kpoints
 
 ! Procedure
 ! ===========================================================================
@@ -910,14 +920,6 @@
         do ikpoint = 1, s%nkpoints
           deallocate (s%kpoints(ikpoint)%S12matrix)
         end do
-
-        do iatom = 1, s%natoms
-          do ineigh = 1, s%neighbors(iatom)%neighn
-            deallocate (s%Hamiltonian(iatom)%neighbors(ineigh)%block)
-          end do
-          deallocate (s%Hamiltonian(iatom)%neighbors)
-        end do
-        deallocate (s%Hamiltonian)
 
 ! Deallocate Arrays
 ! ===========================================================================

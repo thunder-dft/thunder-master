@@ -127,7 +127,6 @@
 
 ! Procedure
 ! ===========================================================================
-
 ! Initialize logfile
         logfile = s%logfile
         inpfile = s%inpfile
@@ -845,6 +844,10 @@
      &                               s%atom(iatom)%ratom(2)*s%atom(iatom)%vatom(1))
         end do
         write (logfile, 102) xlcm
+
+! Deallocate Arrays
+! ===========================================================================
+        deallocate (difference)
 
 ! Format Statements
 ! ===========================================================================

@@ -74,8 +74,7 @@
 ! Subroutine Description
 ! ===========================================================================
 !>  This is the main module for assembling the Vxc matrix element
-!! interactions (McWEDA).  Subroutines from M_assemble_rho_McWEDA_rho
-!! are used. The results are stored in vxc (potential).
+!! interactions (Horsfield).  The results are stored in vxc (potential).
 ! ===========================================================================
 ! Code written by:
 !> @author Daniel G. Trabada
@@ -276,11 +275,12 @@
           norb_mu = species(in1)%norb_max
 
           ! cut some lengthy notation
+          nullify (pvxc)
           pvxc=>s%vxc(iatom)
 
 ! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
-          allocate (pvxc%neighbors(num_neigh))
+          allocate (s%vxc(iatom)%neighbors(num_neigh))
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
@@ -288,11 +288,12 @@
             in2 = s%atom(jatom)%imass
 
             ! cut some more lengthy notation
+            nullify (pvxc_neighbors)
             pvxc_neighbors=>pvxc%neighbors(ineigh)
 
 ! Allocate block size
             norb_nu = species(in2)%norb_max
-            allocate (pvxc_neighbors%block(norb_mu, norb_nu))
+            allocate (s%vxc(iatom)%neighbors(ineigh)%block(norb_mu, norb_nu))
             pvxc_neighbors%block = 0.0d0
 
 ! SET-UP STUFF
@@ -355,7 +356,9 @@
               end do
               deallocate (bcxcm, bcxcx)
             end if ! end if for r1 .eq. r2 case
+            nullify (pvxc_neighbors)
           end do ! end loop over neighbors
+          nullify (pvxc)
         end do ! end loop over atoms
 
 
@@ -371,10 +374,11 @@
           norb_mu = species(in1)%norb_max
 
           ! cut some more lengthy notation
+          nullify (pvxc, pvxc_neighbors)
           pvxc=>s%vxc(iatom); pvxc_neighbors=>pvxc%neighbors(matom)
 
 ! Allocate block size
-          allocate (pvxc_neighbors%block(norb_mu, norb_mu))
+          allocate (pvxc%neighbors(matom)%block(norb_mu, norb_mu))
           pvxc_neighbors%block = 0.0d0
 
 ! Loop over the neighbors of each iatom.
@@ -454,7 +458,7 @@
      &                .eq. species(in1)%orbital(inu)%m) then
                     pvxc_neighbors%block(imu,inu) =                           &
      &                pvxc_neighbors%block(imu,inu)                           &
-     &                + dQ_factor(0)*vxc_1c(in1)%V(issh,jssh)
+     &               + dQ_factor(0)*vxc_1c(in1)%V(issh,jssh)
 
 ! Loop over the different derivative types. We already did ideriv=0 case.
 ! Set ideriv_min = 1 and ideriv_max = 2 for one center case.
@@ -463,7 +467,7 @@
                     do ideriv = ideriv_min, ideriv_max
                       pvxc_neighbors%block(imu,inu) =                         &
      &                  pvxc_neighbors%block(imu,inu)                         &
-     &                  + dQ_factor(ideriv)*vxc_1c(in1)%dV(ideriv,issh,jssh)
+     &                 + dQ_factor(ideriv)*vxc_1c(in1)%dV(ideriv,issh,jssh)
                     end do
                   end if
                 end do
@@ -509,6 +513,7 @@
               deallocate (bcxcm, bcxcx)
             end if ! end if for r1 .eq. r2 case
           end do ! end loop over neighbors
+          nullify (pvxc, pvxc_neighbors)
         end do ! end loop over atoms
 
 ! Deallocate Arrays
@@ -673,6 +678,7 @@
               norb_nu = species(in2)%norb_max
 
               ! cut some lengthy notation
+              nullify (pvxc, pvxc_neighbors)
               pvxc=>s%vxc(iatom); pvxc_neighbors=>pvxc%neighbors(mneigh)
 
 ! SET-UP STUFF
@@ -753,6 +759,7 @@
                 pvxc_neighbors%block = pvxc_neighbors%block + dQ_factor(ideriv)*bcxcx
               end do
               deallocate (bcxcm, bcxcx)
+              nullify (pvxc, pvxc_neighbors)
             end if ! end if skipping mneigh .eq. 0
           end do ! end loop over neighbors
         end do ! end loop over atoms
@@ -772,7 +779,7 @@
 
 
 ! ===========================================================================
-! destroy_assemble_vxc_McWEDA
+! destroy_assemble_vxc
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
@@ -806,8 +813,7 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom                            !< counter over atoms
-        integer ineigh                           !< counter over neighbors
+        integer iatom, ineigh             !< counter over atoms and neighbors
 
 ! Procedure
 ! ===========================================================================

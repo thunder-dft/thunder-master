@@ -117,7 +117,7 @@
         real, allocatable, save :: sigma_saved (:) ! old sigma values
         real, allocatable, save :: Xv (:, :)! input charges
 
-        double precision, allocatable, save :: amatrix (:, :)
+        double precision, allocatable :: amatrix (:, :)
 
 ! Needed for the dsyev LAPACK call
         integer info                   ! error information
@@ -267,8 +267,6 @@
             allocate (work(lwork))
             call dsysv('U', mix_order - 1, 1, amatrix, mix_order - 1,          &
      &                 ipiv, F_dot_delF, mix_order - 1, work, lwork, info)
-            do iloop = istep + 1, iscf_iteration - 1
-            end do
 
 ! If there is an error, then just use the simple mixing
             if (info .ne. 0) then
@@ -347,5 +345,3 @@
 ! ===========================================================================
         return
         end subroutine Qmixer
-
-

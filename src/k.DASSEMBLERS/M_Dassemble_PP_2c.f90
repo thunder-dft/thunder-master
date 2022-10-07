@@ -130,11 +130,12 @@
           norb_mu = species(in1)%norb_max
 
           ! cut some lengthy notation
+          nullify (pdenmat)
           pdenmat=>s%denmat_PP(iatom)
 
 ! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors_PPp(iatom)%neighn
-          allocate (pdenmat%neighbors(num_neigh))
+          allocate (s%denmat_PP(iatom)%neighbors(num_neigh))
           do ineigh = 1, num_neigh        !  <==== loop over iatom's neighbors
             mbeta = s%neighbors_PPp(iatom)%neigh_b(ineigh)
             jatom = s%neighbors_PPp(iatom)%neigh_j(ineigh)
@@ -142,11 +143,12 @@
             in2 = s%atom(jatom)%imass
 
             ! cut some more lengthy notation
+            nullify (pRho_neighbors)
             pRho_neighbors=>pdenmat%neighbors(ineigh)
 
 ! Allocate the block size
             norb_nu = species(in2)%norb_max
-            allocate (pRho_neighbors%block(norb_mu, norb_nu))
+            allocate (s%denmat_PP(iatom)%neighbors(ineigh)%block(norb_mu, norb_nu))
             pRho_neighbors%block = 0.0d0
 
 ! Loop over the special k points.
@@ -186,7 +188,9 @@
             end do
 
 ! Finish loop over atoms and neighbors.
+            nullify (pRho_neighbors)
           end do
+          nullify (pdenmat)
         end do
 
 ! Deallocate Arrays
@@ -294,12 +298,14 @@
           norb_mu = species(in1)%norb_max
 
           ! cut some lengthy notation
+          nullify (psvnl)
           psvnl=>s%svnl(iatom)
 
 ! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors_PP(iatom)%neighn
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
             ! cut some more lengthy notation
+            nullify (psvnl_neighbors)
             psvnl_neighbors=>psvnl%neighbors(ineigh)
             mbeta = s%neighbors_PP(iatom)%neigh_b(ineigh)
             jatom = s%neighbors_PP(iatom)%neigh_j(ineigh)
@@ -308,7 +314,7 @@
 
 ! Allocate block size
             norb_nu = species(in2)%norb_PP_max
-            allocate (psvnl_neighbors%Dblock(3, norb_mu, norb_nu))
+            allocate (s%svnl(iatom)%neighbors(ineigh)%Dblock(3, norb_mu, norb_nu))
             psvnl_neighbors%Dblock = 0.0d0
 
 ! SET-UP STUFF
@@ -377,7 +383,9 @@
 ! Store the derivitive, rotate vector matrix.
             psvnl_neighbors%Dblock = vdsvnlx
             deallocate (svnlm, svnlx, dsvnlm, vdsvnlm, vdsvnlx)
+            nullify (psvnl_neighbors)
           end do ! end loop over neighbors
+          nullify (psvnl)
         end do ! end loop over atoms
 
 ! Deallocate Arrays
@@ -748,7 +756,7 @@
         end subroutine Dassemble_vnl_2c
 
 ! ===========================================================================
-! destroy_Dassemble_vnl
+! destroy_Dassemble_PP_2c
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
@@ -768,7 +776,7 @@
 !
 ! Subroutine Declaration
 ! ===========================================================================
-        subroutine destroy_Dassemble_vnl (s)
+        subroutine destroy_Dassemble_PP_2c (s)
         implicit none
 
 ! Argument Declaration and Description
@@ -782,9 +790,16 @@
 ! Variable Declaration and Description
 ! ===========================================================================
         integer iatom                             !< counter over atoms
+        integer ineigh                            !< counter over neighbors
 
 ! Procedure
 ! ===========================================================================
+        do iatom = 1, s%natoms
+          do ineigh = 1, s%neighbors_PP(iatom)%neighn
+            deallocate (s%svnl(iatom)%neighbors(ineigh)%Dblock)
+          end do
+        end do
+
         do iatom = 1, s%natoms
           deallocate (s%forces(iatom)%vnl_atom)
           deallocate (s%forces(iatom)%vnl_ontop)
@@ -801,7 +816,7 @@
 ! End Subroutine
 ! ===========================================================================
         return
-        end subroutine destroy_Dassemble_vnl
+        end subroutine destroy_Dassemble_PP_2c
 
 ! End Module
 ! ===========================================================================

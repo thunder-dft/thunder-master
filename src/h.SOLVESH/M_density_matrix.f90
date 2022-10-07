@@ -53,6 +53,7 @@
 
 ! /SYSTEM
         use M_configuraciones
+        use M_kpoints
         use M_kspace
         use M_rotations
 
@@ -214,10 +215,11 @@
           num_neigh = s%neighbors(iatom)%neighn
 
           ! cut some lengthy notation
+          nullify (pdenmat)
           pdenmat=>s%denmat(iatom)
 
 ! Allocate arrays
-          allocate (pdenmat%neighbors(num_neigh))
+          allocate (s%denmat(iatom)%neighbors(num_neigh))
 
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
@@ -227,11 +229,12 @@
             in2 = s%atom(jatom)%imass
 
             ! cut some more lengthy notation
+            nullify (pRho_neighbors)
             pRho_neighbors=>pdenmat%neighbors(ineigh)
 
 ! Allocate the block size
             norb_nu = species(in2)%norb_max
-            allocate (pRho_neighbors%block(norb_mu, norb_nu))
+            allocate (s%denmat(iatom)%neighbors(ineigh)%block(norb_mu, norb_nu))
             pRho_neighbors%block = 0.0d0
 
 ! Loop over the special k points.
@@ -269,7 +272,9 @@
             end do
 
 ! Finish loop over atoms and neighbors.
+            nullify (pRho_neighbors)
           end do
+          nullify (pdenmat)
         end do
 
 ! Deallocate Arrays
@@ -369,10 +374,11 @@
           num_neigh = s%neighbors(iatom)%neighn
 
           ! cut some lengthy notation
+          nullify (pcapemat)
           pcapemat=>s%capemat(iatom)
 
 ! Allocate arrays
-          allocate (pcapemat%neighbors(num_neigh))
+          allocate (s%capemat(iatom)%neighbors(num_neigh))
 
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
@@ -382,11 +388,12 @@
             in2 = s%atom(jatom)%imass
 
             ! cut some more lengthy notation
+            nullify (pCape_neighbors)
             pCape_neighbors=>pcapemat%neighbors(ineigh)
 
 ! Allocate the block size
             norb_nu = species(in2)%norb_max
-            allocate (pCape_neighbors%block(norb_mu, norb_nu))
+            allocate (s%capemat(iatom)%neighbors(ineigh)%block(norb_mu, norb_nu))
             pCape_neighbors%block = 0.0d0
 
 ! Loop over the special k points.
@@ -423,7 +430,10 @@
 ! Finish loop over k-points.
             end do
 
-          end do ! Finish loop over atoms and neighbors.
+! Finish loop over atoms and neighbors.
+            nullify (pCape_neighbors)
+          end do
+          nullify (pcapemat)
         end do
 
 ! Deallocate Arrays
@@ -977,23 +987,93 @@
 ! ===========================================================================
         ! destroy the coefficients now at the end of their use
         do ikpoint = 1, s%nkpoints
+          deallocate (s%kpoints(ikpoint)%eigen)
           deallocate (s%kpoints(ikpoint)%c)
+          deallocate (s%kpoints(ikpoint)%c_Lowdin)
         end do
+
+        ! destory the Hamiltonian - we rebuild it
+        do iatom = 1, s%natoms
+          do ineigh = 1, s%neighbors(iatom)%neighn
+            deallocate (s%Hamiltonian(iatom)%neighbors(ineigh)%block)
+          end do
+          deallocate (s%Hamiltonian(iatom)%neighbors)
+        end do
+        deallocate (s%Hamiltonian)
 
         ! destroy the density matrix pieces - forces are already evaluated
         do iatom = 1, s%natoms
           do ineigh = 1, s%neighbors(iatom)%neighn
             deallocate (s%denmat(iatom)%neighbors(ineigh)%block)
+          end do
+          deallocate (s%denmat(iatom)%neighbors)
+        end do
+        deallocate (s%denmat)
+
+! Deallocate Arrays
+! ===========================================================================
+! None
+
+! Format Statements
+! ===========================================================================
+! None
+
+! End Subroutine
+! ===========================================================================
+        return
+        end subroutine destroy_denmat
+
+
+! ===========================================================================
+! destroy_denmat_PP
+! ===========================================================================
+! Subroutine Description
+! ===========================================================================
+!>       This routine deallocates the arrays containing denmat
+!! information.
+!
+! ===========================================================================
+! Code written by:
+!> @author James P. Lewis
+! Box 6315, 209 Hodges Hall
+! Department of Physics
+! West Virginia University
+! Morgantown, WV 26506-6315
+!
+! (304) 293-3422 x1409 (office)
+! (304) 293-5732 (FAX)
+! ===========================================================================
+!
+! Subroutine Declaration
+! ===========================================================================
+        subroutine destroy_denmat_PP (s)
+        implicit none
+
+! Argument Declaration and Description
+! ===========================================================================
+        type(T_structure), target :: s           !< the structure to be used.
+
+! Parameters and Data Declaration
+! ===========================================================================
+! None
+
+! Variable Declaration and Description
+! ===========================================================================
+        integer iatom, ineigh              !< counter over atoms and neighbors
+
+! Procedure
+! ===========================================================================
+        ! destroy the density matrix pieces - forces are already evaluated
+        do iatom = 1, s%natoms
+          do ineigh = 1, s%neighbors(iatom)%neighn
             deallocate (s%capemat(iatom)%neighbors(ineigh)%block)
           end do
           do ineigh = 1, s%neighbors_PPp(iatom)%neighn
             deallocate (s%denmat_PP(iatom)%neighbors(ineigh)%block)
           end do
-          deallocate (s%denmat(iatom)%neighbors)
           deallocate (s%denmat_PP(iatom)%neighbors)
           deallocate (s%capemat(iatom)%neighbors)
         end do
-        deallocate (s%denmat)
         deallocate (s%denmat_PP)
         deallocate (s%capemat)
 
@@ -1008,7 +1088,7 @@
 ! End Subroutine
 ! ===========================================================================
         return
-        end subroutine destroy_denmat
+        end subroutine destroy_denmat_PP
 
 ! End Module
 ! ===========================================================================

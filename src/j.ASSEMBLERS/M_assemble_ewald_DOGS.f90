@@ -156,10 +156,7 @@
           in1 = s%atom(iatom)%imass
           norb_mu = species(in1)%norb_max
           num_neigh = s%neighbors(iatom)%neighn
-
-          ! cut some lengthy notation
-          pewaldsr=>s%ewaldsr(iatom)
-          allocate (pewaldsr%neighbors(num_neigh))
+          allocate (s%ewaldsr(iatom)%neighbors(num_neigh))
 
           do ineigh = 1, num_neigh   !  <==== loop over i's neighbors
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
@@ -167,9 +164,8 @@
             norb_nu = species(in2)%norb_max
 
             ! allocate the Dblock
-            pSR_neighbors=>pewaldsr%neighbors(ineigh)
-            allocate (pSR_neighbors%block(norb_mu, norb_nu))
-            pSR_neighbors%block = 0.0d0
+            allocate (s%ewaldsr(iatom)%neighbors(ineigh)%block(norb_mu, norb_nu))
+            s%ewaldsr(iatom)%neighbors(ineigh)%block = 0.0d0
           end do
         end do
 
@@ -201,10 +197,12 @@
           in1 = s%atom(iatom)%imass
 
           ! cut some lengthy notation
+          nullify (poverlap, pewaldsr)
           poverlap=>s%overlap(iatom)
           pewaldsr=>s%ewaldsr(iatom)
 
           ! cut some more lengthy notation
+          nullify (pS_neighbors, pSR_neighbors)
           pS_neighbors=>poverlap%neighbors(matom)
           pSR_neighbors=>pewaldsr%neighbors(matom)
 
@@ -241,6 +239,7 @@
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
           ! cut some lengthy notation
+          nullify (poverlap, pdipole_z, pewaldsr)
           poverlap=>s%overlap(iatom)
           pdipole_z=>s%dipole_z(iatom)
           pewaldsr=>s%ewaldsr(iatom)
@@ -259,6 +258,7 @@
             norb_nu = species(in2)%norb_max
 
             ! cut some more lengthy notation
+            nullify (pS_neighbors, pdip_neighbors, pSR_neighbors)
             pS_neighbors=>poverlap%neighbors(ineigh)
             pdip_neighbors=>pdipole_z%neighbors(ineigh)
             pSR_neighbors=>pewaldsr%neighbors(ineigh)
@@ -294,10 +294,11 @@
 
               pSR_neighbors%block = pSR_neighbors%block                      &
      &          + dQ(jatom)*(sterm - dterm)*P_eq2
-              deallocate (sterm)
-              deallocate (dterm)
+              deallocate (sterm, dterm)
             end if
+            nullify (pS_neighbors, pdip_neighbors, pSR_neighbors)
           end do ! end loop over neighbors
+          nullify (poverlap, pewaldsr)
         end do ! end loop over atoms
 
 !****************************************************************************
@@ -325,6 +326,7 @@
               norb_nu = species(in2)%norb_max
 
               ! cut some lengthy notation
+              nullify (pS_neighbors, pdip_neighbors, pSR_neighbors)
               pS_neighbors=>s%overlap(iatom)%neighbors(mneigh)
               pdip_neighbors=>s%dipole_z(iatom)%neighbors(mneigh)
               pSR_neighbors=>s%ewaldsr(iatom)%neighbors(mneigh)
@@ -353,8 +355,8 @@
               pSR_neighbors%block =                                          &
       &          pSR_neighbors%block + ((sterm - dterm)/distance_13           &
       &                               + (sterm + dterm)/distance_23)*P_eq2
-              deallocate (sterm)
-              deallocate (dterm)
+              deallocate (sterm, dterm)
+              nullify (pS_neighbors, pdip_neighbors, pSR_neighbors)
             end if
           end do ! end loop over neighbors
         end do ! end loop over atoms
@@ -460,10 +462,7 @@
           in1 = s%atom(iatom)%imass
           norb_mu = species(in1)%norb_max
           num_neigh = s%neighbors(iatom)%neighn
-
-          ! cut some lengthy notation
-          pewaldlr=>s%ewaldlr(iatom)
-          allocate (pewaldlr%neighbors(num_neigh))
+          allocate (s%ewaldlr(iatom)%neighbors(num_neigh))
 
           do ineigh = 1, num_neigh   !  <==== loop over i's neighbors
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
@@ -471,9 +470,8 @@
             norb_nu = species(in2)%norb_max
 
             ! allocate the Dblock
-            pLR_neighbors=>pewaldlr%neighbors(ineigh)
-            allocate (pLR_neighbors%block(norb_mu, norb_nu))
-            pLR_neighbors%block = 0.0d0
+            allocate (s%ewaldlr(iatom)%neighbors(ineigh)%block(norb_mu, norb_nu))
+            s%ewaldlr(iatom)%neighbors(ineigh)%block = 0.0d0
           end do
         end do
 
@@ -527,6 +525,7 @@
           norb_mu = species(in1)%norb_max
 
           ! cut some lengthy notation
+          nullify (poverlap, pdipole_z, pewaldlr)
           poverlap=>s%overlap(iatom)
           pdipole_z=>s%dipole_z(iatom)
           pewaldlr=>s%ewaldlr(iatom)
@@ -571,8 +570,7 @@
             pLR_neighbors%block =                                             &
      &       pLR_neighbors%block + (sterm - dterm)*sum_ewald(iatom)*P_eq2     &
      &                           + (sterm + dterm)*sum_ewald(jatom)*P_eq2
-            deallocate (sterm)
-            deallocate (dterm)
+            deallocate (sterm, dterm)
           end do ! end loop over neighbors
         end do ! end loop over atoms
 
