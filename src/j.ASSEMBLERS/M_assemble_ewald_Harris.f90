@@ -287,7 +287,6 @@
           deallocate (s%ewaldsr(iatom)%neighbors)
           deallocate (s%ewaldlr(iatom)%neighbors)
         end do
-        deallocate (s%ewald)
         deallocate (s%ewaldsr)
         deallocate (s%ewaldlr)
 

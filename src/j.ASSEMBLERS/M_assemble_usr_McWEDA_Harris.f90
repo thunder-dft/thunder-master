@@ -290,7 +290,7 @@
 ! Loops
         integer issh, n1, l1, m1
 
-        real poverlap                    !< temporary storage
+!       real poverlap                    !< temporary storage
         real prho_in_shell               !< temporary storage
         real prho_bond_shell             !< temporary storage
         real prho_in                     !< temporary storage
@@ -359,25 +359,22 @@
 ! loop over orbitals in the iatom-shell
             do m1 = -l1, l1
               imu = n1 + m1
-              poverlap = s%overlap(iatom)%neighbors(matom)%block(imu,imu)
               prho_in = s%rho_in(iatom)%neighbors(matom)%block(imu,imu)
               prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,imu)
 
 ! calculate SN part
 ! exc_sn : xc-energy from second term on the right in Eq. (16): PRB 71, 235101 (2005)
 ! e_vxc_sn : energy already included in the band-structure through vxc_sn
-              e_xc_sn = e_xc_sn                                                &
-     &          + q_mu*(exc_in*poverlap + dexc_in*(prho_in - prho_in_shell*poverlap))
-              e_vxc_sn = e_vxc_sn                                              &
-     &          + q_mu*(muxc_in*poverlap + dmuxc_in*(prho_in - prho_in_shell*poverlap))
+              e_xc_sn = e_xc_sn + q_mu*(exc_in + dexc_in*(prho_in - prho_in_shell))
+              e_vxc_sn = e_vxc_sn + q_mu*(muxc_in + dmuxc_in*(prho_in - prho_in_shell))
 
 ! calculate SN-AT part ("atomic" correction)
 ! exc_sn_bond : xc-energy from third term on the right in Eq. (16): PRB 71, 235101 (2005)
 ! e_vxc_bond_sn : energy already included in the band-structure through vxc_sn_bond
               e_xc_bond_sn = e_xc_bond_sn                                      &
-     &          + q_mu*(exc_bond*poverlap + dexc_bond*(prho_bond - prho_bond_shell*poverlap))
+     &          + q_mu*(exc_bond + dexc_bond*(prho_bond - prho_bond_shell))
               e_vxc_bond_sn = e_vxc_bond_sn                                    &
-     &          + q_mu*(muxc_bond*poverlap + dmuxc_bond*(prho_bond - prho_bond_shell*poverlap))
+     &          + q_mu*(muxc_bond + dmuxc_bond*(prho_bond - prho_bond_shell))
             end do ! end loop m1 = -l1, l1
             n1 = n1 + l1
           end do ! end loop issh = 1, nssh(in1)

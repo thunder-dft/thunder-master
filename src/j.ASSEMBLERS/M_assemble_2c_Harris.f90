@@ -650,6 +650,67 @@
 
 
 ! ===========================================================================
+! destroy_assemble_vna
+! ===========================================================================
+! Subroutine Description
+! ===========================================================================
+!>       This routine deallocates the arrays containing the assemble_2c_DOGS
+!! information.
+!
+! ===========================================================================
+! Code written by:
+! James P. Lewis
+! Unit 909 of Buidling 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
+!
+! Phone: +852 6612 9539 (mobile)
+! ===========================================================================
+!
+! Subroutine Declaration
+! ===========================================================================
+        subroutine destroy_assemble_vna (s)
+        implicit none
+
+! Argument Declaration and Description
+! ===========================================================================
+        type(T_structure), target :: s           !< the structure to be used.
+
+! Parameters and Data Declaration
+! ===========================================================================
+! None
+
+! Variable Declaration and Description
+! ===========================================================================
+        integer iatom, ineigh             !< counter over atoms and neighbors
+
+! Procedure
+! ===========================================================================
+        do iatom = 1, s%natoms
+          do ineigh = 1, s%neighbors(iatom)%neighn
+            deallocate (s%vna(iatom)%neighbors(ineigh)%block)
+            deallocate (s%vna(iatom)%neighbors(ineigh)%blocko)
+          end do
+          deallocate (s%vna(iatom)%neighbors)
+        end do
+        deallocate (s%vna)
+
+! Deallocate Arrays
+! ===========================================================================
+! None
+
+! Format Statements
+! ===========================================================================
+! None
+
+! End Subroutine
+! ===========================================================================
+        return
+        end subroutine destroy_assemble_vna
+
+
+! ===========================================================================
 ! destroy_assemble_2c
 ! ===========================================================================
 ! Subroutine Description
@@ -692,16 +753,12 @@
           do ineigh = 1, s%neighbors(iatom)%neighn
             deallocate (s%overlap(iatom)%neighbors(ineigh)%block)
             deallocate (s%kinetic(iatom)%neighbors(ineigh)%block)
-            deallocate (s%vna(iatom)%neighbors(ineigh)%block)
-            deallocate (s%vna(iatom)%neighbors(ineigh)%blocko)
           end do
           deallocate (s%overlap(iatom)%neighbors)
           deallocate (s%kinetic(iatom)%neighbors)
-          deallocate (s%vna(iatom)%neighbors)
         end do
         deallocate (s%overlap)
         deallocate (s%kinetic)
-        deallocate (s%vna)
 
 ! Deallocate Arrays
 ! ===========================================================================

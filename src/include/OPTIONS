@@ -4,9 +4,13 @@ SHELL = /bin/bash
 # Choose the COMPILER
 COMPILER = ifort
 
+# Choose the Linear Algebra libraries
+#LINALG = LAPACK
+LINALG = MKL
+
 # Do you use DEBUG or Optimization Mode? (DEBUG/OPT)
-MODE = OPT
-#MODE = DEBUG
+#MODE = OPT
+MODE = DEBUG
 
 # Turn on omp or mpi (enter TRUE .or. FALSE)?
 OPENMP = FALSE
@@ -17,8 +21,8 @@ MPI = FALSE
 MACHINE = HKQAI
 
 # Choose HORSFIELD or McWEDA
-THEORY = HORSFIELD
-#THEORY = McWEDA
+#THEORY = HORSFIELD
+THEORY = McWEDA
 
 # Choose HARRIS, DOGS, or KS (Kohn-Sham)
 # Note that the KS code only does LDA for now as it uses McWEDA routines. 
@@ -34,5 +38,5 @@ DIAGONALIZATION = GAMMAD
 #DIAGONALIZATION = KS
 
 # Choose the XC functional
-#XC = LDA
-XC = BLYP
+XC = LDA
+#XC = BLYP

@@ -243,27 +243,27 @@
 !             u0(iatom)%neighbors(ineigh)%E = 0.0d0
               do issh = 1, species(in1)%nssh
                 do jssh = 1, species(in2)%nssh
-!                  pfi%usr = pfi%usr                                          &
-!     &              + (P_eq2/2.0d0)*s%atom(iatom)%shell(issh)%Qin            &
-!     &                *s%atom(jatom)%shell(jssh)%Qin*vdcoulomb(:,issh,jssh)
-!                  pfj%usr = pfj%usr                                          &
-!     &              - (P_eq2/2.0d0)*s%atom(iatom)%shell(issh)%Qin            &
-!     &                *s%atom(jatom)%shell(jssh)%Qin*vdcoulomb(:,issh,jssh)
+                   pfi%usr = pfi%usr                                          &
+      &              + (P_eq2/2.0d0)*s%atom(iatom)%shell(issh)%Qin            &
+      &                *s%atom(jatom)%shell(jssh)%Qin*vdcoulomb(:,issh,jssh)
+                   pfj%usr = pfj%usr                                          &
+      &              - (P_eq2/2.0d0)*s%atom(iatom)%shell(issh)%Qin            &
+      &                *s%atom(jatom)%shell(jssh)%Qin*vdcoulomb(:,issh,jssh)
                 end do
               end do
-!             pfi%usr = pfi%usr - (P_eq2/2.0d0)*eta(:)*(Zi*Zj/z**2)
-!             pfj%usr = pfj%usr + (P_eq2/2.0d0)*eta(:)*(Zi*Zj/z**2)
+              pfi%usr = pfi%usr - (P_eq2/2.0d0)*eta(:)*(Zi*Zj/z**2)
+              pfj%usr = pfj%usr + (P_eq2/2.0d0)*eta(:)*(Zi*Zj/z**2)
 
               ! force due dcorksr
-!             dcorksr(:) = - (P_eq2/2.0d0)*eta(:)*(Zi*Zj - Q(iatom)*Q(jatom))/z**2
-!             pfi%usr = pfi%usr - dcorksr
-!             pfj%usr = pfj%usr + dcorksr
+              dcorksr(:) = - (P_eq2/2.0d0)*eta(:)*(Zi*Zj - Q(iatom)*Q(jatom))/z**2
+              pfi%usr = pfi%usr - dcorksr
+              pfj%usr = pfj%usr + dcorksr
             end if
             deallocate (coulomb, dcoulomb, vdcoulomb)
           end do ! end loop over neighbors
 
           ! add in ewald contributions
-!         pfi%usr = pfi%usr - (P_eq2/2.0d0)*pfi%ewald
+          pfi%usr = pfi%usr - (P_eq2/2.0d0)*pfi%ewald
         end do ! end loop over atoms
 
 ! Deallocate Arrays
@@ -442,19 +442,18 @@
                 q_mu = s%atom(iatom)%shell(issh)%Qin/(2*l1+1)
 
 ! Call lda-function for rho_in
-                prho_in_shell =                                                  &
+                prho_in_shell =                                               &
      &            s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,issh)
-                Dprho_in_shell =                                                 &
-                  s%rho_in_weighted(iatom)%neighbors(matom)%Dblock(:,issh,issh)
-                call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,         &
-     &                                   dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
+                Dprho_in_shell =                                              &
+                  s%rho_in_weighted(iatom)%neighbors(ineigh)%Dblock(:,issh,issh)
+                  call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,    &
+     &                                     dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
                   
-                prho_bond_shell =                                                &
+                prho_bond_shell =                                             &
      &            s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,issh)
-                Dprho_bond_shell(:) =                                            &
-                  s%rho_bond_weighted(iatom)%neighbors(matom)%Dblock(:,issh,issh)
-                call lda_ceperley_alder (prho_bond_shell, exc_bond,              &
-     &                                   muxc_bond, dexc_bond, d2exc_bond,       &
+                Dprho_bond_shell = Dprho_in_shell
+                call lda_ceperley_alder (prho_bond_shell, exc_bond,           &
+     &                                   muxc_bond, dexc_bond, d2exc_bond,    &
      &                                   dmuxc_bond, d2muxc_bond)
 
 ! Calculate vxc_SN and vxc_SN_bond for (mu,nu)-block
@@ -462,10 +461,10 @@
                 do m1 = -l1, l1
                   imu = n1 + m1
                   prho_in = s%rho_in(iatom)%neighbors(matom)%block(imu,imu)
-                  Dprho_in = s%rho_in(iatom)%neighbors(matom)%Dblock(:,imu,imu)
+                  Dprho_in = s%rho_in(iatom)%neighbors(ineigh)%Dblock(:,imu,imu)
 
                   prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,imu)
-                  Dprho_bond(:) = s%rho_bond(iatom)%neighbors(matom)%Dblock(:,imu,imu)
+                  Dprho_bond = Dprho_in
 
 ! calculate SN part forces
 ! exc_sn : xc-energy from second term on the right in Eq. (16): PRB 71, 235101 (2005)
@@ -491,10 +490,18 @@
                 end do ! end loop m1 = -l1, l1
                 n1 = n1 + l1
               end do  ! do issh = 1, nssh(in1)
+!             Find forces for uxcdcc
+!             uxcdcc = uxcdc_bond + uxcdc_sn - uxcdc_bond_sn
 
-! BONAFIDE TWO ATOM CASE
-              pfi%usr = pfi%usr - ((de_xc_sn - de_vxc_sn) + (de_xc_bond_sn - de_vxc_bond_sn))/2.0d0
-              pfj%usr = pfj%usr + ((de_xc_sn - de_vxc_sn) - (de_xc_bond_sn - de_vxc_bond_sn))/2.0d0
+! This term has zero force because it is one-center energy
+!             uxcdc_bond = e_xc_bond - e_vxc_bond
+
+!             forces for the two energy terms:
+!             uxcdc_sn = e_xc_sn - e_vxc_sn
+!             uxcdc_bond_sn = e_xc_bond_sn - e_vxc_bond_sn
+
+              pfi%usr = pfi%usr - ((de_xc_sn - de_vxc_sn) + (de_xc_bond_sn - de_vxc_bond_sn))
+              pfj%usr = pfj%usr + ((de_xc_sn - de_vxc_sn) - (de_xc_bond_sn - de_vxc_bond_sn))
             end if
           end do ! end loop over neighbors
         end do ! end loop over atoms

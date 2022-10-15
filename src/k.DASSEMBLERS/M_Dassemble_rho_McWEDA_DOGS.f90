@@ -116,7 +116,6 @@
         integer jatom                   !< neighbor of iatom
         integer interaction, isorp      !< which interaction and subtype
         integer num_neigh               !< number of neighbors
-        integer matom                   !< matom is the self-interaction atom
         integer mbeta                   !< the cell containing neighbor of iatom
 
         integer norb_mu, norb_nu        !< size of the block for the pair
@@ -182,10 +181,10 @@
 
 ! Allocate block size
             norb_nu = species(in2)%norb_max
-            allocate (prho_in_neighbors%Dblock(3,norb_mu, norb_nu))
-            allocate (prho_bond_neighbors%Dblock(3,norb_mu, norb_nu))
-            prho_in_neighbors%Dblock = 0.0d0
-            prho_bond_neighbors%Dblock = 0.0d0
+            allocate (prho_in_neighbors%Dblocko(3, norb_mu, norb_nu))
+            allocate (prho_bond_neighbors%Dblocko(3, norb_mu, norb_nu))
+            prho_in_neighbors%Dblocko = 0.0d0
+            prho_bond_neighbors%Dblocko = 0.0d0
 
 ! SET-UP STUFF
 ! ***************************************************************************
@@ -263,10 +262,10 @@
                 call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcxcm,   &
      &                        vdbcxcm, vdbcxcx)
 
-                prho_in_neighbors%Dblock =                                    &
-     &            prho_in_neighbors%Dblock + vdbcxcx*Qin
-                prho_bond_neighbors%Dblock =                                  &
-     &            prho_bond_neighbors%Dblock + vdbcxcx*Qin
+                prho_in_neighbors%Dblocko =                                   &
+     &            prho_in_neighbors%Dblocko + vdbcxcx*Qin
+                prho_bond_neighbors%Dblocko =                                 &
+     &            prho_bond_neighbors%Dblocko + vdbcxcx*Qin
               end do
 
 ! For the rho_in_ontopR case, the potential is in the second atom
@@ -289,10 +288,10 @@
                 call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcxcm,   &
      &                        vdbcxcm, vdbcxcx)
 
-                prho_in_neighbors%Dblock =                                    &
-     &            prho_in_neighbors%Dblock + vdbcxcx*Qin
-                prho_bond_neighbors%Dblock =                                  &
-     &            prho_bond_neighbors%Dblock + vdbcxcx*Qin
+                prho_in_neighbors%Dblocko =                                   &
+    &            prho_in_neighbors%Dblocko + vdbcxcx*Qin
+                prho_bond_neighbors%Dblocko =                                 &
+     &            prho_bond_neighbors%Dblocko + vdbcxcx*Qin
               end do
               deallocate (bcxcm, dbcxcm, vdbcxcm, vdbcxcx)
             end if ! end if for r1 .eq. r2 case
@@ -305,16 +304,12 @@
 ! First, do rho_in_atom case. Here we compute <i | v(j) | i> matrix elements.
 ! Loop over the atoms in the central cell.
         do iatom = 1, s%natoms
-          matom = s%neigh_self(iatom)
           r1 = s%atom(iatom)%ratom
           in1 = s%atom(iatom)%imass
           norb_mu = species(in1)%norb_max
 
           ! cut some lengthy notation
           prho_in=>s%rho_in(iatom)
-          prho_in_neighbors=>prho_in%neighbors(matom)
-          prho_bond=>s%rho_bond(iatom)
-          prho_bond_neighbors=>prho_bond%neighbors(matom)
 
 ! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
@@ -323,6 +318,13 @@
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
+
+            ! cut some more lengthy notation
+            prho_in_neighbors=>prho_in%neighbors(ineigh)
+
+! Allocate block size
+            allocate (prho_in_neighbors%Dblock(3, norb_mu, norb_mu))
+            prho_in_neighbors%Dblock = 0.0d0
 
 ! SET-UP STUFF
 ! *************************************************************************
@@ -349,39 +351,7 @@
               interaction = P_rho_atom
               in3 = in1
               
-! bcxcm = density matrix in molecular coordinates
-! bcxcx = density matrix in crystal coordinates
-! dbcxcm = derivative of density matrix in molecular coordinates
-! vdbcxcm = vectorized derivative of denstiy matrix in molecular coordinates
-! vdbcxcx = vectorized derivative of density matrix in crystal coordinates
-              norb_nu = species(in3)%norb_max
-              allocate (bcxcm (norb_mu, norb_nu)); bcxcm = 0.0d0
-              allocate (dbcxcm (norb_mu, norb_nu)); dbcxcm = 0.0d0
-              allocate (vdbcxcm (3, norb_mu, norb_nu)); vdbcxcm = 0.0d0
-              allocate (vdbcxcx (3, norb_mu, norb_nu)); vdbcxcx = 0.0d0
-
-              do isorp = 1, species(in2)%nssh
-                Qin = s%atom(jatom)%shell(isorp)%Qin
-
-                call getDMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
-     &                                 norb_mu, norb_nu, bcxcm, dbcxcm)
-
-! Note the minus sign. d/dr1 = - eta * d/dd.
-                do inu = 1, norb_nu
-                  do imu = 1, norb_mu
-                    if (z .gt. 1.0d-3) vdbcxcm(:,imu,inu) = - eta(:)*dbcxcm(imu,inu)
-                  end do
-                end do
-
-                call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcxcm,   &
-     &                        vdbcxcm, vdbcxcx)
-
-                prho_in_neighbors%Dblock =                                    &
-     &            prho_in_neighbors%Dblock + vdbcxcx*Qin
-                prho_bond_neighbors%Dblock =                                  &
-     &            prho_bond_neighbors%Dblock + vdbcxcx*Qin
-              end do
-              deallocate (bcxcm, dbcxcm, vdbcxcm, vdbcxcx)
+! The derivatives are zero here.
             else
 
 ! Get the matrix from the data files - which is the matrix in molecular
@@ -396,26 +366,24 @@
 ! dbcxcm = derivative of density matrix in molecular coordinates
 ! vdbcxcm = vectorized derivative of denstiy matrix in molecular coordinates
 ! vdbcxcx = vectorized derivative of density matrix in crystal coordinates
-              norb_nu = species(in3)%norb_max
-              allocate (bcxcm (norb_mu, norb_nu)); bcxcm = 0.0d0
-              allocate (dbcxcm (norb_mu, norb_nu)); dbcxcm = 0.0d0
-              allocate (vdbcxcm (3, norb_mu, norb_nu)); vdbcxcm = 0.0d0
-              allocate (vdbcxcx (3, norb_mu, norb_nu)); vdbcxcx = 0.0d0
+              allocate (bcxcm (norb_mu, norb_mu)); bcxcm = 0.0d0
+              allocate (dbcxcm (norb_mu, norb_mu)); dbcxcm = 0.0d0
+              allocate (vdbcxcm (3, norb_mu, norb_mu)); vdbcxcm = 0.0d0
+              allocate (vdbcxcx (3, norb_mu, norb_mu)); vdbcxcx = 0.0d0
 
               do isorp = 1, species(in2)%nssh
                 Qin = s%atom(jatom)%shell(isorp)%Qin
-
                 call getDMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
-     &                                 norb_mu, norb_nu, bcxcm, dbcxcm)
+     &                                 norb_mu, norb_mu, bcxcm, dbcxcm)
 
 ! Note the minus sign. d/dr1 = - eta * d/dd.
-                do inu = 1, norb_nu
+                do inu = 1, norb_mu
                   do imu = 1, norb_mu
                     if (z .gt. 1.0d-3) vdbcxcm(:,imu,inu) = - eta(:)*dbcxcm(imu,inu)
                   end do
                 end do
 
-                call Drotate (in1, in3, eps, deps, norb_mu, norb_nu, bcxcm,   &
+                call Drotate (in1, in3, eps, deps, norb_mu, norb_mu, bcxcm,   &
      &                        vdbcxcm, vdbcxcx)
 
                 prho_in_neighbors%Dblock =                                    &
@@ -481,7 +449,8 @@
 ! Variable Declaration and Description
 ! ===========================================================================
         integer iatom, ineigh            !< counter over atoms and neighbors
-        integer in1, in2, in3, inu, imu  !< species numbers
+        integer in1, in2, in3            !< species numbers
+        integer imu, inu                 !< counter over orbitals
         integer jatom                    !< neighbor of iatom
         integer interaction, isorp       !< which interaction and subtype
         integer num_neigh                !< number of neighbors
@@ -549,10 +518,10 @@
 
 ! Allocate block size
             nssh_j = species(in2)%nssh
-            allocate (pWrho_in_neighbors%Dblock(3, nssh_i, nssh_j))
-            allocate (pWrho_bond_neighbors%Dblock(3, nssh_i, nssh_j))
-            pWrho_in_neighbors%Dblock = 0.0d0
-            pWrho_bond_neighbors%Dblock = 0.0d0
+            allocate (pWrho_in_neighbors%Dblocko(3, nssh_i, nssh_j))
+            allocate (pWrho_bond_neighbors%Dblocko(3, nssh_i, nssh_j))
+            pWrho_in_neighbors%Dblocko = 0.0d0
+            pWrho_bond_neighbors%Dblocko = 0.0d0
 
 ! Calculate the distance between the two centers.
             z = distance (r1, r2)
@@ -600,7 +569,6 @@
 
               do isorp = 1, species(in1)%nssh
                 Qin = s%atom(iatom)%shell(isorp)%Qin
-
                 call getDMEs_Fdata_2c (in1, in3, interaction, isorp, z,       &
      &                                 nssh_i, nssh_j, bcxcm, dbcxcm)
 
@@ -611,10 +579,10 @@
                   end do
                 end do
 
-                pWrho_in_neighbors%Dblock =                                   &
-     &            pWrho_in_neighbors%Dblock + vdbcxcm*Qin
-                pWrho_bond_neighbors%Dblock =                                 &
-     &            pWrho_bond_neighbors%Dblock + vdbcxcm*Qin
+                pWrho_in_neighbors%Dblocko =                                  &
+     &            pWrho_in_neighbors%Dblocko + vdbcxcm*Qin
+                pWrho_bond_neighbors%Dblocko =                                &
+     &            pWrho_bond_neighbors%Dblocko + vdbcxcm*Qin
               end do
 
 ! For the rho_in_weighted_ontopR case, the potential is in the second atom -
@@ -624,7 +592,6 @@
 
               do isorp = 1, species(in2)%nssh
                 Qin = s%atom(jatom)%shell(isorp)%Qin
-
                 call getDMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
      &                                 nssh_i, nssh_j, bcxcm, dbcxcm)
 
@@ -635,10 +602,10 @@
                   end do
                 end do
 
-                pWrho_in_neighbors%Dblock =                                   &
-     &            pWrho_in_neighbors%Dblock + vdbcxcm*Qin
-                pWrho_bond_neighbors%Dblock =                                 &
-     &            pWrho_bond_neighbors%Dblock + vdbcxcm*Qin
+                pWrho_in_neighbors%Dblocko =                                  &
+     &            pWrho_in_neighbors%Dblocko + vdbcxcm*Qin
+                pWrho_bond_neighbors%Dblocko =                                &
+     &            pWrho_bond_neighbors%Dblocko + vdbcxcm*Qin
               end do
               deallocate (bcxcm, dbcxcm, vdbcxcm)
 
@@ -660,11 +627,7 @@
           num_neigh = s%neighbors(iatom)%neighn
 
           ! cut some lengthy notation
-!         prho_in_weighted=>s%rho_in_weighted(iatom)
-!         pWrho_in_neighbors=>prho_in_weighted%neighbors(matom)
-
-!         prho_bond_weighted=>s%rho_bond_weighted(iatom)
-!         pWrho_bond_neighbors=>prho_bond_weighted%neighbors(matom)
+          prho_in_weighted=>s%rho_in_weighted(iatom)
 
 ! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
@@ -673,6 +636,14 @@
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
+            nssh_j = species(in2)%nssh
+
+            ! cut some more lengthy notation
+            pWrho_in_neighbors=>prho_in_weighted%neighbors(ineigh)
+
+! Allocate block size
+            allocate (pWrho_in_neighbors%Dblock(3, nssh_i, nssh_i))
+            pWrho_in_neighbors%Dblock = 0.0d0
 
 ! Calculate the distance between the two centers.
             z = distance (r1, r2)
@@ -709,27 +680,26 @@
 ! bcxcm = density matrix in molecular coordinates
 ! dbcxcm = derivative of density matrix in molecular coordinates
 ! vdbcxcm = vectorized derivative of denstiy matrix in molecular coordinates
-!             allocate (bcxcm (nssh_i, nssh_i)); bcxcm = 0.0d0
-!             allocate (dbcxcm (nssh_i, nssh_i)); dbcxcm = 0.0d0
-!             allocate (vdbcxcm (3, nssh_i, nssh_i)); vdbcxcm = 0.0d0
+              allocate (bcxcm (nssh_i, nssh_i)); bcxcm = 0.0d0
+              allocate (dbcxcm (nssh_i, nssh_i)); dbcxcm = 0.0d0
+              allocate (vdbcxcm (3, nssh_i, nssh_i)); vdbcxcm = 0.0d0
 
-!             do isorp = 1, species(in2)%nssh
-!               Qin = s%atom(jatom)%shell(isorp)%Qin
-
-!               call getDMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
-!    &                                 nssh_i, nssh_i, bcxcm, dbcxcm)
+              do isorp = 1, species(in2)%nssh
+                Qin = s%atom(jatom)%shell(isorp)%Qin
+                call getDMEs_Fdata_2c (in1, in2, interaction, isorp, z,       &
+     &                                 nssh_i, nssh_i, bcxcm, dbcxcm)
 
 ! Note the minus sign. d/dr1 = - eta * d/dd.
-!               do inu = 1, nssh_i ! norb_nu
-!                 do imu = 1, nssh_i ! norb_mu
-!                   if (z .gt. 1.0d-3) vdbcxcm(:,imu,inu) = - eta(:)*dbcxcm(imu,inu)
-!                 end do
-!               end do
+                do inu = 1, nssh_i ! norb_nu
+                  do imu = 1, nssh_i ! norb_mu
+                    if (z .gt. 1.0d-3) vdbcxcm(:,imu,inu) = - eta(:)*dbcxcm(imu,inu)
+                  end do
+                end do
 
-!               pWrho_in_neighbors%Dblock =                                   &
-!    &            pWrho_in_neighbors%Dblock + vdbcxcm*Qin
-!             end do
-!             deallocate (bcxcm, dbcxcm, vdbcxcm)
+                pWrho_in_neighbors%Dblock =                                   &
+     &            pWrho_in_neighbors%Dblock + vdbcxcm*Qin
+              end do
+              deallocate (bcxcm, dbcxcm, vdbcxcm)
             end if
           end do ! end loop over neighbors
         end do ! end loop over atoms
@@ -783,7 +753,7 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom                             !< counter over atoms
+        integer iatom                            !< counter over atoms
         integer ineigh 
         integer mneigh                           !< counter over neighbors
 

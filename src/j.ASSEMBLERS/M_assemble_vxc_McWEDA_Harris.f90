@@ -438,14 +438,14 @@
 ! Call lda-function for rho_in
             prho_in_shell =                                                    &
      &        s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,issh)
-              call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,         &
-     &                                 dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
+            call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,           &
+     &                               dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
 
             prho_bond_shell =                                                  &
      &        s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,issh)
-              call lda_ceperley_alder (prho_bond_shell, exc_bond,              &
-     &                                 muxc_bond, dexc_bond, d2exc_bond,       &
-     &                                 dmuxc_bond, d2muxc_bond)
+            call lda_ceperley_alder (prho_bond_shell, exc_bond,                &
+     &                               muxc_bond, dexc_bond, d2exc_bond,         &
+     &                               dmuxc_bond, d2muxc_bond)
 
 ! Calculate vxc_SN and vxc_SN_bond for (mu,nu)-block
 ! loop over orbitals in the iatom-shell (imu)
@@ -720,7 +720,7 @@
 !
 ! Subroutine Declaration
 ! ===========================================================================
-        subroutine destroy_assemble_vxc_McWEDA (s)
+        subroutine destroy_assemble_vxc (s)
         implicit none
 
 ! Argument Declaration and Description
@@ -768,7 +768,7 @@
 ! End Subroutine
 ! ===========================================================================
         return
-        end subroutine destroy_assemble_vxc_McWEDA
+        end subroutine destroy_assemble_vxc
 
 ! End Module
 ! ===========================================================================

@@ -519,6 +519,7 @@
         write (222, '(1x, a26, i10)') ' nstepi                 = ', nstepi
         write (222, '(1x, a26, i10)') ' nstepf                 = ', nstepf
         write (222, '(1x, a26, i10)') ' iquench                = ', iquench
+
         write (222, '(1x, a26, f10.1)') ' T_initial              = ', T_initial
         write (222, '(1x, a26, f10.1)') ' T_final                = ', T_final
         write (222, '(1x, a26, f10.1)') ' T_want                 = ', T_want
@@ -537,6 +538,12 @@
         write (222, '(1x, a26, f10.2)') ' beta_set               = ', beta_set
         write (222, '(1x, a26, f10.1)') ' Ecut_set               = ', Ecut_set
         close (unit = 222)
+
+! Fix places where there are inconsistencies in paramaters:
+        if (iquench .lt. 0 .and. iensemble .ne. 0) then
+          write (*,*) ' We set iensemble = 0 because we are quenching! '
+        end if
+
 
 ! Format Statements
 ! ===========================================================================
@@ -1084,7 +1091,6 @@
 ! Procedure
 ! ===========================================================================
         do ikpoint = 1, s%nkpoints
-          deallocate (s%kpoints(ikpoint)%eigen)
           deallocate (s%kpoints(ikpoint)%foccupy)
           deallocate (s%kpoints(ikpoint)%ioccupy)
         end do
