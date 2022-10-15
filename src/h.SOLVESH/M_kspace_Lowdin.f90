@@ -909,7 +909,6 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, ineigh             !< counter over atoms and neighbors
         integer ikpoint                   !< counter over kpoints
 
 ! Procedure

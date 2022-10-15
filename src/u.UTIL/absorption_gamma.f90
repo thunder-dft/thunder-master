@@ -358,7 +358,6 @@
 !$omp          private (inu, nnu, n2, r2max, l2, m2, r1p, r1pin)             &
 !$omp          private (imu, mmu, n1, r1max, l1, m1, r2p, r2pin)
 !$omp do
-
           do itransition = 1, ntransitions
             write (logfile, *) ' Working on itransition = ', itransition
             iband = t%kpoints(1)%transition(ilevel, itransition)%imap

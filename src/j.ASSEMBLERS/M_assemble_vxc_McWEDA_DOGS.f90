@@ -750,7 +750,7 @@
 !
 ! Subroutine Declaration
 ! ===========================================================================
-        subroutine destroy_assemble_vxc_McWEDA (s)
+        subroutine destroy_assemble_vxc (s)
         implicit none
 
 ! Argument Declaration and Description
@@ -798,7 +798,7 @@
 ! End Subroutine
 ! ===========================================================================
         return
-        end subroutine destroy_assemble_vxc_McWEDA
+        end subroutine destroy_assemble_vxc
 
 ! End Module
 ! ===========================================================================

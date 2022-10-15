@@ -215,6 +215,7 @@
 ! ===========================================================================
         integer iatom, ineigh            !< counter over atoms and neighbors
         integer in1, in2, in3            !< species numbers
+!       integer in1, in2                 !< species numbers
         integer jatom                    !< neighbor of iatom
         integer interaction, isorp       !< which interaction and subtype
         integer logfile                  !< writing to which unit
@@ -341,7 +342,7 @@
                    prho_in_shell =                                            &
                     s%rho_in_weighted(iatom)%neighbors(ineigh)%block(issh,jssh)
                    Dprho_in_shell=                                            &
-     &              s%rho_in_weighted(iatom)%neighbors(ineigh)%Dblock(:,issh,jssh)
+     &              s%rho_in_weighted(iatom)%neighbors(ineigh)%Dblocko(:,issh,jssh)
                    call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,   &
      &                                      dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
 
@@ -349,7 +350,7 @@
                    prho_bond_shell =                                          &
      &              s%rho_bond_weighted(iatom)%neighbors(ineigh)%block(issh,jssh)
                    Dprho_bond_shell=                                          &
-     &              s%rho_bond_weighted(iatom)%neighbors(ineigh)%Dblock(:,issh,jssh)     
+     &              s%rho_bond_weighted(iatom)%neighbors(ineigh)%Dblocko(:,issh,jssh)
                    call lda_ceperley_alder (prho_bond_shell, exc_bond, muxc_bond, &
      &                                      dexc_bond, d2exc_bond, dmuxc_bond, d2muxc_bond)
 
@@ -369,12 +370,12 @@
                        prho_in =                                              &
      &                   s%rho_in(iatom)%neighbors(ineigh)%block(imu,inu)
                        Dprho_in =                                             &
-     &                   s%rho_in(iatom)%neighbors(ineigh)%Dblock(:,imu,inu)
+     &                   s%rho_in(iatom)%neighbors(ineigh)%Dblocko(:,imu,inu)
                        
                        prho_bond =                                            &
      &                   s%rho_bond(iatom)%neighbors(ineigh)%block(imu,inu)
                        Dprho_bond =                                           &
-     &                   s%rho_bond(iatom)%neighbors(ineigh)%Dblock(:,imu,inu)
+     &                   s%rho_bond(iatom)%neighbors(ineigh)%Dblocko(:,imu,inu)
 
 ! calculate GSN force based on rho_in
                        pfi%vxc_off_site(:,ineigh) = pfi%vxc_off_site(:,ineigh)&
@@ -392,13 +393,13 @@
      &                      + Dprho_bond_shell*d2muxc_bond                    &
      &                       *(prho_bond - prho_bond_shell*poverlap)          &
      &                      + dmuxc_bond*Dprho_bond)
-                     end do !** m2 = -l2, l2
-                   end do !** m1 = -l1, l1
-                end do !** jssh = 1, species(in2)%nssh
-              end do !** issh = 1, species(in1)%nssh
-            end if !** differenciate between on site and off site
-          end do !** over the neighbors
-        end do !** over the atoms
+                     end do
+                   end do
+                end do ! end loop over jssh
+              end do ! end loop over issh
+            end if ! end iatom .ne. jatom
+          end do ! end loop over neighbors
+        end do ! end loop over atoms
 
 ! ***************************************************************************
 !
@@ -485,7 +486,6 @@
 ! Loop over shells i-atom
               n1 = 0
               do issh = 1, species(in1)%nssh
-!               write (*,*) ' issh = ', issh
 
 ! n1 : counter used to determine orbitals imu
                 l1 = species(in1)%shell(issh)%lssh
@@ -494,8 +494,11 @@
 ! Call lda-function for rho_in
                 prho_in_shell =                                                &
      &           s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,issh)
-                Dprho_in_shell = vdbcxcm(:,issh,issh)
-!               write (*,*) ' Dprho_in_shell = ', issh, Dprho_in_shell
+!               Dprho_in_shell = vdbcxcm(:,issh,issh)
+!               Dprho_in_shell =                                               &
+!    &           s%rho_in_weighted(iatom)%neighbors(ineigh)%Dblock(:,issh,issh)
+                Dprho_in_shell =                                               &
+     &           s%rho_in_weighted(iatom)%neighbors(matom)%Dblocko(:,issh,issh)
                 call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,       &
      &                                   dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
 
@@ -503,8 +506,9 @@
      &           s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,issh)
 !               Dprho_bond_shell = vdbcxcm(:,issh,issh)
                 Dprho_bond_shell =                                             &
-     &           s%rho_bond_weighted(iatom)%neighbors(matom)%Dblock(:,issh,issh)
+     &           s%rho_bond_weighted(iatom)%neighbors(matom)%Dblocko(:,issh,issh)
 !               write (*,*) ' Dprho_bond_shell = ', issh, Dprho_bond_shell
+!               Dprho_bond_shell = Dprho_in_shell
                 call lda_ceperley_alder (prho_bond_shell, exc_bond, muxc_bond, &
      &                                   dexc_bond, d2exc_bond, dmuxc_bond,    &
      &                                   d2muxc_bond)
@@ -514,26 +518,28 @@
                 do m1 = -l1, l1
                   imu = n1 + m1
                   prho_in = s%rho_in(iatom)%neighbors(matom)%block(imu,imu)
-                  Dprho_in = s%rho_in(iatom)%neighbors(matom)%Dblock(:,imu,imu)
+!                 Dprho_in = s%rho_in(iatom)%neighbors(matom)%Dblocko(:,imu,imu)
+                  Dprho_in = s%rho_in(iatom)%neighbors(ineigh)%Dblock(:,imu,imu)
 !                 write (*,*) ' Dprho_in = ', Dprho_in
      
                   prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,imu)
-                  Dprho_bond = s%rho_bond(iatom)%neighbors(matom)%Dblock(:,imu,imu)
+                  Dprho_bond = Dprho_in
+!                 Dprho_bond = s%rho_bond(iatom)%neighbors(ineigh)%Dblock(:,imu,imu)
+!                 Dprho_bond = s%rho_bond(iatom)%neighbors(matom)%Dblocko(:,imu,imu)
 !                 write (*,*) ' Dprho_bond = ', Dprho_bond
 
 ! calculate GSN for rho_in
                   pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh)        &
      &              - pRho_neighbors_matom%block(imu,imu)                      &
-     &               *(dmuxc_in*Dprho_in_shell                                 &
+     &               *(dmuxc_in*Dprho_in                                       &
      &                 + Dprho_in_shell*d2muxc_in*(prho_in - prho_in_shell))
 
 ! calculate GSN for rho_bond ("atomic" correction)
 ! Use "+" here because the energy contribution for the bond-part is "-"
                   pfi%vxc_on_site(:,ineigh)= pfi%vxc_on_site(:,ineigh)         &
      &              + pRho_neighbors_matom%block(imu,imu)                      &
-     &               *(dmuxc_bond*Dprho_bond                                   &
-!    &                 + Dprho_bond_shell*d2muxc_bond*(prho_bond - prho_bond_shell))
-     &                 + Dprho_in_shell*d2muxc_bond*(prho_bond - prho_bond_shell))
+     &               *(dmuxc_bond*Dprho_bond_shell                             &
+     &                 + Dprho_bond_shell*d2muxc_bond*(prho_bond - prho_bond_shell))
                 end do ! m1 = -l1, l1
 
 ! Off-diagonal terms
@@ -547,16 +553,19 @@
 ! Call lda-function for rho_in
                   prho_in_shell =                                             &
      &             s%rho_in_weighted(iatom)%neighbors(matom)%block(issh,jssh)
-                  Dprho_in_shell = vdbcxcm(:,issh,jssh)
+!                 Dprho_in_shell = vdbcxcm(:,issh,jssh)
+                  Dprho_in_shell=                                             &
+     &             s%rho_in_weighted(iatom)%neighbors(ineigh)%Dblock(:,issh,jssh)
                   call lda_ceperley_alder (prho_in_shell, exc_in, muxc_in,    &
      &                                     dexc_in, d2exc_in, dmuxc_in, d2muxc_in)
 
                   prho_bond_shell =                                           &
      &             s%rho_bond_weighted(iatom)%neighbors(matom)%block(issh,jssh)
-                  Dprho_bond_shell=                                           &
-     &             s%rho_bond_weighted(iatom)%neighbors(matom)%Dblock(:,issh,jssh)
-!                 call lda_ceperley_alder (prho_bond_shell, exc_bond, muxc_bond,&
-!    &                                     dexc_bond, d2exc_bond, dmuxc_bond, d2muxc_bond)
+!                 Dprho_bond_shell=                                           &
+!    &             s%rho_bond_weighted(iatom)%neighbors(matom)%Dblock(:,issh,jssh)
+                  Dprho_bond_shell = Dprho_in_shell
+                  call lda_ceperley_alder (prho_bond_shell, exc_bond, muxc_bond,&
+     &                                     dexc_bond, d2exc_bond, dmuxc_bond, d2muxc_bond)
 
 ! Calculate vxc_SN and vxc_SN_bond for (mu,nu)-block
 ! loop over orbitals in the iatom-shell (imu)
@@ -567,10 +576,10 @@
                       inu = n2 + m2
                       if (imu .ne. inu) then
                         prho_in = s%rho_in(iatom)%neighbors(matom)%block(imu,inu)
-                        Dprho_in = s%rho_in(iatom)%neighbors(matom)%Dblock(:,imu,inu)
+                        Dprho_in = s%rho_in(iatom)%neighbors(ineigh)%Dblock(:,imu,inu)
 
                         prho_bond = s%rho_bond(iatom)%neighbors(matom)%block(imu,inu)
-                        Dprho_bond(:) = s%rho_bond(iatom)%neighbors(matom)%Dblock(:,imu,inu)
+                        Dprho_bond = Dprho_in
 
 ! calculate GSN for rho_in
                         pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh) &
@@ -578,9 +587,8 @@
      &                     *(Dprho_in_shell*d2muxc_in*prho_in + dmuxc_in*Dprho_in)
 
                         pfi%vxc_on_site(:,ineigh) = pfi%vxc_on_site(:,ineigh) &
-     &                    + pRho_neighbors_matom%block(imu,imu)               &
-!    &                     *(Dprho_bond_shell*d2muxc_in*prho_in + dmuxc_in*Dprho_bond)
-     &                     *(Dprho_in_shell*d2muxc_in*prho_in + dmuxc_in*Dprho_bond)
+     &                    + pRho_neighbors_matom%block(imu,inu)               &
+     &                     *(Dprho_bond_shell*d2muxc_bond*prho_bond + dmuxc_bond*Dprho_bond)
                      end if ! imu .eq. inu
                     end do !do m2 = -l2, l2
                   end do !do m1 = -l1, l1
@@ -800,6 +808,63 @@
 ! ===========================================================================
         return
         end subroutine Dassemble_vxc_bond
+
+
+! ===========================================================================
+! destroy_Dassemble_vxc
+! ===========================================================================
+! Subroutine Description
+! ===========================================================================
+!>       This routine deallocates the arrays containing the Dassemble_2c
+!! information.
+!
+! ===========================================================================
+! Code written by:
+! James P. Lewis
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
+!
+! Phone: +852 6612 9539 (mobile)
+! ===========================================================================
+!
+! Subroutine Declaration
+! ===========================================================================
+        subroutine destroy_Dassemble_vxc (s)
+        implicit none
+
+! Argument Declaration and Description
+! ===========================================================================
+        type(T_structure), target :: s           !< the structure to be used.
+
+! Parameters and Data Declaration
+! ===========================================================================
+! None
+
+! Variable Declaration and Description
+! ===========================================================================
+        integer iatom                             !< counter over atoms
+
+! Procedure
+! ===========================================================================
+        do iatom = 1, s%natoms
+          deallocate (s%forces(iatom)%vxc_on_site)
+          deallocate (s%forces(iatom)%vxc_off_site)
+        end do
+
+! Deallocate Arrays
+! ===========================================================================
+! None
+
+! Format Statements
+! ===========================================================================
+! None
+
+! End Subroutine
+! ===========================================================================
+        return
+        end subroutine destroy_Dassemble_vxc
 
 
 ! End Module

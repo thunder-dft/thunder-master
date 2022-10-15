@@ -63,7 +63,6 @@
         double precision, allocatable :: eigen (:)
 
 ! define matrices
-        double precision, allocatable :: S12matrix (:, :)
         double precision, allocatable :: Smatrix (:, :)
         double precision, allocatable :: Hmatrix (:, :)
 
