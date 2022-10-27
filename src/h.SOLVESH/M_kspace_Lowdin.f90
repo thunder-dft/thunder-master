@@ -657,6 +657,7 @@
         logfile = s%logfile
 
 ! Loop over the atoms in the central cell.
+        Smatrix = 0.0d0
         do iatom = 1, s%natoms ! natoms passed
           poverlap=>s%overlap(iatom)
           in1 = s%atom(iatom)%imass
@@ -675,6 +676,7 @@
             vec = s%xl(mbeta)%a + s%atom(jatom)%ratom - s%atom(iatom)%ratom
             sks = s%kpoints(ikpoint)%k
             dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+            write (*,*) ' dot, phase = ', dot, phase(dot)
 
 ! So this matrix element goes in the i, j slot
             do inu = 1, norb_nu
@@ -788,6 +790,7 @@
 ! interactions have a different neighbor map.
 
 ! Loop over the atoms in the central cell.
+        Hmatrix = 0.0d0
         do iatom = 1, s%natoms ! natoms passed
           pHamiltonian=>s%Hamiltonian(iatom)
           pvnl=>s%vnl(iatom)
