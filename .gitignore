@@ -40,3 +40,4 @@ autom4te.cache
 config.h
 config.status
 Makefile
+src/include/.OPTIONS.swp
