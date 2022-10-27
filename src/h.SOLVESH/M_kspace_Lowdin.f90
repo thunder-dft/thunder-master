@@ -676,7 +676,6 @@
             vec = s%xl(mbeta)%a + s%atom(jatom)%ratom - s%atom(iatom)%ratom
             sks = s%kpoints(ikpoint)%k
             dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
-            write (*,*) ' dot, phase = ', dot, phase(dot)
 
 ! So this matrix element goes in the i, j slot
             do inu = 1, norb_nu
