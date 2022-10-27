@@ -447,7 +447,7 @@ M_assemble_2c_DOGS.o : j.ASSEMBLERS/M_assemble_2c_DOGS.f90
 M_assemble_3c_Harris.o : j.ASSEMBLERS/M_assemble_3c_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_assemble_3c_DOGS.o : j.ASSEMBLERS/M_assemble_3c_DOGS.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(OMP) -c $^
 M_assemble_ewald_Harris.o : j.ASSEMBLERS/M_assemble_ewald_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_assemble_ewald_DOGS.o : j.ASSEMBLERS/M_assemble_ewald_DOGS.f90
@@ -653,7 +653,7 @@ create_Horsfield.o : x.DRIVERS/create_Horsfield.f90
 create_McWEDA.o : x.DRIVERS/create_McWEDA.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^ 
 fireball.o : x.DRIVERS/fireball.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(OMP) -c $^
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 fireball-MDET.o : x.DRIVERS/fireball-MDET.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 lightning.o : x.DRIVERS/lightning.f90
