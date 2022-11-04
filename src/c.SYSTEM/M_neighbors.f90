@@ -104,7 +104,7 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer logfile                     !< writing to which unit
+        integer logfile                              !< writing to which unit
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -115,7 +115,6 @@
 ! Initialize logfile
         logfile = s%logfile
 
-        write (logfile,*)
         write (logfile,*) ' Welcome to neighbors - determine neighbor mapping. '
         if (ifix_neighbors .eq. 1) then
           call read_NEIGHBORS (s)
@@ -177,8 +176,9 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, jatom                 !< counter over atoms
+        integer iatom, jatom, katom          !< counter over atoms
         integer ineigh, jneigh               !< counter over neighbors
+        integer mbeta, lbeta                 !< counter over cells
         integer inpfile                      !< reading from which unit
         integer num_neigh                    !< number of neighbors
 
@@ -193,22 +193,20 @@
 ! Initialize logfile
         inpfile = s%inpfile
 
-! Open the file neighbors and read in the neighbor map.
         slogfile = s%basisfile(:len(trim(s%basisfile)) - 4)
         slogfile = trim(slogfile)//'.NEIGHBORS'
-        open (inpfile, file = slogfile, status = 'old')
-        read (inpfile, *)
+        open (unit = inpfile, file = slogfile, status = 'unknown')
+        read (inpfile,104) s%natoms, s%basisfile
         do iatom = 1, s%natoms
+          num_neigh =  s%neighbors(iatom)%neighn
           read (inpfile,*) jatom, num_neigh
-          s%neighbors(iatom)%neighn = num_neigh
-          allocate (s%neighbors(iatom)%neigh_b(num_neigh))
-          allocate (s%neighbors(iatom)%neigh_j(num_neigh))
           do ineigh = 1, num_neigh
-            read (inpfile,*) jneigh, s%neighbors(iatom)%neigh_b(ineigh),     &
-     &                          s%neighbors(iatom)%neigh_j(ineigh),          &
-     &                          s%neigh_self(iatom)
+            mbeta = s%neighbors(iatom)%neigh_b(ineigh)
+            jatom = s%neighbors(iatom)%neigh_j(ineigh)
+            read (inpfile,*) jneigh, lbeta, katom, s%neigh_self(iatom)
           end do
         end do
+        close (unit = inpfile)
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -216,7 +214,7 @@
 
 ! Format Statements
 ! ===========================================================================
-! None
+104     format (2x, i5, 2x, a40)
 
 ! End Subroutine
 ! ===========================================================================
