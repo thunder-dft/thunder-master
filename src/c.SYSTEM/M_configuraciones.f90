@@ -169,6 +169,9 @@
           ! Short-range force (double-counting terms)
           real, dimension (3) :: usr
 
+          ! van der Waals forces (double-counting terms)
+          real, dimension (3) :: vdW
+
           ! Total forces
           real, dimension (3) :: ftot
         end type T_forces
@@ -446,12 +449,12 @@
 
 ! Open structures.inp file and read global &OUTPUT options
         filename = 'structures.inp'
-        inquire (FILE=filename, EXIST=file_exists)   ! file_exists will be TRUE if the file
-                                                     ! exists and FALSE otherwise
+        inquire (file = filename, exist = file_exists)   ! file_exists will be TRUE if the file
+                                                         ! exists and FALSE otherwise
         if ( file_exists ) then
-           write (*,*) ' Reading: >'//filename//'<'
+           write (ilogfile,*) ' Reading: >'//filename//'<'
         else
-           write(*,*) ' ERROR: Could not open: ', filename
+           write (ilogfile,*) ' ERROR: Could not open: ', filename
            stop
         end if
 
@@ -678,9 +681,9 @@
 
 ! Open the kpoints file for this structure
 ! If the .kpoints file exists, then use these kpoints.
-! THe the .kpoints file does not exist, then assume gamma point calculation.
+! The the .kpoints file does not exist, then assume gamma point calculation.
         slogfile = s%basisfile(:len(trim(s%basisfile))-4)
-        slogfile = trim(slogfile)//'.kpoints'
+        slogfile = trim(slogfile)//'.KPOINTS'
         inquire (file = slogfile, exist = read_kpoints)
 
         ! Reading kpoints
