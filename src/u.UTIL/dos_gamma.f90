@@ -139,7 +139,7 @@
 
 ! Write the dos files - make the output directory
         slogfile = t%basisfile(:len(trim(t%basisfile))-4)
-        slogfile = trim(slogfile)//'.dos'
+        slogfile = trim(slogfile)//'.DOS'
         call system ('mkdir '//trim(slogfile)//'')
 
 ! Determine if the dos.input files exists - if not, then exit.
