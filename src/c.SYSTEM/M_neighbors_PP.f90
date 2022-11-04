@@ -204,7 +204,7 @@
 
 ! Open the file NEIGHBORS and read in the neighbor map.
         slogfile = s%basisfile(:len(trim(s%basisfile)) - 4)
-        slogfile = trim(slogfile)//'.NEIGHBORS_PP'
+        slogfile = trim(slogfile)//'.NEIGHBORS-PP'
         open (unit = inpfile, file = slogfile, status = 'old')
         read (inpfile, *)
         read (inpfile, *)
