@@ -113,6 +113,7 @@
           s%forces(iatom)%vnl = 0.0d0
           s%forces(iatom)%ewald = 0.0d0
           s%forces(iatom)%ewaldlr = 0.0d0
+          s%forces(iatom)%vdW = 0.0d0
 
           ! corrections to the force
           s%forces(iatom)%usr = 0.0d0
@@ -550,6 +551,17 @@
           pfi%ftot = pfi%ftot + pfi%usr
         end do ! end loop over atoms
 
+! ***************************************************************************
+!
+!            v d W   C O R R E C T I O N S   (T W O - C E N T E R)
+! ***************************************************************************
+! Loop over all atoms iatom in the central cell.
+        do iatom = 1, s%natoms
+          ! cut some lengthy notation
+          pfi=>s%forces(iatom)
+          pfi%ftot = pfi%ftot + pfi%vdW
+        end do ! end loop over atoms
+
 ! Calculate the RMS force and MAX force
         rms = 0.0d0
         maxf = -999.0d0
@@ -748,6 +760,16 @@
         do iatom = 1, s%natoms
           write (logfile,102) 'f_usr', iatom, s%atom(iatom)%species%symbol, &
      &                                        s%forces(iatom)%usr
+        end do
+
+        write (logfile,*)
+        write (logfile,103) 'The van der Waal''s force: '
+        write (logfile,100)
+        write (logfile,101)
+        write (logfile,100)
+        do iatom = 1, s%natoms
+          write (logfile,102) 'f_vdW', iatom, s%atom(iatom)%species%symbol, &
+     &                                        s%forces(iatom)%vdW
         end do
 
         write (logfile,*)
