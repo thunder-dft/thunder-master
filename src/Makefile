@@ -55,7 +55,7 @@ SYSTEM_BEGIN =  M_species.o M_atom_functions.o M_atomPP_functions_KB.o M_atomPP_
 SYSTEM_LOOPRC = M_species.o M_atom_functions.o M_atomPP_functions_KB.o M_integrals_2c.o
 SYSTEM_CREATE = M_species.o M_atom_functions.o M_integrals_2c.o M_integrals_3c.o M_atomPP_functions_KB.o M_atomPP_ion_functions_KB.o
 SYSTEM_LIGHTNING = M_species.o M_kpoints.o M_configuraciones.o M_atom_functions.o M_neighbors.o M_neighbors_PP.o M_rotations.o M_grid.o rotate_PP.o
-SYSTEM = M_species.o M_kpoints.o M_configuraciones.o M_neighbors.o M_neighbors_PP.o M_atom_functions.o M_rotations.o M_integrals_2c.o M_grid.o M_Drotations.o M_Drotations_PP.o M_build_forces.o rotate_PP.o
+SYSTEM = M_species.o M_kpoints.o M_configuraciones.o M_neighbors.o M_neighbors_PP.o M_atom_functions.o M_rotations.o M_integrals_2c.o M_grid.o M_Drotations.o M_Drotations_PP.o M_build_forces.o rotate_PP.o M_vdW.o
 
 BEGIN = M_psi.o M_rcatms_Coulomb.o M_rcatms_Coulomb_DMOL_excited.o M_rcatms_DMOL_excited.o M_rcatms.o M_vnn.o
 BEGIN_LOOPRC = M_psi.o M_rcatms_Coulomb.o M_rcatms.o M_looprc.o
@@ -330,7 +330,13 @@ M_atomPP_functions_KB.o : c.SYSTEM/M_atomPP_functions_KB.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_atomPP_ion_functions_KB.o : c.SYSTEM/M_atomPP_ion_functions_KB.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_build_forces.o : c.SYSTEM/M_build_forces.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_configuraciones.o : c.SYSTEM/M_configuraciones.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_Drotations.o : c.SYSTEM/M_Drotations.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_Drotations_PP.o : c.SYSTEM/M_Drotations_PP.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_integrals_2c.o : c.SYSTEM/M_integrals_2c.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
@@ -346,17 +352,11 @@ M_neighbors_PP.o : c.SYSTEM/M_neighbors_PP.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_species.o : c.SYSTEM/M_species.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-write_species.o : c.SYSTEM/write_species.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -s $^
 M_rotations.o : c.SYSTEM/M_rotations.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_vdW.o : c.SYSTEM/M_vdW.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 make_cells.o : c.SYSTEM/make_cells.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_Drotations.o : c.SYSTEM/M_Drotations.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_Drotations_PP.o : c.SYSTEM/M_Drotations_PP.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_build_forces.o : c.SYSTEM/M_build_forces.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 rotate_PP.o : c.SYSTEM/rotate_PP.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
@@ -447,7 +447,7 @@ M_assemble_2c_DOGS.o : j.ASSEMBLERS/M_assemble_2c_DOGS.f90
 M_assemble_3c_Harris.o : j.ASSEMBLERS/M_assemble_3c_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_assemble_3c_DOGS.o : j.ASSEMBLERS/M_assemble_3c_DOGS.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(OMP) -c $^
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_assemble_ewald_Harris.o : j.ASSEMBLERS/M_assemble_ewald_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_assemble_ewald_DOGS.o : j.ASSEMBLERS/M_assemble_ewald_DOGS.f90
