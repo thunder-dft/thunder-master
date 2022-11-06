@@ -518,7 +518,8 @@
 
 ! The variable num_neigh counts neighbors.
           num_neigh = 0
-
+          neighbors_vdW(iatom)%neighn = num_neigh
+          
           ! check to see if iatom is in iatom_vdW list
           if (read_vdW) then
             if (.not. any(iatom_vdW .eq. iatom)) cycle
@@ -645,12 +646,6 @@
           write (logfile,*) '  '
           write (logfile,*) ' Neighbors of each atom: '
           do iatom = 1, s%natoms
-            ! check to see if iatom is in iatom_vdW list
-            ! if not, then nothing was allocated before
-            if (read_vdW) then
-              if (.not. any(iatom_vdW .eq. iatom)) cycle
-            end if
-
             r1 = s%atom(iatom)%ratom
             num_neigh =  neighbors_vdW(iatom)%neighn
             write (logfile,*) '  '
@@ -658,6 +653,7 @@
             write (logfile,101) iatom, num_neigh
             write (logfile,102)
             write (logfile,100)
+            if (num_neigh .eq. 0) cycle
             do ineigh = 1, num_neigh
               mbeta = neighbors_vdW(iatom)%neigh_b(ineigh)
               jatom = neighbors_vdW(iatom)%neigh_j(ineigh)
@@ -674,14 +670,9 @@
           open (unit = inpfile, file = slogfile, status = 'unknown')
           write (inpfile,104) s%natoms, s%basisfile
           do iatom = 1, s%natoms
-            ! check to see if iatom is in iatom_vdW list
-            ! if not, then nothing was allocated before
-            if (read_vdW) then
-              if (.not. any(iatom_vdW .eq. iatom)) cycle
-            end if
-
             num_neigh =  neighbors_vdW(iatom)%neighn
             write (inpfile,*) iatom, num_neigh
+            if (num_neigh .eq. 0) cycle
             do ineigh = 1, num_neigh
               mbeta = neighbors_vdW(iatom)%neigh_b(ineigh)
               jatom = neighbors_vdW(iatom)%neigh_j(ineigh)
@@ -782,13 +773,6 @@
 ! Loop over all atoms - van der Waal's interactions.
         vdw = 0.0d0
         do iatom = 1, s%natoms
-
-          ! check to see if iatom is in iatom_vdW list
-          ! if not, then nothing was allocated before
-          if (read_vdW) then
-            if (.not. any(iatom_vdW .eq. iatom)) cycle
-          end if
-
           in1 = s%atom(iatom)%imass
           r1 = s%atom(iatom)%ratom
 
@@ -798,6 +782,7 @@
 
 ! Loop over all possible neighbors
           num_neigh =  neighbors_vdW(iatom)%neighn
+          if (num_neigh .eq. 0) cycle
           do ineigh = 1, num_neigh
             mbeta = neighbors_vdW(iatom)%neigh_b(ineigh)
             jatom = neighbors_vdW(iatom)%neigh_j(ineigh)
