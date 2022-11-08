@@ -44,6 +44,7 @@
 !!       find_neighbors_vdW - finds all the neighbors for the two-center and
 !!                        three-center interactions
 !!       writeout_neighbors - write out the neighbor mapping into a file
+!!       calculate_vdW - calculate the van der Waals energies and forces
 !!       destroy_neighbors - destroy the neighbor arrays
 !
 ! ===========================================================================
