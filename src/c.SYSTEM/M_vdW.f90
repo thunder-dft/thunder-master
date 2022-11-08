@@ -641,10 +641,10 @@
         slogfile = trim(slogfile)//'.vdW'
         inquire (file = slogfile, exist = read_vdW)
 
-        iwriteout_neighbors_vdW = .true.
+        iwriteout_neighbors_vdW = .false.
         if (iwriteout_neighbors_vdW) then
           write (logfile,*) '  '
-          write (logfile,*) ' Neighbors of each atom: '
+          write (logfile,*) ' Neighbors (van der Waal''s) of each atom: '
           do iatom = 1, s%natoms
             r1 = s%atom(iatom)%ratom
             num_neigh =  neighbors_vdW(iatom)%neighn
@@ -822,7 +822,7 @@
 
 ! damping term
             alpha = -3.0d0*(z/Rfactor)**7
-            factor = (1 - exp(alpha))**4
+            factor = (1.0d0 - exp(alpha))**4
 
 ! assemble the energy term
             vdw_piece = - factor*C6factor/z**6
