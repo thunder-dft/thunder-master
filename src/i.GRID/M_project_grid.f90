@@ -434,7 +434,7 @@
         integer imu, inu                    !< loop over shells
         integer norb_mu, norb_nu            !< size of the block for the pair
 
-!        integer, dimension (3) :: ipiv     !< index points on grid
+!       integer, dimension (3) :: ipiv      !< index points on grid
         integer, dimension (3) :: nr
 
         real adensity, density

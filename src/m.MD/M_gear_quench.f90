@@ -137,7 +137,7 @@
 ! distribution.
         write (logfile,*)
         slogfile = s%basisfile(:len(trim(s%basisfile)) - 4)
-        slogfile = trim(slogfile)//'.vatom'
+        slogfile = trim(slogfile)//'.VATOM'
         inquire (file = slogfile, exist = velocity)
         if (velocity) then
           write (logfile,*) ' We are reading from a velocity file. '

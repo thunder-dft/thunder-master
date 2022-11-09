@@ -155,11 +155,11 @@
 
 ! Determine if the abs.inp files exists - if not, then exit.
         slogfile = t%basisfile(:len(trim(t%basisfile))-4)
-        slogfile = trim(slogfile)//'.abs.inp'
+        slogfile = trim(slogfile)//'.ABSORPTION'
         inquire (file = slogfile, exist = read_abs)
         if (read_abs) then
 ! Read from input file - gives dos options
-          write (logfile,*) ' Reading from abs.inp file! '
+          write (logfile,*) ' Reading from abs file! '
           open (unit = inpfile, file = slogfile, status = 'old')
           read (inpfile,*) nenergy_grid    ! energy grid
           read (inpfile,*) dgrid    ! read grid spacing for integrations

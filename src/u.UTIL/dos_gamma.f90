@@ -139,7 +139,7 @@
 
 ! Write the dos files - make the output directory
         slogfile = t%basisfile(:len(trim(t%basisfile))-4)
-        slogfile = trim(slogfile)//'.dos'
+        slogfile = trim(slogfile)//'.DOS'
         call system ('mkdir '//trim(slogfile)//'')
 
 ! Determine if the dos.input files exists - if not, then exit.
@@ -186,27 +186,26 @@
             norb_mu = species(in1)%norb_max
             mmu = t%iblock_slot(iatom)
 
+            allocate (identity (norb_mu, norb_mu)); identity = 0.0d0
+            do imu = 1, norb_mu
+              identity (imu, imu) = 1.0d0
+            end do
+
 ! Loop over atoms again
             do jatom = 1, t%natoms
               in2 = t%atom(jatom)%imass
               norb_nu = species(in2)%norb_max
               nnu = t%iblock_slot(jatom)
-
-              allocate (identity (norb_mu, norb_nu)); identity = 0.0d0
-              do imu = 1, norb_mu
-                identity (imu, imu) = 1.0d0
-              end do
-
               if (iatom .eq. jatom) then
-                greenk(mmu + 1:mmu + norb_mu, nnu + 1: nnu + norb_nu) =        &
-     &            energy*identity(1:norb_mu,1:norb_nu)                         &
-     &             - Hk(mmu + 1:mmu + norb_mu, nnu + 1:nnu + norb_nu)
+                greenk(mmu + 1:mmu + norb_mu, mmu + 1: mmu + norb_mu) =        &
+     &            energy*identity(1:norb_mu,1:norb_mu)                         &
+     &             - Hk(mmu + 1:mmu + norb_mu, mmu + 1:mmu + norb_mu)
               else
                 greenk(mmu + 1:mmu + norb_mu, nnu + 1:nnu + norb_nu) =         &
      &             - Hk(mmu + 1:mmu + norb_mu, nnu + 1:nnu + norb_nu)
               end if
-              deallocate (identity)
             end do ! end loop over jatom
+            deallocate (identity)
           end do ! end loop over iatom
 
 ! Invert the matrix, green, send the result to green

@@ -169,6 +169,9 @@
           ! Short-range force (double-counting terms)
           real, dimension (3) :: usr
 
+          ! van der Waals forces (double-counting terms)
+          real, dimension (3) :: vdW
+
           ! Total forces
           real, dimension (3) :: ftot
         end type T_forces
@@ -318,15 +321,18 @@
         integer iwriteout_neighbors
         integer iwriteout_dos
         integer iwriteout_abs
-        integer iwriteout_xyz
         integer iwriteout_ewf
 
         namelist /output/ iwriteout_ME_SandH, iwriteout_density,             &
      &                    iwriteout_cdcoeffs, iwriteout_charges,             &
      &                    iwriteout_populations, iwriteout_energies,         &
      &                    iwriteout_forces, iwriteout_neighbors,             &
-     &                    iwriteout_dos, iwriteout_abs, iwriteout_xyz,       &
-     &                    iwriteout_ewf
+     &                    iwriteout_dos, iwriteout_abs, iwriteout_ewf
+
+        ! xsf namelist
+        real rho_surface_min, rho_surface_max
+
+        namelist /xsfoptions/ rho_surface_min, rho_surface_max
 
 ! Parameter Declaration and Description
 ! ===========================================================================
@@ -413,7 +419,6 @@
         iwriteout_neighbors = 0
         iwriteout_dos = 0
         iwriteout_abs = 0
-        iwriteout_xyz = 0
         iwriteout_ewf = 0
 
 ! Initialize parameters &OPTIONS
@@ -438,14 +443,18 @@
         beta_set = beta
         Ecut_set = Ecut
 
+! Initialize parameters &XSF
+        rho_surface_min = 0.0005
+        rho_surface_max = 0.010
+
 ! Open structures.inp file and read global &OUTPUT options
         filename = 'structures.inp'
-        inquire (FILE=filename, EXIST=file_exists)   ! file_exists will be TRUE if the file
-                                                     ! exists and FALSE otherwise
+        inquire (file = filename, exist = file_exists)   ! file_exists will be TRUE if the file
+                                                         ! exists and FALSE otherwise
         if ( file_exists ) then
-           write (*,*) ' Reading: >'//filename//'<'
+           write (ilogfile,*) ' Reading: >'//filename//'<'
         else
-           write(*,*) ' ERROR: Could not open: ', filename
+           write (ilogfile,*) ' ERROR: Could not open: ', filename
            stop
         end if
 
@@ -462,6 +471,14 @@
         if (read_string) then
           open (unit = 222, file = filename, status = 'old')
           read (222, nml = options)
+          close (unit = 222)
+        end if
+
+        string = '&XSFOPTIONS'
+        call read_sections (filename, string, read_string)
+        if (read_string) then
+          open (unit = 222, file = filename, status = 'old')
+          read (222, nml = xsfoptions)
           close (unit = 222)
         end if
 
@@ -489,8 +506,6 @@
      &    write (ilogfile,*) ' - Writing out the electronic density of states. '
         if (iwriteout_abs .eq. 1)                                           &
      &    write (ilogfile,*) ' Writing out the absorption spectra. '
-        if (iwriteout_xyz .eq. 1)                                           &
-     &    write (ilogfile,*) ' Writing out the xyz file. '
         if (iwriteout_ewf .eq. 1)                                           &
      &    write (ilogfile,*) ' Writing out the isosurfaces file. '
 
@@ -498,52 +513,59 @@
 ! are written out and input values are written out accordingly
         filename = 'structures.output'
         open (unit = 222, file = filename, status = 'unknown')
-        write (222, *) ' &OUTPUT'
-        write (222, '(1x, a26, i10)') ' iwriteout_ME_SandH     = ', iwriteout_ME_SandH
-        write (222, '(1x, a26, i10)') ' iwriteout_density      = ', iwriteout_density
-        write (222, '(1x, a26, i10)') ' iwriteout_cdcoeffs     = ', iwriteout_cdcoeffs
-        write (222, '(1x, a26, i10)') ' iwriteout_charges      = ', iwriteout_charges
-        write (222, '(1x, a26, i10)') ' iwriteout_energies     = ', iwriteout_energies
-        write (222, '(1x, a26, i10)') ' iwriteout_populations  = ', iwriteout_populations
-        write (222, '(1x, a26, i10)') ' iwriteout_forces       = ', iwriteout_forces
-        write (222, '(1x, a26, i10)') ' iwriteout_neighbors    = ', iwriteout_neighbors
-        write (222, '(1x, a26, i10)') ' iwriteout_dos          = ', iwriteout_dos
-        write (222, '(1x, a26, i10)') ' iwriteout_abs          = ', iwriteout_abs
-        write (222, '(1x, a26, i10)') ' iwriteout_xyz          = ', iwriteout_xyz
-        write (222, '(1x, a26, i10)') ' iwriteout_ewf          = ', iwriteout_ewf
+        write (222, *) '&OUTPUT'
+        write (222, '(a26, i10)') ' iwriteout_ME_SandH     = ', iwriteout_ME_SandH
+        write (222, '(a26, i10)') ' iwriteout_density      = ', iwriteout_density
+        write (222, '(a26, i10)') ' iwriteout_cdcoeffs     = ', iwriteout_cdcoeffs
+        write (222, '(a26, i10)') ' iwriteout_charges      = ', iwriteout_charges
+        write (222, '(a26, i10)') ' iwriteout_energies     = ', iwriteout_energies
+        write (222, '(a26, i10)') ' iwriteout_populations  = ', iwriteout_populations
+        write (222, '(a26, i10)') ' iwriteout_forces       = ', iwriteout_forces
+        write (222, '(a26, i10)') ' iwriteout_neighbors    = ', iwriteout_neighbors
+        write (222, '(a26, i10)') ' iwriteout_dos          = ', iwriteout_dos
+        write (222, '(a26, i10)') ' iwriteout_abs          = ', iwriteout_abs
+        write (222, '(a26, i10)') ' iwriteout_ewf          = ', iwriteout_ewf
+        write (222, *) '&END'
         close (unit = 222)
 
         filename = 'structures.options'
         open (unit = 222, file = filename, status = 'unknown')
-        write (222, *) ' &OPTIONS'
-        write (222, '(1x, a26, i10)') ' nstepi                 = ', nstepi
-        write (222, '(1x, a26, i10)') ' nstepf                 = ', nstepf
-        write (222, '(1x, a26, i10)') ' iquench                = ', iquench
+        write (222, *) '&OPTIONS'
+        write (222, '(a26, i10)') ' nstepi                 = ', nstepi
+        write (222, '(a26, i10)') ' nstepf                 = ', nstepf
+        write (222, '(a26, i10)') ' iquench                = ', iquench
+        write (222, '(a26, f10.1)') ' T_initial              = ', T_initial
+        write (222, '(a26, f10.1)') ' T_final                = ', T_final
+        write (222, '(a26, f10.1)') ' T_want                 = ', T_want
+        write (222, '(a26, f10.1)') ' taurelax               = ', taurelax
+        write (222, '(a26, f10.1)') ' efermi_T               = ', efermi_T
+        write (222, '(a26, f10.2)') ' dt                     = ', dt
+        write (222, '(a26, i10)') ' iensemble              = ', iensemble
+        write (222, '(a26, i10)') ' iconstraint_rcm        = ', iconstraint_rcm
+        write (222, '(a26, i10)') ' iconstraint_vcm        = ', iconstraint_vcm
+        write (222, '(a26, i10)') ' iconstraint_L          = ', iconstraint_L
+        write (222, '(a26, i10)') ' iconstraint_KE         = ', iconstraint_KE
+        write (222, '(a26, i10)') ' ifix_neighbors         = ', ifix_neighbors
+        write (222, '(a26, i10)') ' ifix_CHARGES           = ', ifix_CHARGES
+        write (222, '(a26, i10)') ' max_scf_iterations_set = ', max_scf_iterations_set
+        write (222, '(a26, f10.8)') ' scf_tolerance_set      = ', scf_tolerance_set
+        write (222, '(a26, f10.2)') ' beta_set               = ', beta_set
+        write (222, '(a26, f10.1)') ' Ecut_set               = ', Ecut_set
+        write (222, *) '&END'
+        close (unit = 222)
 
-        write (222, '(1x, a26, f10.1)') ' T_initial              = ', T_initial
-        write (222, '(1x, a26, f10.1)') ' T_final                = ', T_final
-        write (222, '(1x, a26, f10.1)') ' T_want                 = ', T_want
-        write (222, '(1x, a26, f10.1)') ' taurelax               = ', taurelax
-        write (222, '(1x, a26, f10.1)') ' efermi_T               = ', efermi_T
-        write (222, '(1x, a26, f10.2)') ' dt                     = ', dt
-        write (222, '(1x, a26, i10)') ' iensemble              = ', iensemble
-        write (222, '(1x, a26, i10)') ' iconstraint_rcm        = ', iconstraint_rcm
-        write (222, '(1x, a26, i10)') ' iconstraint_vcm        = ', iconstraint_vcm
-        write (222, '(1x, a26, i10)') ' iconstraint_L          = ', iconstraint_L
-        write (222, '(1x, a26, i10)') ' iconstraint_KE         = ', iconstraint_KE
-        write (222, '(1x, a26, i10)') ' ifix_neighbors         = ', ifix_neighbors
-        write (222, '(1x, a26, i10)') ' ifix_CHARGES           = ', ifix_CHARGES
-        write (222, '(1x, a26, i10)') ' max_scf_iterations_set = ', max_scf_iterations_set
-        write (222, '(1x, a26, f10.8)') ' scf_tolerance_set      = ', scf_tolerance_set
-        write (222, '(1x, a26, f10.2)') ' beta_set               = ', beta_set
-        write (222, '(1x, a26, f10.1)') ' Ecut_set               = ', Ecut_set
+        filename = 'structures.xsfoptions'
+        open (unit = 222, file = filename, status = 'unknown')
+        write (222, *) '&XSFOPTIONS'
+        write (222, '(a26, f10.4)') ' rho_surface_min        = ', rho_surface_min
+        write (222, '(a26, f10.8)') ' rho_surface_max        = ', rho_surface_max
+        write (222, *) '&END'
         close (unit = 222)
 
 ! Fix places where there are inconsistencies in paramaters:
         if (iquench .lt. 0 .and. iensemble .ne. 0) then
           write (*,*) ' We set iensemble = 0 because we are quenching! '
         end if
-
 
 ! Format Statements
 ! ===========================================================================
@@ -659,9 +681,9 @@
 
 ! Open the kpoints file for this structure
 ! If the .kpoints file exists, then use these kpoints.
-! THe the .kpoints file does not exist, then assume gamma point calculation.
+! The the .kpoints file does not exist, then assume gamma point calculation.
         slogfile = s%basisfile(:len(trim(s%basisfile))-4)
-        slogfile = trim(slogfile)//'.kpoints'
+        slogfile = trim(slogfile)//'.KPOINTS'
         inquire (file = slogfile, exist = read_kpoints)
 
         ! Reading kpoints
