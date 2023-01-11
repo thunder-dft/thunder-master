@@ -182,6 +182,7 @@
 
           integer icluster                    !< cluster calculation flag
           integer inpfile                     !< unit number for input file
+          integer jsonfile                    !< unit number for json output
           integer logfile                     !< which unit to write output
           integer natoms                      !< number of atoms
           integer nfragments                  !< number of fragments
