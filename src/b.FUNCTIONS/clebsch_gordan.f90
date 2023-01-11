@@ -54,8 +54,9 @@
 
 ! Argument Declaration and Description
 ! ===========================================================================
-        integer l, l1, l2
-        integer m, m1, m2
+! Input
+        integer, intent(in) :: l, l1, l2
+        integer, intent(in) :: m, m1, m2
 !
 ! Local Parameters and Data Declaration
 ! ===========================================================================
