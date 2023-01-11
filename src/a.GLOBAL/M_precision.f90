@@ -39,7 +39,6 @@
 
 ! Identifiers for important files
         integer, parameter :: ilogfile = 121             ! output.log unit number
-        integer, parameter :: jsonfile = 122             ! output json file unit number
 
 ! Mathematical constants
         double precision, parameter :: pi = 3.141592653589793238462643d0  ! pi = 4.0d0*atan(1.0d0)
