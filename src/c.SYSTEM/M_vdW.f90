@@ -134,7 +134,7 @@
 
         character (len = 25) :: filename
 
-        logical file_exists
+        logical read_vdW_parameters
 
         type(T_vdW_parameter), pointer :: pvdW
 
@@ -145,10 +145,11 @@
 ! Procedure
 ! ===========================================================================
         filename = 'structures.vdW'
-        inquire (file = filename, exist = file_exists)   ! file_exists will be TRUE if the file
-                                                         ! exists and FALSE otherwise
-        if ( file_exists ) then
-           write (ilogfile,*) ' Reading: >'//filename//'<'
+        inquire (file = filename, exist = read_vdW_parameters)
+        if (read_vdW_parameters) then
+          write (ilogfile,*) ' Reading: >'//filename//'<'
+        else
+          return
         end if
 
         open (unit = 222, file = filename, status = 'unknown')
@@ -298,6 +299,7 @@
         slogfile = s%basisfile(:len(trim(s%basisfile))-4)
         slogfile = trim(slogfile)//'.vdW'
         inquire (file = slogfile, exist = read_vdW)
+        if (.not. read_vdW) return
 
 ! Here we read in the atom pairs that should be included in calculating
 ! the van der Waals interactions.
