@@ -1,0 +1,24 @@
+#ICC ICC ICC ICC ICC ICC ICC ICC ICC ICC ICC ICC ICC ICC ICC ICC ICC ICC ICC
+ifneq (,$(findstring ICC,${MACHINE}))
+	ifneq (,$(findstring ifort,${COMPILER}))
+		F90 = ifort
+		FFLAGS = -O3 -r8 -fpp -ipo -fpe0 -ftz -align 
+		ifneq (,$(findstring DEBUG,${MODE}))
+			FFLAGS = -g -traceback -C -check arg_temp_created -r8 \
+				-debug all -check all -warn all,noexternal -fpe0
+		endif
+		ifneq (,$(findstring TRUE,${OPENMP}))
+			OMP = -qopenmp -fpp -auto
+		endif
+	endif
+
+	MKLROOT = /export/opt/intel/compilers_and_libraries_2019.5.281/linux/mkl
+	MKLPATH = $(MKLROOT)/lib/intel64
+	FFTPATH = $(MKLROOT)/include/fftw
+	# GAF: Using the proper static link sequence
+	LFLAGS = -Wl,--start-group $(MKLPATH)/libmkl_intel_lp64.a \
+		$(MKLPATH)/libmkl_core.a $(MKLPATH)/libmkl_sequential.a \
+		-Wl,--end-group -lpthread -lm
+#	LFLAGS_FFT = -I$(FFTPATH) -L$(MKLPATH) $(MKLPATH)/libfftw3xf_intel.a \
+#		$(MKLPATH)/libmkl_em64t.a -Bdynamic $(MKLPATH)/libguide.a
+endif
