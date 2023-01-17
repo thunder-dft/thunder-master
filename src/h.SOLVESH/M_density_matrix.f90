@@ -80,7 +80,7 @@
 ! structure given in M_assemble_block.f90
 !
 ! ===========================================================================
-        subroutine density_matrix (s)
+        subroutine density_matrix (s, efermi)
         implicit none
 
         include '../include/constants.h'
