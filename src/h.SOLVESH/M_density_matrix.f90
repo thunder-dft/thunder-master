@@ -191,6 +191,8 @@
 ! ****************************************************************************
 ! Write out the coefficients to a file - *.cdcoeffs
         if (iwriteout_cdcoeffs .eq. 1) then
+
+! Unformatted file
           slogfile = s%basisfile(:len(trim(s%basisfile)) - 4)
           slogfile = trim(slogfile)//'.cdcoeffs'
           open (unit = 22, file = slogfile, status = 'replace', form = 'unformatted')
@@ -204,6 +206,35 @@
             end do
           end do
           close (unit = 22)
+
+! Formatted file needed for Multimwfn
+! Only for gamma
+          slogfile = s%basisfile(:len(trim(s%basisfile)) - 4)
+          slogfile = trim(slogfile)//'.cdcoeffs-mwfn'
+          open (unit = 22, file = slogfile, status = 'replace')
+
+          if (s%nkpoints .ne. 1) then
+            open (11, file = 'WARNINGS', status = 'unknown', position = 'append')
+            write (11,*) '  '
+            write (11,*) ' ************ WARNING ******* WARNING *********** '
+            write (11,*) '      cdcoeffs-mwfn file had multiple kpoints:     '
+            write (11,*) '    file will not be read correctly by Multiwfn!  '
+            write (11,*) ' ************************************************ '
+            close (11)
+          else
+            do iband = 1, s%norbitals_new
+              write (22,*) ' Index= ', iband
+              write (22,*) ' Type= 0'
+              write (22,*) ' Energy= ', s%kpoints(1)%eigen(iband)/P_Hartree
+              write (22,*) ' Occ= ', s%kpoints(1)%foccupy(iband)
+              write (22,*) ' Sym= ?'
+              write (22,*) ' $Coeff '
+
+! write out the coefficient
+              write (22,*) (real(s%kpoints(1)%c(inu,iband)), inu = 1, s%norbitals_new)
+            end do
+          end if
+         close (unit = 22)
         end if
 
 ! Loop over all atoms iatom in the unit cell, and then over all its neighbors.
