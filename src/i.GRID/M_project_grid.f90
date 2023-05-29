@@ -808,21 +808,21 @@
         integer iatom                       !< counter over atoms and neighbors
         integer imesh                       !< counter over the mesh
         integer i0, j0, k0                  !< grid index points
-!        integer i, j, k
+!       integer i, j, k
         integer index0, index1, index2      !< different indexing counters
         integer in1                         !< species numbers
         integer issh                        !< counter over shells
         integer logfile                     !< writing to which unit
 
-!        integer, dimension (3) :: ipiv     !< index points on grid
+!       integer, dimension (3) :: ipiv      !< index points on grid
         integer, dimension (3) :: nr
 
-        real r1pin                           ! distance from centers to integration point
-!        real r1max                           !< maximum extent of cutoff radius
+        real r1pin                          ! distance from centers to integration point
+!       real r1max                          !< maximum extent of cutoff radius
         real vna0
 
-        real, dimension (3) :: r1          !< positions of iatom and jatom
-        real, dimension (3) :: r1p         !< shifted positions of iatom and jatom
+        real, dimension (3) :: r1           !< positions of iatom and jatom
+        real, dimension (3) :: r1p          !< shifted positions of iatom and jatom
         real, dimension (3) :: g1
         real, dimension (3) :: u, u1x
         real, dimension (3) :: x0

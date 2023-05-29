@@ -139,7 +139,7 @@
         real, target, allocatable, dimension (:) :: result
 
 ! For the visualization part
-!        integer iatom
+!       integer iatom
 
         character (len=25) xsfname
         character (len=25) message
@@ -250,7 +250,7 @@
             do i = 1, irm1
               index1 = i + (j - 1)*irm1 + (k - 1)*irm1*irm2 - 1
 ! renormalize
-             vcaG(index1) = Vin(i,j,k)*factor
+              vcaG(index1) = Vin(i,j,k)*factor
             end do
           end do
         end do
