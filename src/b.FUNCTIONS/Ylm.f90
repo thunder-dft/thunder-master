@@ -146,6 +146,19 @@
            if (m .eq. 0) Ylm = clm(2,0)/sqrt(4.0d0*pi)*(2.0d0*z**2 - x**2 - y**2)/r_magnitude**2
            if (m .eq. 1) Ylm = clm(2,1)/sqrt(2.0d0*pi)*(x*z/r_magnitude**2)
            if (m .eq. 2) Ylm = clm(2,2)/sqrt(2.0d0*pi)*(x**2 - y**2)/r_magnitude**2
+
+! -------------------------------------------------------------
+! f-orbital
+! -------------------------------------------------------------
+        case (3)
+! values
+!          if (m .eq. -3) Ylm = clm(3,-3)/sqrt()
+!          if (m .eq. -2) Ylm = clm(2,-2)/sqrt()
+!          if (m .eq. -1) Ylm = clm(2,-1)/sqrt()
+!          if (m .eq. 0) Ylm = clm(2,0)/sqrt()
+!          if (m .eq. 1) Ylm = clm(2,1)/sqrt()
+!          if (m .eq. 2) Ylm = clm(2,2)/sqrt()
+!          if (m .eq. 3) Ylm = clm(3,3)/sqrt()
         end select
 
 ! Format Statements

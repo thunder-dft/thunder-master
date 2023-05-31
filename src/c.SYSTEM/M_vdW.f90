@@ -768,13 +768,15 @@
 
 ! Procedure
 ! ===========================================================================
+! Initialize vdW to zero
+        vdW = 0.0d0
+
 ! Skip this routine if there are no van der Waals parameters
         slogfile = 'structures.vdW'
         inquire (file = slogfile, exist = read_vdw_parameters)
         if (.not. read_vdW_parameters) return
 
 ! Loop over all atoms - van der Waal's interactions.
-        vdw = 0.0d0
         do iatom = 1, s%natoms
           in1 = s%atom(iatom)%imass
           r1 = s%atom(iatom)%ratom

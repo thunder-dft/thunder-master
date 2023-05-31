@@ -221,7 +221,7 @@
             write (11,*) '    file will not be read correctly by Multiwfn!  '
             write (11,*) ' ************************************************ '
             close (11)
-          else
+           else
             do iband = 1, s%norbitals_new
               write (22,*) ' Index= ', iband
               write (22,*) ' Type= 0'

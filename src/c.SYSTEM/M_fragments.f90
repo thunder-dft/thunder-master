@@ -357,7 +357,7 @@
             vdw = vdw + vdw_piece
 
 ! assemble the forces
-            dfactor = (-4.0d0*exp(alpha) + 12.0d0*(exp(alpha)**2)             &
+            dfactor = (- 4.0d0*exp(alpha) + 12.0d0*(exp(alpha)**2)            &
      &                 - 12.0d0*(exp(alpha)**3) + 4.0d0*(exp(alpha)**4))*7.0d0*alpha/z
             pfi%vdW = pfi%vdW + 6.0d0*vdw_piece*eta/z + dfactor*C6factor*eta/z**6
             pfj%vdW = pfj%vdW - 6.0d0*vdw_piece*eta/z - dfactor*C6factor*eta/z**6
