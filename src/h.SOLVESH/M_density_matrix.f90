@@ -213,27 +213,21 @@
           slogfile = trim(slogfile)//'.cdcoeffs-mwfn'
           open (unit = 22, file = slogfile, status = 'replace')
 
-          if (s%nkpoints .ne. 1) then
-            open (11, file = 'WARNINGS', status = 'unknown', position = 'append')
-            write (11,*) '  '
-            write (11,*) ' ************ WARNING ******* WARNING *********** '
-            write (11,*) '      cdcoeffs-mwfn file had multiple kpoints:     '
-            write (11,*) '    file will not be read correctly by Multiwfn!  '
-            write (11,*) ' ************************************************ '
-            close (11)
-           else
+          do ikpoint = 1, s%nkpoints
+            write (22,"('Kpoint=',i10)") ikpoint
             do iband = 1, s%norbitals_new
-              write (22,*) ' Index= ', iband
-              write (22,*) ' Type= 0'
-              write (22,*) ' Energy= ', s%kpoints(1)%eigen(iband)/P_Hartree
-              write (22,*) ' Occ= ', s%kpoints(1)%foccupy(iband)
-              write (22,*) ' Sym= ?'
-              write (22,*) ' $Coeff '
-
+              write (22,*)
+              write (22,"('Index=',i10)") iband
+              write (22,"('Type=',i2)") 0
+              write (22,"('Energy=',1PE16.8)") s%kpoints(1)%eigen(iband)/P_Hartree
+              write (22,"('Occ=',f12.8)") s%kpoints(1)%foccupy(iband) * P_spin
+              write (22,"('Sym= ?')")
+              write (22,"('$Coeff')")
 ! write out the coefficient
-              write (22,*) (real(s%kpoints(1)%c(inu,iband)), inu = 1, s%norbitals_new)
+              write (22,"(5(1PE16.8))") (real(s%kpoints(ikpoint)%c(inu,iband)), inu = 1, s%norbitals_new)
             end do
-          end if
+            write (22,*)
+          end do
          close (unit = 22)
         end if
 
