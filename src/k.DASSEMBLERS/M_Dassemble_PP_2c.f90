@@ -654,17 +654,17 @@
 ! ASSEMBLE VNL ONTOP RIGHT CASE   <phi_i|Psi_j><Psi_j|phi_j>
 ! ===========================================================================
 ! Loop over iatom
-        do iatom = 1,s%natoms
-          in1 = s%atom(iatom)%imass
-          norb_mu =  species(in1)%norb_max
-
+        do iatom = 1, s%natoms
           ! cut some lengthy notation
           psvnl1 => s%svnl(iatom)
           pdenmat=>s%denmat_PP(iatom)
           pfi=>s%forces(iatom)
 
-! Loop over the neighbors of each iatom.
+          in1 = s%atom(iatom)%imass
+          norb_mu =  species(in1)%norb_max
           num_neigh = s%neighbors_PP(iatom)%neighn
+
+! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
             mbeta = s%neighbors_PP(iatom)%neigh_b(ineigh)
             jatom = s%neighbors_PP(iatom)%neigh_j(ineigh)
@@ -706,7 +706,7 @@
                 do imu = 1, norb_mu
                   do ncc = 1, species(in2)%norb_PP_max
                     PPx(:,imu,inu) = PPx(:,imu,inu)                            &
-      &              + cl_value(ncc)*psvnl1_neighbors%Dblock(:,imu,ncc)        &
+      &              - cl_value(ncc)*psvnl1_neighbors%Dblock(:,imu,ncc)        &
       &                             *psvnl2_neighbors%block(inu,ncc)
                   end do
                 end do
@@ -732,8 +732,8 @@
 ! Notice the explicit negative sign, this makes it force like.
               do inu = 1, norb_nu
                 do imu = 1, norb_mu
-                  pfi%vnl_ontop(:,ineigh) = pfi%vnl_ontop(:,ineigh)         &
-     &             - pRho_neighbors%block(imu,inu)*PPx(:,imu,inu)
+!                 pfi%vnl_ontop(:,ineigh) = pfi%vnl_ontop(:,ineigh)         &
+!    &             + pRho_neighbors%block(imu,inu)*PPx(:,imu,inu)
                 end do
               end do
               deallocate (PPx)

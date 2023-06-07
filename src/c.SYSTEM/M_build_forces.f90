@@ -420,14 +420,14 @@
 ! cut some lengthy notation
             pfj => s%forces(jatom)
 
-            pfi%vnl = pfi%vnl + pfi%vnl_ontop(:,ineigh)
-            pfj%vnl = pfj%vnl - pfi%vnl_ontop(:,ineigh)
+            pfi%vnl = pfi%vnl + 2.0d0*pfi%vnl_ontop(:,ineigh)
+            pfj%vnl = pfj%vnl - 2.0d0*pfi%vnl_ontop(:,ineigh)
 
-            pfi%febs = pfi%febs + pfi%vnl_ontop(:,ineigh)
-            pfj%febs = pfj%febs - pfi%vnl_ontop(:,ineigh)
+            pfi%febs = pfi%febs + 2.0d0*pfi%vnl_ontop(:,ineigh)
+            pfj%febs = pfj%febs - 2.0d0*pfi%vnl_ontop(:,ineigh)
 
-            pfi%ftot = pfi%ftot + pfi%vnl_ontop(:,ineigh)
-            pfj%ftot = pfj%ftot - pfi%vnl_ontop(:,ineigh)
+            pfi%ftot = pfi%ftot + 2.0d0*pfi%vnl_ontop(:,ineigh)
+            pfj%ftot = pfj%ftot - 2.0d0*pfi%vnl_ontop(:,ineigh)
           end do ! end loop over neighbors
         end do  ! end loop over atoms
 
