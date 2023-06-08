@@ -760,32 +760,32 @@
               ! force on iatom
               do inu = 1, norb_nu
                 do imu = 1, norb_mu
-                  pfi%ewaldlr = pfi%ewaldlr                                   &
-     &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
-     &               *(sterm(imu,inu) - dterm(imu,inu))*sum_dewald(:,iatom)   &
-     &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
-     &               *(spterm(:,imu,inu) - dpterm(:,imu,inu))*sum_ewald(iatom)&
-     &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
-                     *(sterm(imu,inu) + dterm(imu,inu))                       &
-     &               *dQ(iatom)*s%dewald(:,iatom,jatom)                       &
-     &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
-     &               *(spterm(:,imu,inu) + dpterm(:,imu,inu))*sum_ewald(jatom)
+                  pfi%ewaldlr = pfi%ewaldlr                                    &
+      &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
+      &               *(sterm(imu,inu) - dterm(imu,inu))*sum_dewald(:,iatom)   &
+      &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
+      &               *(spterm(:,imu,inu) - dpterm(:,imu,inu))*sum_ewald(iatom)&
+      &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
+      &               *(sterm(imu,inu) + dterm(imu,inu))                       &
+      &               *dQ(iatom)*s%dewald(:,iatom,jatom)                       &
+      &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
+      &               *(spterm(:,imu,inu) + dpterm(:,imu,inu))*sum_ewald(jatom)
                 end do
               end do
 
               ! force on jatom
               do inu = 1, norb_nu
                 do imu = 1, norb_mu
-                  pfj%ewaldlr = pfj%ewaldlr                                   &
-     &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
-     &               *(sterm(imu,inu)                                         &
-     &                 - dterm(imu,inu))*dQ(jatom)*s%dewald(:,jatom,iatom)    &
-     &              + P_eq2*pRho_neighbors%block(imu,inu)                     &
-     &               *(spterm(:,imu,inu) - dpterm(:,imu,inu))*sum_ewald(iatom)&
-     &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
-     &               *(sterm(imu,inu) + dterm(imu,inu))*sum_dewald(:,jatom)   &
-     &              + P_eq2*pRho_neighbors%block(imu,inu)                     &
-     &               *(spterm(:,imu,inu) + dpterm(:,imu,inu))*sum_ewald(jatom)
+                  pfj%ewaldlr = pfj%ewaldlr                                    &
+      &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
+      &               *(sterm(imu,inu)                                         &
+      &                  - dterm(imu,inu))*dQ(jatom)*s%dewald(:,jatom,iatom)   &
+      &              + P_eq2*pRho_neighbors%block(imu,inu)                     &
+      &               *(spterm(:,imu,inu) - dpterm(:,imu,inu))*sum_ewald(iatom)&
+      &              - P_eq2*pRho_neighbors%block(imu,inu)                     &
+      &               *(sterm(imu,inu) + dterm(imu,inu))*sum_dewald(:,jatom)   &
+      &              + P_eq2*pRho_neighbors%block(imu,inu)                     &
+      &               *(spterm(:,imu,inu) + dpterm(:,imu,inu))*sum_ewald(jatom)
                 end do
               end do
             end if ! end if for r1 .eq. r2 case
@@ -1118,7 +1118,7 @@
                     pfj%ewald = pfj%ewald - qq*factorf*sin(gdotb)*g
 
                     s%dewald(:,iatom,jatom) = s%dewald(:,iatom,jatom) - factor*sin(gdotb)*g
-                    s%dewald(:,jatom,iatom) = s%dewald(:,iatom,jatom) + factor*sin(gdotb)*g
+                    s%dewald(:,jatom,iatom) = s%dewald(:,jatom,iatom) + factor*sin(gdotb)*g
                   end do
                 end do
               end if
