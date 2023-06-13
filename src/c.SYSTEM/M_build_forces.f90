@@ -169,7 +169,7 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine build_forces (s)
+        subroutine build_forces (s, rms)
         implicit none
 
         include '../include/constants.h'
