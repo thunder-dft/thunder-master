@@ -46,8 +46,7 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine Depsilon_3c (r1, r2, r21, distance12, ratm, rnabc,   &
-     &                          eps3, dera3, der13)
+        subroutine Depsilon_3c (r1, r2, r21, z, ratm, rnabc, eps3, dera3, der13)
 
         implicit none
         include '../include/constants.h'
@@ -55,7 +54,7 @@
 ! Argument Declaration and Description
 ! ===========================================================================
 ! Input
-        real, intent(in) :: distance12 ! distance between atom 1 and atom 2
+        real, intent(in) :: z              ! distance between atom 1 and atom 2
 
         real, intent(in) :: eps3 (3, 3)! 3c epsilon matrix z = r2 - r1, x = dhat
         real, intent(in) :: r1 (3)     ! position of atom 1
@@ -105,7 +104,7 @@
 ! three-center system.
         if (abs(crossmag) .lt. 1.0d-3) then
           open (11, file = 'WARNINGS', status = 'unknown', position = 'append')
-          write (11,*) ' *********** WARNING in deps3cent ************ '
+          write (11,*) ' *********** WARNING in Depsilon_3c ************ '
           write (11,*) ' Vectors sighat and dhat dangerously colinear '
           write (11,*) ' sigma - cross - r21 = ', crossmag
           write (11,*) ' setting all 3-center deps to zero '
@@ -150,8 +149,7 @@
 ! Now calculate deps/dr1
         do ix = 1, 3
          do imu = 1, 3
-          der13(ix,imu,3) = (1.0d0/distance12)                               &
-     &                      *(eps3(imu,3)*eps3(ix,3) - delk(imu,ix))
+          der13(ix,imu,3) = (1.0d0/z)*(eps3(imu,3)*eps3(ix,3) - delk(imu,ix))
           sum = xlevi(ix,imu,1)*(ratm(1) - r2(1))                            &
      &          + xlevi(ix,imu,2)*(ratm(2) - r2(2))                          &
      &          + xlevi(ix,imu,3)*(ratm(3) - r2(3))

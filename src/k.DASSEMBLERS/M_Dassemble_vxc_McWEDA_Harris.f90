@@ -725,7 +725,7 @@
               sighat = (r2 - r1)/z
             end if
             call epsilon_function (r2, sighat, eps)
-            call Depsilon_2c (r1, r2, eps, deps)
+            call Depsilon_2c (r1, r2, z, eps, deps)
 
 ! As long as epsilon is called with sighat in the second "spot" as
 ! call epsilon (R1, sighat, spe), then eps(ix,3) = eta(ix).
