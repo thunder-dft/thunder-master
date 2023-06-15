@@ -43,7 +43,7 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine Depsilon_2c (r1, r2, eps, deps)
+        subroutine Depsilon_2c (r1, r2, z, eps, deps)
         implicit none
 
         include '../include/constants.h'
@@ -51,6 +51,8 @@
 ! Argument Declaration and Description
 ! ===========================================================================
 ! Input:
+        real, intent(in) :: z              ! distance between atom 1 and atom 2
+
 ! r1    - position of atom 1
 ! r2    - posiiton of atom 2
 ! eps  - 2 center epsilon with z=r2-r1
@@ -66,10 +68,15 @@
 
 ! Local Variable Declaration and Description
 ! ===========================================================================
-        integer i,ii,ix
+        integer imu
+        integer ix
 
-        real r2mag2,r2mag,r1mag,denom
-        real crossmag,dd,dot,term,ddinv,crossinv
+        real crossmag
+        real r1dotr2
+        real r1mag2
+        real r2mag2
+        real sum
+
         real crossa(3)
 
 ! Procedure
@@ -78,46 +85,52 @@
         deps = 0.0d0
 
 ! If we are doing an atom, r1=r2. Then set deps2 to zero.
-        dd = sqrt((r2(1)-r1(1))**2+(r2(2)-r1(2))**2+(r2(3)-r1(3))**2)
-        if (dd.lt.1.0d-4)return
-        ddinv = 1.0d0/dd
+        if (z .lt. 1.0d-5) return
+
+! Calculate (r2 - r1) - cross - d
+        crossa(1) = r2(2)*r1(3) - r2(3)*r1(2)
+        crossa(2) = r2(3)*r1(1) - r2(1)*r1(3)
+        crossa(3) = r2(1)*r1(2) - r2(2)*r1(1)
+        crossmag = sqrt(crossa(1)*crossa(1) + crossa(2)*crossa(2)             &
+     &                  + crossa(3)*crossa(3))
+
+! Crossmag cannot be zero for what follows. However, this should rarely happen
+! because if crossmag = 0 we probably have an "on-top" instead of a true
+! three-center system.
+        if (abs(crossmag) .lt. 1.0d-3) then
+          open (11, file = 'WARNINGS', status = 'unknown', position = 'append')
+          write (11,*) ' *********** WARNING in Depsilon_2c ************ '
+          write (11,*) ' Vectors sighat and dhat dangerously colinear '
+          write (11,*) ' sigma - cross - r21 = ', crossmag
+          write (11,*) ' setting all 3-center deps to zero '
+          close (11)
+          return
+        end if
 
         r2mag2 = r2(1)**2 + r2(2)**2 + r2(3)**2
-        r2mag = sqrt(r2mag2)
-        r1mag = sqrt(r1(1)**2 + r1(2)**2 + r1(3)**2)
-        crossa(1) = r2(2)*r1(3)-r2(3)*r1(2)
-        crossa(2) = r2(3)*r1(1)-r2(1)*r1(3)
-        crossa(3) = r2(1)*r1(2)-r2(2)*r1(1)
-        crossmag = sqrt(crossa(1)**2+crossa(2)**2+crossa(3)**2)
-        dot = 0.e0
-        do i=1,3
-          dot=dot+r1(i)*r2(i)
-        end do
-        denom=r1mag*r2mag
+        r1mag2 = r1(1)**2 + r1(2)**2 + r1(3)**2
+        r1dotr2 = r1(1)*r2(1) + r1(2)*r2(2) + r1(3)*r2(3)
 
-! check to see if atoms are colinear
-        if(abs(crossmag).lt.1.0d-3)then
-          return
-        endif
-        crossinv=1.0/crossmag
-!
-! now calculate deps
-        do ii=1,3
-         do ix=1,3
-          term=xlevi(ix,ii,1)*r2(1)+   &
-     &         xlevi(ix,ii,2)*r2(2)+   &
-     &         xlevi(ix,ii,3)*r2(3)
+! Now calculate deps
+! Now calculate deps/dratm
+        do ix = 1, 3
+          do imu = 1, 3
+            sum = xlevi(ix,imu,1)*r2(1) + xlevi(ix,imu,2)*r2(2)               &
+     &           + xlevi(ix,imu,3)*r2(3)
 
-          deps(ix,ii,1)=(eps(ii,1)*eps(ix,3)*ddinv)-(eps(ii,1)*  &
-     &     crossinv**2)*(r2mag2*r1(ix)-dot*r2(ix))+  &
-     &     ddinv*crossinv*(delk(ii,ix)*(r2mag2-dot)-  &
-     &     r1(ii)*r2(ix)-r2(ii)*r2(ix)+2.e0*r1(ix)*r2(ii))
+            deps(ix,imu,1) = (eps(imu,1)*eps(ix,3)*(1.0d0/z))                 &
+     &                      - (eps(imu,1)*(1.0d0/crossmag)**2)                &
+     &                       *(r2mag2*r1(ix) - r1dotr2*r2(ix))                &
+     &                      + (1.0d0/z)*(1.0d0/crossmag)*(delk(imu,ix)        &
+     &                       *(r2mag2 - r1dotr2) - r1(imu)*r2(ix)             &
+     &                         - r2(imu)*r2(ix) + 2.0d0*r1(ix)*r2(imu))
 
-          deps(ix,ii,2)=crossinv*(term+(eps(ii,2)*crossinv)*  &
-     &        (dot*r2(ix)-r2mag2*r1(ix)))
+            deps(ix,imu,2) = (1.0d0/crossmag)                                 &
+     &                      *(sum + (eps(imu,2)*(1.0d0/crossmag))             &
+     &                      *(r1dotr2*r2(ix) - r2mag2*r1(ix)))
 
-          deps(ix,ii,3)=-(delk(ii,ix)-eps(ii,3)*eps(ix,3))*ddinv
-         end do
+            deps(ix,imu,3) = -(delk(imu,ix) - eps(imu,3)*eps(ix,3))*(1.0d0/z)
+          end do
         end do
 !
 ! Format Statements
