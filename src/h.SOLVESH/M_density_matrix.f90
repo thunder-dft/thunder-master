@@ -113,7 +113,6 @@
         real dot                         !< dot product between K and r
         real efermi
         real gutr                        !< real part of density matrix
-        real qstate
 
         real, dimension (3) :: r1, r2    !< positions of iatom and jatom
         real, dimension (3) :: sks       !< k point value
@@ -148,14 +147,15 @@
           end do
         end do
 
+! Modify the total charge by the charge state
+        s%ztot = s%ztot + qstate
+
         write (logfile,*)
         write (logfile,*) ' Calculating density matrix elements here. '
+        write (logfile,*) ' The current charge state is, qstate = ', qstate
         write (logfile,*) ' Total number of electrons in the system is, ztot = ', s%ztot
 
 ! Calculate the Fermi energy.
-! FIX ME! For now we set qstate = 0.0d0
-        qstate = 0.0d0
-
 ! Inquire here regarding the occupations file
         slogfile = s%basisfile(:len(trim(s%basisfile))-4)
         slogfile = trim(slogfile)//'.OCCUPATION'
@@ -691,7 +691,8 @@
 ! Procedure
 ! ===========================================================================
 ! Add in the qstate to the total charge
-        qztot = s%ztot + qstate
+!       qztot = s%ztot + qstate
+        qztot = s%ztot
 
 ! The subroutine fermie needs a temperature to calculate the occupations of
 ! the states so set temperature to some low value (1 eV = 11604 K).
