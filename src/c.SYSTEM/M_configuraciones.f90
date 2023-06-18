@@ -302,6 +302,7 @@
         real efermi_T
         real scf_tolerance_set
         real beta_set
+        real qstate
         real Ecut_set
 
         namelist /options/ nstepi, nstepf, iquench, iensemble, T_initial,    &
@@ -309,7 +310,7 @@
      &                     iconstraint_rcm, iconstraint_vcm, iconstraint_L,  &
      &                     iconstraint_KE, ifix_neighbors, ifix_CHARGES,     &
      &                     efermi_T, dt, max_scf_iterations_set,             &
-     &                     scf_tolerance_set, beta_set, Ecut_set
+     &                     scf_tolerance_set, beta_set, qstate, Ecut_set
 
         ! output namelist
         integer iwriteout_ME_SandH
@@ -344,8 +345,8 @@
         integer, parameter :: max_scf_iterations = 50
         real, parameter :: scf_tolerance = 1.0d-6
 
-! beta = 0.08 means: Careful mixing (only 8 percent of the new charge).
-! For larger max_order values, the choice of beta becomes less important.
+        ! beta = 0.08 means: Careful mixing (only 8 percent of the new charge).
+        ! For larger max_order values, the choice of beta becomes less important.
         real, parameter :: beta = 0.08d0    ! factor for mixing old and new
 
 ! Ecut = 200.0d0
@@ -442,6 +443,7 @@
         max_scf_iterations_set = max_scf_iterations
         scf_tolerance_set = scf_tolerance
         beta_set = beta
+        qstate = 0.0d0
         Ecut_set = Ecut
 
 ! Initialize parameters &XSF
@@ -551,6 +553,7 @@
         write (222, '(a26, i10)') ' max_scf_iterations_set = ', max_scf_iterations_set
         write (222, '(a26, f10.8)') ' scf_tolerance_set      = ', scf_tolerance_set
         write (222, '(a26, f10.2)') ' beta_set               = ', beta_set
+        write (222, '(a26, f10.2)') ' qstate                 = ', qstate
         write (222, '(a26, f10.1)') ' Ecut_set               = ', Ecut_set
         write (222, *) '&END'
         close (unit = 222)

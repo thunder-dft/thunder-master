@@ -77,7 +77,7 @@
         real r2mag2
         real sum
 
-        real crossa(3)
+        real crossa (3)
 
 ! Procedure
 ! ===========================================================================
@@ -91,8 +91,7 @@
         crossa(1) = r2(2)*r1(3) - r2(3)*r1(2)
         crossa(2) = r2(3)*r1(1) - r2(1)*r1(3)
         crossa(3) = r2(1)*r1(2) - r2(2)*r1(1)
-        crossmag = sqrt(crossa(1)*crossa(1) + crossa(2)*crossa(2)             &
-     &                  + crossa(3)*crossa(3))
+        crossmag = sqrt(crossa(1)**2 + crossa(2)**2 + crossa(3)**2)
 
 ! Crossmag cannot be zero for what follows. However, this should rarely happen
 ! because if crossmag = 0 we probably have an "on-top" instead of a true
