@@ -204,25 +204,25 @@
 ! set by overtol.
 
 ! Determine the smallest active eigenvector
-          mineig = 0
-          do imu = 1, s%norbitals
-            if (eigen(imu) .lt. overtol) mineig = imu
-          end do
+        mineig = 0
+        do imu = 1, s%norbitals
+          if (eigen(imu) .lt. overtol) mineig = imu
+        end do
 
-          mineig = mineig + 1
-          s%norbitals_new = s%norbitals + 1 - mineig
-          if (s%norbitals_new .ne. s%norbitals) then
-            write (logfile,*) '  '
-            write (logfile,*) ' WARNING. ### ### ### '
-            write (logfile,*) ' Linear dependence encountered in eigenvectors. '
-            write (logfile,*) ' Eigenvalue is very small. '
-            write (logfile,*) s%norbitals - s%norbitals_new, ' vectors removed.'
-            do imu = mineig, s%norbitals
-              jmu = imu - mineig + 1
-              Smatrix(:,jmu) = Smatrix(:,imu)
-              eigen(jmu) = eigen(imu)
-            end do
-          end if
+        mineig = mineig + 1
+        s%norbitals_new = s%norbitals + 1 - mineig
+        if (s%norbitals_new .ne. s%norbitals) then
+          write (logfile,*) '  '
+          write (logfile,*) ' WARNING. ### ### ### '
+          write (logfile,*) ' Linear dependence encountered in eigenvectors. '
+          write (logfile,*) ' Eigenvalue is very small. '
+          write (logfile,*) s%norbitals - s%norbitals_new, ' vectors removed.'
+          do imu = mineig, s%norbitals
+            jmu = imu - mineig + 1
+            Smatrix(:,jmu) = Smatrix(:,imu)
+            eigen(jmu) = eigen(imu)
+          end do
+        end if
 
 ! Deallocate Arrays
 ! ===========================================================================

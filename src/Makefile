@@ -60,7 +60,6 @@ SYSTEM = M_species.o M_kpoints.o M_configuraciones.o M_neighbors.o M_neighbors_P
 BEGIN = M_psi.o M_rcatms_Coulomb.o M_rcatms_Coulomb_DMOL_excited.o M_rcatms_DMOL_excited.o M_rcatms.o M_vnn.o
 BEGIN_LOOPRC = M_psi.o M_rcatms_Coulomb.o M_rcatms.o M_looprc.o
 
-FUNCTIONS_CREATE = initialize_noMPI.o finalize_noMPI.o
 FUNCTIONS_LIGHTNING = make_cells.o cl.o epsilon.o
 
 MD = M_gear_quench.o
@@ -68,6 +67,9 @@ NAMD = M_non_adiabatic_gamma.o M_non_adiabatic_coupling.o M_density_MDET.o
 OUTPUT = writeout_energies.o writeout_xyz.o writeout_xsf.o
 UTIL = absorption_gamma.o dos_gamma.o M_isosurfaces.o
 SOLVESH = M_diagonalization_Lowdin.o M_kspace_Lowdin.o M_density_matrix.o
+
+# Parallelization
+PARALLEL = M_nompi.o
 
 # LDA is default - we change later if we want something other than LDA
 XC_FUNCTIONALS = M_xc_option3_1c.o M_xc_option3_2c.o
@@ -188,11 +190,11 @@ ifneq (,$(findstring BLYP, ${XC}))
 XC_FUNCTIONALS = M_xc_option9_1c.o M_xc_option9_2c.o
 endif
 
-OBJECTS_LOOPRC = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(FUNCTIONS_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN_LOOPRC)
-OBJECTS_BEGIN = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(FUNCTIONS_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN)
-OBJECTS_CREATE = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_CREATE) $(FUNCTIONS_CREATE) $(XC_FUNCTIONALS) $(CREATE)
+OBJECTS_LOOPRC = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN_LOOPRC)
+OBJECTS_BEGIN = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN)
+OBJECTS_CREATE = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_CREATE) $(XC_FUNCTIONALS) $(PARALLEL) $(CREATE)
 OBJECTS_LIGHTNING = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
-OBJECTS_FIREBALL = $(GLOBAL) $(FUNCTIONS) $(SYSTEM) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(OUTPUT) $(UTIL)
+OBJECTS_FIREBALL = $(GLOBAL) $(FUNCTIONS) $(SYSTEM) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(PARALLEL) $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(OUTPUT) $(UTIL)
 OBJECTS_MDET = $(GLOBAL) $(FUNCTIONS) $(SYSTEM)  $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(NAMD) $(OUTPUT)
 OBJECTS_LIGHTNING_GRID = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(GRID) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
 ##############################################################################
@@ -380,13 +382,9 @@ M_Fdata_3c.o : e.FDATA/M_Fdata_3c.f90
 # *****************************************************************************
 # f.MPI
 # *****************************************************************************
-finalize_MPI.o : f.MPI/finalize_MPI.f90
+M_mpi.o : f.MPI/M_mpi.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-finalize_noMPI.o : f.MPI/finalize_noMPI.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-initialize_MPI.o : f.MPI/initialize_MPI.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-initialize_noMPI.o : f.MPI/initialize_noMPI.f90
+M_nompi.o : f.MPI/M_nompi.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 
 # *****************************************************************************
@@ -419,7 +417,7 @@ M_kspace_Lowdin.o : h.SOLVESH/M_kspace_Lowdin.f90
 M_diagonalization_Lowdin_gamma.o : h.SOLVESH/M_diagonalization_Lowdin_gamma.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_diagonalization_Lowdin_gammad.o : h.SOLVESH/M_diagonalization_Lowdin_gammad.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^		
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(OMP) -c $^		
 M_diagonalization_Lowdin_kpoints.o : h.SOLVESH/M_diagonalization_Lowdin_kpoints.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_diagonalization_kpoints.o : h.SOLVESH/M_diagonalization_kpoints.f90
