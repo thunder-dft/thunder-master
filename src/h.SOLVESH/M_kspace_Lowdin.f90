@@ -101,6 +101,7 @@
 ! Variable Declaration and Description
 ! ===========================================================================
         integer ikpoint
+        integer imu                         !< counters for mu
         integer logfile                     !< writing to which unit
 
         interface
@@ -129,13 +130,24 @@
           end if
 
           call diagonalization_initialize (s, iscf_iteration, ikpoint)
-          if (iscf_iteration .eq. 1) call kspace_Smatrix (s, ikpoint)
+
+ ! DIAGONALIZE THE OVERLAP MATRIX
+          if (iscf_iteration .eq. 1) then
+            call kspace_Smatrix (s, ikpoint)
+            call diagonalize_S (s)
+
+            write (logfile,*)
+            write (logfile,'(4x, A)') 'S: eigenvalues '
+            write (logfile,'(4x, A)') '-------------- '
+            write (logfile,200) (eigen(imu), imu = 1, s%norbitals_new)
+          end if
+
           call kspace_Lowdin (s, iscf_iteration, ikpoint)
         end do
 
 ! Format Statements
 ! ===========================================================================
-! None
+200     format (4(2x, f12.4))
 
 ! End Subroutine
 ! ===========================================================================
@@ -696,14 +708,6 @@
 !           if (jmu .eq. jnu) Smatrix(jmu,jnu) = 1.0d0
 !         end do
 !       end do
-
-! DIAGONALIZE THE OVERLAP MATRIX
-        call diagonalize_S (s)
-
-        write (logfile,*)
-        write (logfile,'(4x, A)') 'S: eigenvalues '
-        write (logfile,'(4x, A)') '-------------- '
-        write (logfile,200) (eigen(imu), imu = 1, s%norbitals_new)
 
 ! Deallocate Arrays
 ! ===========================================================================

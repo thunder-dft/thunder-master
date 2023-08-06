@@ -10,6 +10,9 @@ ifneq (,$(findstring HKQAI,${MACHINE}))
 		ifneq (,$(findstring TRUE,${OPENMP}))
 			OMP = -qopenmp -fpp -auto
 		endif
+		ifneq (,$(findstring TRUE,${MPI}))
+			F90 = mpiifort
+		endif
 	endif
 
 	MKLROOT = /opt/intel/oneapi/mkl/latest
@@ -19,6 +22,11 @@ ifneq (,$(findstring HKQAI,${MACHINE}))
 	LFLAGS = -Wl,--start-group $(MKLPATH)/libmkl_intel_lp64.a \
 		$(MKLPATH)/libmkl_core.a $(MKLPATH)/libmkl_sequential.a \
 		-Wl,--end-group -lpthread -lm
+	ifneq (,$(findstring SCALAPACK, ${DIAGONALIZATION}))
+		LFLAGS = -Wl,--start-group $(MKLPATH)/libmkl_intel_lp64.a \
+			$(MKLPATH)/libmkl_core.a $(MKLPATH)/libmkl_sequential.a \
+			-lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64 -Wl,--end-group -lpthread -lm
+	endif
 #	LFLAGS_FFT = -I$(FFTPATH) -L$(MKLPATH) $(MKLPATH)/libfftw3xf_intel.a \
 #		$(MKLPATH)/libmkl_em64t.a -Bdynamic $(MKLPATH)/libguide.a
 endif
