@@ -172,6 +172,10 @@ SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix.o
 ifneq (,$(findstring GAMMAD, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix.o
 endif
+ifneq (,$(findstring SCALAPACK, ${DIAGONALIZATION}))
+PARALLEL = M_mpi.o
+SOLVESH = M_diagonalization_Lowdin_gammad_mpi.o M_diagonalization_Lowdin_gammad_mpi_slave.o M_kspace_Lowdin_mpi.o M_density_matrix.o
+endif
 ifneq (,$(findstring KPOINTS, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_kpoints.o M_kspace_Lowdin.o M_density_matrix.o
 UTIL = absorption_gamma.o dos_kpoints.o M_isosurfaces.o 
@@ -414,8 +418,14 @@ M_kspace_grid.o : h.SOLVESH/M_kspace_grid.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_kspace_Lowdin.o : h.SOLVESH/M_kspace_Lowdin.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_kspace_Lowdin_mpi.o : h.SOLVESH/M_kspace_Lowdin_mpi.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_diagonalization_Lowdin_gamma.o : h.SOLVESH/M_diagonalization_Lowdin_gamma.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_diagonalization_Lowdin_gammad_mpi.o : h.SOLVESH/M_diagonalization_Lowdin_gammad_mpi.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(OMP) -c $^	
+M_diagonalization_Lowdin_gammad_mpi_slave.o : h.SOLVESH/M_diagonalization_Lowdin_gammad_mpi_slave.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(OMP) -c $^	
 M_diagonalization_Lowdin_gammad.o : h.SOLVESH/M_diagonalization_Lowdin_gammad.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(OMP) -c $^		
 M_diagonalization_Lowdin_kpoints.o : h.SOLVESH/M_diagonalization_Lowdin_kpoints.f90
