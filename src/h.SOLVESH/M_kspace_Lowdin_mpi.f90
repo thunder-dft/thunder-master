@@ -55,6 +55,10 @@
 
 ! /SOLVESH
         use M_diagonalization
+        use M_diagonalization_slave
+
+! /MPI
+        use M_mpi
 
 ! Type declaration
 ! =========================================================================
@@ -120,20 +124,23 @@
 ! Initialize logfile
         logfile = s%logfile
 
-        do ikpoint = 1, s%nkpoints
-          call build_Hmatrix (s)
+        if (s%nkpoints .gt. 1) then
+          write (*,*) ' Run ScaLAPACK diagonalization with gamma-only kpoint! '
+          stop
+        end if
 
+        if (iammaster) then
+          call build_Hmatrix (s)
           if (iwriteout_ME_SandH .eq. 1) then
             write (logfile,*)
             write (logfile,*) ' Writing out overlap and Hamiltonian matrices: '
             call writeout_ME_SandH (s)
           end if
+          call diagonalization_initialize (s, iscf_iteration, ikpoint=1)
 
-          call diagonalization_initialize (s, iscf_iteration, ikpoint)
-
- ! DIAGONALIZE THE OVERLAP MATRIX
+! DIAGONALIZE THE OVERLAP MATRIX
           if (iscf_iteration .eq. 1) then
-            call kspace_Smatrix (s, ikpoint)
+            call kspace_Smatrix (s, ikpoint=1)
             call diagonalize_S (s)
 
             write (logfile,*)
@@ -141,9 +148,14 @@
             write (logfile,'(4x, A)') '-------------- '
             write (logfile,200) (eigen(imu), imu = 1, s%norbitals_new)
           end if
+        else
+          call diagonalization_initialize_slave (s, iscf_iteration, ikpoint=1)
 
-          call kspace_Lowdin (s, iscf_iteration, ikpoint)
-        end do
+! DIAGONALIZE THE OVERLAP MATRIX - SLAVE
+          if (iscf_iteration .eq. 1) call diagonalize_S_slave (s)
+        end if
+
+        call kspace_Lowdin (s, iscf_iteration, ikpoint=1)
 
 ! Format Statements
 ! ===========================================================================
@@ -156,7 +168,7 @@
 
 
 ! ===========================================================================
-! build_Hmatrix
+! kspace_Hmatrix
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
@@ -716,7 +728,6 @@
 ! Format Statements
 ! ===========================================================================
 100     format (75('='))
-200     format (4(2x, f12.4))
 
 ! End Subroutine
 ! ===========================================================================

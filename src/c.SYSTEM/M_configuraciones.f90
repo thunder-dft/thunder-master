@@ -285,7 +285,7 @@
         end type T_structure
 
         ! options namelist
-        integer iquench, iensemble
+        integer ipi, iquench, iensemble
         integer iconstraint_rcm, iconstraint_vcm, iconstraint_L, iconstraint_KE
         integer ifix_neighbors, ifix_CHARGES
         integer nstepi, nstepf
@@ -305,8 +305,8 @@
         real qstate
         real Ecut_set
 
-        namelist /options/ nstepi, nstepf, iquench, iensemble, T_initial,    &
-     &                     T_final, T_want, taurelax,                        &
+        namelist /options/ nstepi, nstepf, ipi, iquench, iensemble,          &
+     &                     T_initial, T_final, T_want, taurelax,             &
      &                     iconstraint_rcm, iconstraint_vcm, iconstraint_L,  &
      &                     iconstraint_KE, ifix_neighbors, ifix_CHARGES,     &
      &                     efermi_T, dt, max_scf_iterations_set,             &
@@ -323,18 +323,12 @@
         integer iwriteout_neighbors
         integer iwriteout_dos
         integer iwriteout_abs
-        integer iwriteout_ewf
 
         namelist /output/ iwriteout_ME_SandH, iwriteout_density,             &
      &                    iwriteout_cdcoeffs, iwriteout_charges,             &
      &                    iwriteout_populations, iwriteout_energies,         &
      &                    iwriteout_forces, iwriteout_neighbors,             &
-     &                    iwriteout_dos, iwriteout_abs, iwriteout_ewf
-
-        ! xsf namelist
-        real rho_surface_min, rho_surface_max
-
-        namelist /xsfoptions/ rho_surface_min, rho_surface_max
+     &                    iwriteout_dos, iwriteout_abs
 
 ! Parameter Declaration and Description
 ! ===========================================================================
@@ -421,11 +415,11 @@
         iwriteout_neighbors = 0
         iwriteout_dos = 0
         iwriteout_abs = 0
-        iwriteout_ewf = 0
 
 ! Initialize parameters &OPTIONS
         nstepi = 1
         nstepf = 1
+        ipi = 0
         iquench = 0
         T_initial = 300.0d0
         T_final = 0.0d0
@@ -434,7 +428,7 @@
         efermi_T = 100.0d0
         dt = 0.25d0
         iensemble = 0
-        iconstraint_rcm = 1
+        iconstraint_rcm = 0
         iconstraint_vcm = 1
         iconstraint_L = 1
         iconstraint_KE = 1
@@ -445,10 +439,6 @@
         beta_set = beta
         qstate = 0.0d0
         Ecut_set = Ecut
-
-! Initialize parameters &XSF
-        rho_surface_min = 0.0005
-        rho_surface_max = 0.010
 
 ! Open structures.inp file and read global &OUTPUT options
         filename = 'structures.inp'
@@ -477,14 +467,6 @@
           close (unit = 222)
         end if
 
-        string = '&XSFOPTIONS'
-        call read_sections (filename, string, read_string)
-        if (read_string) then
-          open (unit = 222, file = filename, status = 'old')
-          read (222, nml = xsfoptions)
-          close (unit = 222)
-        end if
-
 ! State what is being written out
         write (ilogfile,*)
         write (ilogfile,'(A)') 'Writing options '
@@ -509,8 +491,6 @@
      &    write (ilogfile,*) ' - Writing out the electronic density of states. '
         if (iwriteout_abs .eq. 1)                                           &
      &    write (ilogfile,*) ' Writing out the absorption spectra. '
-        if (iwriteout_ewf .eq. 1)                                           &
-     &    write (ilogfile,*) ' Writing out the isosurfaces file. '
 
 ! Now write out all the options and output parameters - default values
 ! are written out and input values are written out accordingly
@@ -527,7 +507,6 @@
         write (222, '(a26, i10)') ' iwriteout_neighbors    = ', iwriteout_neighbors
         write (222, '(a26, i10)') ' iwriteout_dos          = ', iwriteout_dos
         write (222, '(a26, i10)') ' iwriteout_abs          = ', iwriteout_abs
-        write (222, '(a26, i10)') ' iwriteout_ewf          = ', iwriteout_ewf
         write (222, *) '&END'
         close (unit = 222)
 
@@ -536,6 +515,7 @@
         write (222, *) '&OPTIONS'
         write (222, '(a26, i10)') ' nstepi                 = ', nstepi
         write (222, '(a26, i10)') ' nstepf                 = ', nstepf
+        write (222, '(a26, i10)') ' ipi                    = ', ipi
         write (222, '(a26, i10)') ' iquench                = ', iquench
         write (222, '(a26, f10.1)') ' T_initial              = ', T_initial
         write (222, '(a26, f10.1)') ' T_final                = ', T_final
@@ -555,14 +535,6 @@
         write (222, '(a26, f10.2)') ' beta_set               = ', beta_set
         write (222, '(a26, f10.2)') ' qstate                 = ', qstate
         write (222, '(a26, f10.1)') ' Ecut_set               = ', Ecut_set
-        write (222, *) '&END'
-        close (unit = 222)
-
-        filename = 'structures.xsfoptions'
-        open (unit = 222, file = filename, status = 'unknown')
-        write (222, *) '&XSFOPTIONS'
-        write (222, '(a26, f10.4)') ' rho_surface_min        = ', rho_surface_min
-        write (222, '(a26, f10.8)') ' rho_surface_max        = ', rho_surface_max
         write (222, *) '&END'
         close (unit = 222)
 

@@ -1,6 +1,6 @@
 ! copyright info:
 !
-!                             @Copyright 2022
+!                             @Copyright 2023
 !                           Fireball Committee
 ! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
 ! Universidad de Madrid - Jose Ortega
@@ -34,12 +34,15 @@
 ! ===========================================================================
 !>       This is a version of matrix diagonalization for the Gamma kpoint.
 !! The set of routines here use the blas library.
+!!
 !!      It contains the following subroutines within the module:
 !!
 !!      diagonalization_initialize - initialize the n x n matrices
 !!      diagonalize_S - diagonalizes the overlap matrix
 !!      diagonalize_H_Lowdin - perform Lowdin transformation of Hamiltonian
 !!                             and then diagonalize the transformed Hamiltonian
+!!
+!!      This version uses mpi for parallel diagonalization.
 !
 ! Code written by:
 ! James P. Lewis
@@ -57,8 +60,13 @@
 ! /SYSTEM
         use M_configuraciones
 
+! /MPI
+        use M_mpi
+
 ! Type declarations for Hamiltonian matrix in k-space
 ! =========================================================================
+        integer, parameter :: desc_length = 10
+
 ! Define eigenvalues as 1 dimensional array
         double precision, allocatable :: eigen (:)
 
@@ -66,8 +74,20 @@
         double precision, allocatable :: Smatrix (:, :)
         double precision, allocatable :: Hmatrix (:, :)
 
+! working matrices - for parallel divide and conquer
+        integer, dimension (desc_length) :: desc_x
+        integer, dimension (desc_length) :: desc_y
+        integer, dimension (desc_length) :: desc_z
+
+        double precision, allocatable :: xxxx (:, :)
+        double precision, allocatable :: yyyy (:, :)
+        double precision, allocatable :: zzzz (:, :)
+
 ! define parameter for linear dependence criteria
         double precision, parameter :: overtol = 1.0d-4
+
+! MPI Stuff:
+        integer, dimension (3) :: mybuffer
 
 ! module procedures
         contains
@@ -101,7 +121,15 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-! None
+! MPI Broadcasting information
+        integer ierror
+        integer npcol, nprow, nb
+
+        integer ic, ir, mq0, np0
+        integer mycol, myrow
+        integer icontext, info
+
+        integer, external :: numroc
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -109,12 +137,50 @@
 
 ! Procedure
 ! ===========================================================================
+! Initialize BLACS
+        nprow = int(sqrt(real(nprocessors)))
+        npcol = nprocessors/nprow
+
+        ! how to split the rows and columns
+        nb = 64
+
+        mybuffer(1) = nprow              ! number of processors per row
+        mybuffer(2) = npcol              ! number of processors per column
+        mybuffer(3) = nb
+        call MPI_BCAST (mybuffer, 3, MPI_INTEGER, 0, MPI_COMM_WORLD, ierror)
+
+        call blacs_pinfo (my_proc, nprocessors)
+        call blacs_get (0, 0, icontext)
+        call blacs_gridinit (icontext, 'R', nprow, npcol)
+        call blacs_gridinfo (Icontext, nprow, npcol, myrow, mycol)
+
+        if (myrow .eq. -1) then
+          write (*,*) ' diagonalization_initialize died in BLACS initializing '
+          stop
+        end if
+
+! Reduce memory requirements for parallel diagonalization
+        ir = max(1, numroc(s%norbitals, nb, myrow, 0, nprow))
+        ic = max(1, numroc(s%norbitals, nb, mycol, 0, npcol))
+        np0 = numroc(s%norbitals, nb, 0, 0, nprow)
+        mq0 = numroc(s%norbitals, nb, 0, 0, npcol)
+
         if (iscf_iteration .eq. 1) then
           ! cut some lengthy notation
           pkpoint=>s%kpoints(ikpoint)
-          allocate (s%kpoints(ikpoint)%S12matrix (s%norbitals, s%norbitals))
+          allocate (pkpoint%S12matrix (1:ir, 1:ic))
           pkpoint%S12matrix = 0.0d0
+
+          ! allocate working arrays
+          allocate (yyyy (1:ir, 1:ic))
         end if
+
+        call descinit (desc_x, s%norbitals, s%norbitals, nb, nb, 0, 0,        &
+     &                 icontext, s%norbitals, info)
+        call descinit (desc_y, s%norbitals, s%norbitals, nb, nb, 0, 0,        &
+     &                 icontext, s%norbitals, info)
+        call descinit (desc_z, s%norbitals, s%norbitals, nb, nb, 0, 0,        &
+     &                 icontext, s%norbitals, info)
 
         allocate (Hmatrix (s%norbitals, s%norbitals)); Hmatrix = 0.0d0
         if (iscf_iteration .eq. 1 .and. ikpoint .eq. 1) then
@@ -178,19 +244,26 @@
 ! ***************************************************************************
 ! Initialize logfile
         logfile = s%logfile
-        write (logfile,*)
-        write (logfile,*) ' Call diagonalizer for Smatrix '
-        write (logfile,*) ' Using divide and conquer packages here '
+        if (iammaster) then
+          write (logfile,*)
+          write (logfile,*) ' Call diagonalizer for Smatrix '
+          write (logfile,*) ' Using divide and conquer mpi packages here '
+        end if
 
+        call pclaputter (yyyy, desc_y, xxxx, s%norbitals)
         ! first find optimal length of rwork
-        call dsyevd ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
-     &               rwork, -1, iwork, -1, info)
+!       call dsyevd ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
+!    &               rwork, -1, iwork, -1, info)
+        call pdsyevd ('V', 'U', s%norbitals, yyyy, 1, 1, desc_y, eigen,       &
+     &                Smatrix, 1, 1, desc_x, rwork, -1, iwork, -1, info)
         lrwork = rwork(1)
         liwork = iwork(1)
         deallocate (rwork, iwork)
         allocate (rwork(lrwork)); allocate (iwork(liwork))
-        call dsyevd ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
-     &               rwork, lrwork, iwork, liwork, info)
+!       call dsyevd ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
+!    &               rwork, lrwork, iwork, liwork, info)
+        call pdsyevd ('V', 'U', s%norbitals, yyyy, 1, 1, desc_y, eigen,       &
+     &                Smatrix, 1, 1, desc_x, rwork, lrwork, iwork, liwork, info)
 ! NOTE: After calling dsyev, Smatrix now becomes the eigenvectors of the
 ! diagonalized Smatrix!
 
@@ -218,25 +291,25 @@
 ! set by overtol.
 
 ! Determine the smallest active eigenvector
-        mineig = 0
-        do imu = 1, s%norbitals
-          if (eigen(imu) .lt. overtol) mineig = imu
-        end do
-
-        mineig = mineig + 1
-        s%norbitals_new = s%norbitals + 1 - mineig
-        if (s%norbitals_new .ne. s%norbitals) then
-          write (logfile,*) '  '
-          write (logfile,*) ' WARNING. ### ### ### '
-          write (logfile,*) ' Linear dependence encountered in eigenvectors. '
-          write (logfile,*) ' Eigenvalue is very small. '
-          write (logfile,*) s%norbitals - s%norbitals_new, ' vectors removed.'
-          do imu = mineig, s%norbitals
-            jmu = imu - mineig + 1
-            Smatrix(:,jmu) = Smatrix(:,imu)
-            eigen(jmu) = eigen(imu)
+          mineig = 0
+          do imu = 1, s%norbitals
+            if (eigen(imu) .lt. overtol) mineig = imu
           end do
-        end if
+
+          mineig = mineig + 1
+          s%norbitals_new = s%norbitals + 1 - mineig
+          if (s%norbitals_new .ne. s%norbitals) then
+            write (logfile,*) '  '
+            write (logfile,*) ' WARNING. ### ### ### '
+            write (logfile,*) ' Linear dependence encountered in eigenvectors. '
+            write (logfile,*) ' Eigenvalue is very small. '
+            write (logfile,*) s%norbitals - s%norbitals_new, ' vectors removed.'
+            do imu = mineig, s%norbitals
+              jmu = imu - mineig + 1
+              Smatrix(:,jmu) = Smatrix(:,imu)
+              eigen(jmu) = eigen(imu)
+            end do
+          end if
 
 ! Deallocate Arrays
 ! ===========================================================================

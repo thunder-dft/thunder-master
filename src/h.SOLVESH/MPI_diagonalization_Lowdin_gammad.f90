@@ -1,6 +1,6 @@
 ! copyright info:
 !
-!                             @Copyright 2022
+!                             @Copyright 2023
 !                           Fireball Committee
 ! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
 ! Universidad de Madrid - Jose Ortega
@@ -34,12 +34,15 @@
 ! ===========================================================================
 !>       This is a version of matrix diagonalization for the Gamma kpoint.
 !! The set of routines here use the blas library.
+!!
 !!      It contains the following subroutines within the module:
 !!
 !!      diagonalization_initialize - initialize the n x n matrices
 !!      diagonalize_S - diagonalizes the overlap matrix
 !!      diagonalize_H_Lowdin - perform Lowdin transformation of Hamiltonian
 !!                             and then diagonalize the transformed Hamiltonian
+!!
+!!      This version uses mpi for parallel diagonalization.
 !
 ! Code written by:
 ! James P. Lewis
@@ -53,6 +56,7 @@
 ! Module Declaration
 ! ============================================================================
         module M_diagonalization
+        use mpi
 
 ! /SYSTEM
         use M_configuraciones
@@ -101,26 +105,18 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-! None
+         if (iscf_iteration .eq. 1) then
+           ! cut some lengthy notation
+           pkpoint=>s%kpoints(ikpoint)
+           allocate (s%kpoints(ikpoint)%S12matrix (s%norbitals, s%norbitals))
+           pkpoint%S12matrix = 0.0d0
+         end if
 
-! Allocate Arrays
-! ===========================================================================
-! None
-
-! Procedure
-! ===========================================================================
-        if (iscf_iteration .eq. 1) then
-          ! cut some lengthy notation
-          pkpoint=>s%kpoints(ikpoint)
-          allocate (s%kpoints(ikpoint)%S12matrix (s%norbitals, s%norbitals))
-          pkpoint%S12matrix = 0.0d0
-        end if
-
-        allocate (Hmatrix (s%norbitals, s%norbitals)); Hmatrix = 0.0d0
-        if (iscf_iteration .eq. 1 .and. ikpoint .eq. 1) then
-          allocate (eigen(s%norbitals))
-          allocate (Smatrix (s%norbitals, s%norbitals)); Smatrix = 0.0d0
-        end if
+         allocate (Hmatrix (s%norbitals, s%norbitals)); Hmatrix = 0.0d0
+         if (iscf_iteration .eq. 1 .and. ikpoint .eq. 1) then
+           allocate (eigen(s%norbitals))
+           allocate (Smatrix (s%norbitals, s%norbitals)); Smatrix = 0.0d0
+         end if
 
 ! End subroutine
 ! ===========================================================================
@@ -174,21 +170,30 @@
 
 ! Procedure
 ! ===========================================================================
+! Initialize BLACS
+
+        nprow = int(sqrt(real(nprocs)))
+        npcol = nprocs/nprow
+
 ! DIAGONALIZE THE OVERLAP MATRIX
 ! ***************************************************************************
 ! Initialize logfile
         logfile = s%logfile
         write (logfile,*)
         write (logfile,*) ' Call diagonalizer for Smatrix '
-        write (logfile,*) ' Using divide and conquer packages here '
+        write (logfile,*) ' Using divide and conquer mpi packages here '
 
         ! first find optimal length of rwork
+!       call dsyev ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
+!    &               rwork, -1, info)
         call dsyevd ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
      &               rwork, -1, iwork, -1, info)
         lrwork = rwork(1)
         liwork = iwork(1)
         deallocate (rwork, iwork)
         allocate (rwork(lrwork)); allocate (iwork(liwork))
+!       call dsyev ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
+!    &               rwork, lrwork, info)
         call dsyevd ('V', 'U', s%norbitals, Smatrix, s%norbitals, eigen,      &
      &               rwork, lrwork, iwork, liwork, info)
 ! NOTE: After calling dsyev, Smatrix now becomes the eigenvectors of the
@@ -218,25 +223,25 @@
 ! set by overtol.
 
 ! Determine the smallest active eigenvector
-        mineig = 0
-        do imu = 1, s%norbitals
-          if (eigen(imu) .lt. overtol) mineig = imu
-        end do
-
-        mineig = mineig + 1
-        s%norbitals_new = s%norbitals + 1 - mineig
-        if (s%norbitals_new .ne. s%norbitals) then
-          write (logfile,*) '  '
-          write (logfile,*) ' WARNING. ### ### ### '
-          write (logfile,*) ' Linear dependence encountered in eigenvectors. '
-          write (logfile,*) ' Eigenvalue is very small. '
-          write (logfile,*) s%norbitals - s%norbitals_new, ' vectors removed.'
-          do imu = mineig, s%norbitals
-            jmu = imu - mineig + 1
-            Smatrix(:,jmu) = Smatrix(:,imu)
-            eigen(jmu) = eigen(imu)
+          mineig = 0
+          do imu = 1, s%norbitals
+            if (eigen(imu) .lt. overtol) mineig = imu
           end do
-        end if
+
+          mineig = mineig + 1
+          s%norbitals_new = s%norbitals + 1 - mineig
+          if (s%norbitals_new .ne. s%norbitals) then
+            write (logfile,*) '  '
+            write (logfile,*) ' WARNING. ### ### ### '
+            write (logfile,*) ' Linear dependence encountered in eigenvectors. '
+            write (logfile,*) ' Eigenvalue is very small. '
+            write (logfile,*) s%norbitals - s%norbitals_new, ' vectors removed.'
+            do imu = mineig, s%norbitals
+              jmu = imu - mineig + 1
+              Smatrix(:,jmu) = Smatrix(:,imu)
+              eigen(jmu) = eigen(imu)
+            end do
+          end if
 
 ! Deallocate Arrays
 ! ===========================================================================
