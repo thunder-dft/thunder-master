@@ -13,6 +13,8 @@ ifneq (,$(findstring HKQAI,${MACHINE}))
 		ifneq (,$(findstring TRUE,${MPI}))
 			F90 = mpiifort
 		endif
+        CC = icc
+        CFLAGS = -ipo
 	endif
 
 	MKLROOT = /opt/intel/oneapi/mkl/latest

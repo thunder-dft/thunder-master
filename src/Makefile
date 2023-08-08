@@ -65,8 +65,9 @@ FUNCTIONS_LIGHTNING = make_cells.o cl.o epsilon.o
 MD = M_gear_quench.o
 NAMD = M_non_adiabatic_gamma.o M_non_adiabatic_coupling.o M_density_MDET.o
 OUTPUT = writeout_energies.o writeout_xyz.o writeout_xsf.o
-UTIL = absorption_gamma.o dos_gamma.o M_isosurfaces.o
+UTIL = absorption_gamma.o dos_gamma.o
 SOLVESH = M_diagonalization_Lowdin.o M_kspace_Lowdin.o M_density_matrix.o
+SOCKETS = M_sockets.o sockets.o
 
 # Parallelization
 PARALLEL = M_nompi.o
@@ -178,7 +179,7 @@ SOLVESH = M_diagonalization_Lowdin_gammad_mpi.o M_diagonalization_Lowdin_gammad_
 endif
 ifneq (,$(findstring KPOINTS, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_kpoints.o M_kspace_Lowdin.o M_density_matrix.o
-UTIL = absorption_gamma.o dos_kpoints.o M_isosurfaces.o 
+UTIL = absorption_gamma.o dos_kpoints.o
 endif
 ifneq (,$(findstring MDET, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix_MDET.o
@@ -198,7 +199,7 @@ OBJECTS_LOOPRC = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIONALS) M_vxc_
 OBJECTS_BEGIN = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN)
 OBJECTS_CREATE = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_CREATE) $(XC_FUNCTIONALS) $(PARALLEL) $(CREATE)
 OBJECTS_LIGHTNING = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
-OBJECTS_FIREBALL = $(GLOBAL) $(FUNCTIONS) $(SYSTEM) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(PARALLEL) $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(OUTPUT) $(UTIL)
+OBJECTS_FIREBALL = $(GLOBAL) $(FUNCTIONS) $(SYSTEM) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(PARALLEL) $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(OUTPUT) $(SOCKETS) $(UTIL)
 OBJECTS_MDET = $(GLOBAL) $(FUNCTIONS) $(SYSTEM)  $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(NAMD) $(OUTPUT)
 OBJECTS_LIGHTNING_GRID = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(GRID) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
 ##############################################################################
@@ -620,6 +621,14 @@ M_xc3c_Horsfield_DOGS.o : p.THEORY/M_xc3c_Horsfield_DOGS.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 
 # *****************************************************************************
+# s.SOCKETS
+# *****************************************************************************
+M_sockets.o : s.SOCKETS/M_sockets.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+sockets.o: s.SOCKETS/sockets.c
+		$(CC) $(CFLAGS) -c -o sockets.o s.SOCKETS/sockets.c
+
+# *****************************************************************************
 # u.UTIL
 # *****************************************************************************
 absorption_gamma.o : u.UTIL/absorption_gamma.f90
@@ -627,8 +636,6 @@ absorption_gamma.o : u.UTIL/absorption_gamma.f90
 dos_gamma.o : u.UTIL/dos_gamma.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 dos_kpoints.o : u.UTIL/dos_kpoints.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_isosurfaces.o : u.UTIL/M_isosurfaces.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 
 # *****************************************************************************
