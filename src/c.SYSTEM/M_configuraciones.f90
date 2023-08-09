@@ -285,7 +285,7 @@
         end type T_structure
 
         ! options namelist
-        integer ipi, iport, iquench, iensemble
+        integer ipi, inet, port, iquench, iensemble
         integer iconstraint_rcm, iconstraint_vcm, iconstraint_L, iconstraint_KE
         integer ifix_neighbors, ifix_CHARGES
         integer nstepi, nstepf
@@ -305,14 +305,15 @@
         real qstate
         real Ecut_set
 
-        character (len = 1024) :: unixsocket
+        character (len = 1024) :: host
 
-        namelist /options/ nstepi, nstepf, ipi, iport, unixsocket, iquench,  &
-     &                     iensemble, T_initial, T_final, T_want, taurelax,  &
-     &                     iconstraint_rcm, iconstraint_vcm, iconstraint_L,  &
-     &                     iconstraint_KE, ifix_neighbors, ifix_CHARGES,     &
-     &                     efermi_T, dt, max_scf_iterations_set,             &
-     &                     scf_tolerance_set, beta_set, qstate, Ecut_set
+        namelist /options/ nstepi, nstepf, ipi, inet, port, unixsocket,      &
+     &                     iquench, iensemble, T_initial, T_final, T_want,   &
+     &                     taurelax, iconstraint_rcm, iconstraint_vcm,       &
+     &                     iconstraint_L, iconstraint_KE, ifix_neighbors,    &
+     &                     ifix_CHARGES, efermi_T, dt,                       &
+     &                     max_scf_iterations_set, scf_tolerance_set,        &
+     &                     beta_set, qstate, Ecut_set
 
         ! output namelist
         integer iwriteout_ME_SandH
@@ -422,8 +423,9 @@
         nstepi = 1
         nstepf = 1
         ipi = 0
-        iport = 31415
-        unixsocket = 'thunder-ase'
+        inet = 0
+        port = 31415
+        host = 'thunder-ase'//char(0)
         iquench = 0
         T_initial = 300.0d0
         T_final = 0.0d0
@@ -517,30 +519,31 @@
         filename = 'structures.options'
         open (unit = 222, file = filename, status = 'unknown')
         write (222, *) '&OPTIONS'
-        write (222, '(a26, i10)') ' nstepi                 = ', nstepi
-        write (222, '(a26, i10)') ' nstepf                 = ', nstepf
-        write (222, '(a26, i10)') ' ipi                    = ', ipi
-        write (222, '(a26, i10)') ' iport                  = ', iport
-        write (222, '(a26, a1024)') ' unixsocket             = ', unixsocket
-        write (222, '(a26, i10)') ' iquench                = ', iquench
-        write (222, '(a26, f10.1)') ' T_initial              = ', T_initial
-        write (222, '(a26, f10.1)') ' T_final                = ', T_final
-        write (222, '(a26, f10.1)') ' T_want                 = ', T_want
-        write (222, '(a26, f10.1)') ' taurelax               = ', taurelax
-        write (222, '(a26, f10.1)') ' efermi_T               = ', efermi_T
-        write (222, '(a26, f10.2)') ' dt                     = ', dt
-        write (222, '(a26, i10)') ' iensemble              = ', iensemble
-        write (222, '(a26, i10)') ' iconstraint_rcm        = ', iconstraint_rcm
-        write (222, '(a26, i10)') ' iconstraint_vcm        = ', iconstraint_vcm
-        write (222, '(a26, i10)') ' iconstraint_L          = ', iconstraint_L
-        write (222, '(a26, i10)') ' iconstraint_KE         = ', iconstraint_KE
-        write (222, '(a26, i10)') ' ifix_neighbors         = ', ifix_neighbors
-        write (222, '(a26, i10)') ' ifix_CHARGES           = ', ifix_CHARGES
-        write (222, '(a26, i10)') ' max_scf_iterations_set = ', max_scf_iterations_set
-        write (222, '(a26, f10.8)') ' scf_tolerance_set      = ', scf_tolerance_set
-        write (222, '(a26, f10.2)') ' beta_set               = ', beta_set
-        write (222, '(a26, f10.2)') ' qstate                 = ', qstate
-        write (222, '(a26, f10.1)') ' Ecut_set               = ', Ecut_set
+        write (222, '(a26, i11)') ' nstepi                 = ', nstepi
+        write (222, '(a26, i11)') ' nstepf                 = ', nstepf
+        write (222, '(a26, i11)') ' ipi                    = ', ipi
+        write (222, '(a26, i11)') ' inet                   = ', inet
+        write (222, '(a26, i11)') ' port                   = ', port
+        write (222, '(a26, a)')   ' host                   = ', trim(host)
+        write (222, '(a26, i11)') ' iquench                = ', iquench
+        write (222, '(a26, f11.1)') ' T_initial              = ', T_initial
+        write (222, '(a26, f11.1)') ' T_final                = ', T_final
+        write (222, '(a26, f11.1)') ' T_want                 = ', T_want
+        write (222, '(a26, f11.1)') ' taurelax               = ', taurelax
+        write (222, '(a26, f11.1)') ' efermi_T               = ', efermi_T
+        write (222, '(a26, f11.2)') ' dt                     = ', dt
+        write (222, '(a26, i11)') ' iensemble              = ', iensemble
+        write (222, '(a26, i11)') ' iconstraint_rcm        = ', iconstraint_rcm
+        write (222, '(a26, i11)') ' iconstraint_vcm        = ', iconstraint_vcm
+        write (222, '(a26, i11)') ' iconstraint_L          = ', iconstraint_L
+        write (222, '(a26, i11)') ' iconstraint_KE         = ', iconstraint_KE
+        write (222, '(a26, i11)') ' ifix_neighbors         = ', ifix_neighbors
+        write (222, '(a26, i11)') ' ifix_CHARGES           = ', ifix_CHARGES
+        write (222, '(a26, i11)') ' max_scf_iterations_set = ', max_scf_iterations_set
+        write (222, '(a26, f11.8)') ' scf_tolerance_set      = ', scf_tolerance_set
+        write (222, '(a26, f11.2)') ' beta_set               = ', beta_set
+        write (222, '(a26, f11.2)') ' qstate                 = ', qstate
+        write (222, '(a26, f11.1)') ' Ecut_set               = ', Ecut_set
         write (222, *) '&END'
         close (unit = 222)
 
