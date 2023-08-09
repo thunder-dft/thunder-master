@@ -285,7 +285,7 @@
         end type T_structure
 
         ! options namelist
-        integer ipi, iquench, iensemble
+        integer ipi, iport, iquench, iensemble
         integer iconstraint_rcm, iconstraint_vcm, iconstraint_L, iconstraint_KE
         integer ifix_neighbors, ifix_CHARGES
         integer nstepi, nstepf
@@ -305,8 +305,10 @@
         real qstate
         real Ecut_set
 
-        namelist /options/ nstepi, nstepf, ipi, iquench, iensemble,          &
-     &                     T_initial, T_final, T_want, taurelax,             &
+        character (len = 1024) :: unixsocket
+
+        namelist /options/ nstepi, nstepf, ipi, iport, unixsocket, iquench,  &
+     &                     iensemble, T_initial, T_final, T_want, taurelax,  &
      &                     iconstraint_rcm, iconstraint_vcm, iconstraint_L,  &
      &                     iconstraint_KE, ifix_neighbors, ifix_CHARGES,     &
      &                     efermi_T, dt, max_scf_iterations_set,             &
@@ -420,6 +422,8 @@
         nstepi = 1
         nstepf = 1
         ipi = 0
+        iport = 31415
+        unixsocket = 'thunder-ase'
         iquench = 0
         T_initial = 300.0d0
         T_final = 0.0d0
