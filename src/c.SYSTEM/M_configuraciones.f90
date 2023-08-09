@@ -520,6 +520,8 @@
         write (222, '(a26, i10)') ' nstepi                 = ', nstepi
         write (222, '(a26, i10)') ' nstepf                 = ', nstepf
         write (222, '(a26, i10)') ' ipi                    = ', ipi
+        write (222, '(a26, i10)') ' iport                  = ', iport
+        write (222, '(a26, a1024)') ' unixsocket             = ', unixsocket
         write (222, '(a26, i10)') ' iquench                = ', iquench
         write (222, '(a26, f10.1)') ' T_initial              = ', T_initial
         write (222, '(a26, f10.1)') ' T_final                = ', T_final
