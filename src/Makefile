@@ -232,7 +232,8 @@ lightning-grid.x: $(OBJECTS_LIGHTNING) lightning-grid.o
 	
 fireball.x: $(OBJECTS_FIREBALL) fireball.o
 	$(F90) -o fireball.x $(FFLAGS) $(OMP) $(OBJECTS_FIREBALL) fireball.o $(LFLAGS) 
-
+fireball-ase.x: $(OBJECTS_FIREBALL) fireball-ase.o
+	$(F90) -o fireball-ase.x $(FFLAGS) $(OMP) $(OBJECTS_FIREBALL) fireball-ase.o $(LFLAGS) 
 fireball-MDET.x: $(OBJECTS_MDET) fireball-MDET.o
 	$(F90) -o fireball-MDET.x $(FFLAGS) $(OBJECTS_MDET) fireball-MDET.o $(LFLAGS)
 
@@ -241,7 +242,7 @@ fireball-MDET.x: $(OBJECTS_MDET) fireball-MDET.o
 clean:
 	rm -f -r *.o *.mod *.mod.*
 	rm -f -r core .nfs* rii_files begin-looprc.x.ip* begin.x.ip* \
-			create.x.ip* fireball.x.ip* fireball-MDET.x.ip* \
+			create.x.ip* fireball.x.ip* fireball-ase.x.ip* fireball-MDET.x.ip* \
 			lightning.x.ip* *genmod.f90 .#* ldtmp* *.vo *~ *.il
 	rm -f -r include/*.o include/*.mod include/*.mod.*
 	rm -f -r a.GLOBAL/*.o a.GLOBAL/*.mod a.GLOBAL/*.mod.*
@@ -262,13 +263,14 @@ clean:
 
 veryclean: clean
 	rm -f begin-looprc.x begin.x create.x lightning.x lightning-grid.x \
-			fireball.x fireball-MDET.x 
+			fireball.x fireball-ase.x fireball-MDET.x 
 
 all:
 	make begin-looprc.x
 	make begin.x
 	make create.x
 	make fireball.x
+	make fireball-ase.x
 	make fireball-MDET.x
 	make lightning.x
 	make lightning-grid.x
@@ -668,6 +670,8 @@ create_Horsfield.o : x.DRIVERS/create_Horsfield.f90
 create_McWEDA.o : x.DRIVERS/create_McWEDA.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^ 
 fireball.o : x.DRIVERS/fireball.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+fireball-ase.o : x.DRIVERS/fireball-ase.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 fireball-MDET.o : x.DRIVERS/fireball-MDET.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
