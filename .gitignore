@@ -41,3 +41,5 @@ config.h
 config.status
 Makefile
 src/include/.OPTIONS.swp
+*.swo
+*.swp

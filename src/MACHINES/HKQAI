@@ -1,7 +1,7 @@
 #HKQAI HKQAI HKQAI HKQAI HKQAI HKQAI HKQAI HKQAI HKQAI HKQAI HKQAI HKQAI HKQAI 
 ifneq (,$(findstring HKQAI,${MACHINE}))
 	ifneq (,$(findstring ifort,${COMPILER}))
-		F90 = ifort
+		F90 = ifx
 		FFLAGS = -O3 -r8 -fpp -ipo -fpe0 -ftz -align 
 		ifneq (,$(findstring DEBUG,${MODE}))
 			FFLAGS = -g -traceback -C -check arg_temp_created -r8 \
@@ -13,7 +13,7 @@ ifneq (,$(findstring HKQAI,${MACHINE}))
 		ifneq (,$(findstring TRUE,${MPI}))
 			F90 = mpiifort
 		endif
-        CC = icc
+        CC = icx
         CFLAGS = -ipo
 	endif
 
