@@ -351,13 +351,6 @@
           write (logfile, *)
           write (logfile,*) ' Starting from energy state = ', ihomo + ilevel,&
      &                      ' energy = ', t%kpoints(1)%eigen(ihomo + ilevel)
-!$omp parallel private (itransition, iband, ir, l, m, iz, iy, ix, xtemp)     &
-!$omp          private (zntegral, yntegral, xntegral, z, y, x, r_dipole)     &
-!$omp          private (iatom, r1, in1, norb_mu, num_neigh, ineigh, mbeta)   &
-!$omp          private (jatom, r2, in2, norb_nu)                             &
-!$omp          private (inu, nnu, n2, r2max, l2, m2, r1p, r1pin)             &
-!$omp          private (imu, mmu, n1, r1max, l1, m1, r2p, r2pin)
-!$omp do
           do itransition = 1, ntransitions
             write (logfile, *) ' Working on itransition = ', itransition
             iband = t%kpoints(1)%transition(ilevel, itransition)%imap
@@ -478,8 +471,6 @@
               write (inpfile, *) t%kpoints(1)%eigen(iband), answer(ilevel, itransition)
             end if
           end do  ! end loop over transitions
-!$omp end do
-!$omp end parallel
         end do  ! end loop over HOMO levels
         close (unit = inpfile)
 

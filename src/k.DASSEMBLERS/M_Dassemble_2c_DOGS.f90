@@ -193,7 +193,7 @@
               sighat = (r2 - r1)/z
             end if
             call epsilon_function (r2, sighat, eps)
-	        call Depsilon_2c (r1, r2, z, eps, deps)
+            call Depsilon_2c (r1, r2, z, eps, deps)
 
 ! Get the matrix from the data files - which is the matrix in molecular
 ! coordinates (stored in sm). Rotate the matrix into crystal coordinates.
@@ -245,7 +245,7 @@
             call Drotate (in1, in2, eps, deps, norb_mu, norb_nu, sm, vdsm, vdsx)
 
 ! Store the derivitive, rotate vector matrix.
-			pS_neighbors%Dblock = vdsx
+            pS_neighbors%Dblock = vdsx
             deallocate (sm, sx, dsm, vdsm, vdsx)
             nullify (pS_neighbors)
           end do ! end loop over neighbors

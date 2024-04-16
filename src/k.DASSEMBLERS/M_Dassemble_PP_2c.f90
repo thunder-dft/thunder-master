@@ -331,6 +331,7 @@
               sighat = (r2 - r1)/z
             end if
             call epsilon_function (r2, sighat, eps)
+            call Depsilon_2c (r1, r2, z, eps, deps)
 
 ! CALL DOSCENTROSPP AND GET SVNL
 ! ****************************************************************************
@@ -377,7 +378,7 @@
               end do
             end do
 
-! Drotate then puts the vectors in coordinates alone the bond-charge.
+! Drotate then puts the vectors in coordinates along the bond-charge.
             call Drotate_PP (in1, in2, eps, deps, norb_mu, norb_nu, svnlm, vdsvnlm, vdsvnlx) 
 
 ! Store the derivitive, rotate vector matrix.
