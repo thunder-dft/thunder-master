@@ -153,14 +153,28 @@
 
 ! Procedure
 ! ===========================================================================
-        write (ilogfile, *)
-        write (ilogfile, *) ' Sizing three-center integrals: '
+! begin iammaster
+        if (my_proc .eq. 0) then
+          write (ilogfile, *)
+          write (ilogfile, *) ' Sizing three-center integrals: '
+
+! end iammaster
+        end if
+
         do ispecies = 1, nspecies
           do jspecies = 1, nspecies
             do kspecies = 1, nspecies
               ! cut some lengthy notation
               pFdata_bundle=>Fdata_bundle_3c(ispecies, jspecies, kspecies)
-              write (ilogfile,100) ispecies, jspecies, kspecies, pFdata_bundle%nFdata_cell_3c
+
+! begin iammaster
+              if (my_proc .eq. 0) then
+                write (ilogfile,100) ispecies, jspecies, kspecies,           &
+     &                               pFdata_bundle%nFdata_cell_3c
+
+! end iammaster
+              end if
+
               allocate (pFdata_bundle%Fdata_cell_3c(pFdata_bundle%nFdata_cell_3c))
 
 ! Set this back to zero and then start counting as interactions are computed.

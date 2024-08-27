@@ -65,7 +65,8 @@
         use M_species
         use M_atom_functions
 
-        implicit none
+! /MPI
+        use M_mpi
 
 ! Type Declaration
 ! ============================================================================
@@ -190,12 +191,17 @@
           open (unit = 88, file = trim(Fdata_location)//'/'//trim(file_in),  &
      &          status = 'old')
 
-          write (ilogfile,*)
-          write (ilogfile,*) ' *-----------------------------------------------* '
-          write (ilogfile,*) ' |               Welcome to READvPP              | '
-          write (ilogfile,*) ' |  Reading pseudo-potential files of the atom   | '
-          write (ilogfile,*) ' *-----------------------------------------------* '
-          write (ilogfile, 101) file_in
+! begin iammaster
+          if (my_proc .eq. 0) then
+            write (ilogfile,*)
+            write (ilogfile,*) ' *-----------------------------------------------* '
+            write (ilogfile,*) ' |               Welcome to READvPP              | '
+            write (ilogfile,*) ' |  Reading pseudo-potential files of the atom   | '
+            write (ilogfile,*) ' *-----------------------------------------------* '
+            write (ilogfile, 101) file_in
+
+! end iammaster
+          end if
 
 ! There are 14 message lines in each pseudopotential file
           do iline = 1, 14
@@ -213,36 +219,44 @@
           end if
           iexc = species_PP(ispecies)%iexc
 
-          write (ilogfile,*) ' We are reading in iexc from the pseudopotential file. '
-          write (ilogfile,*) ' This tells us which exchange-correlation approximation '
-          write (ilogfile,*) ' we are using. You have chosen iexc = ', iexc
-          write (ilogfile,*)
-          write (ilogfile,*) ' The available exchange-correlation options are: '
-          write (ilogfile,*) ' 1  LDA Wigner'
-          write (ilogfile,*) ' 2  LDA Hedin/Lundqvist'
-          write (ilogfile,*) ' 3  LDA Ceperley/Alder Perdew/Zunger (1980) '
-          write (ilogfile,*) ' 4  GGA Perdew/Wang (1991)'
-          write (ilogfile,*) ' 5  GGA Becke (1988) X, Perdew (1986)'
-          write (ilogfile,*) ' 6  GGA Perdew/Burke/Ernzerhof (1996)'
-          write (ilogfile,*) ' 7  LDA Zhao/Parr'
-          write (ilogfile,*) ' 8  LDA Ceperley/Alder Perdew/Wang (1991)'
-          write (ilogfile,*) ' 9  GGA Becke (1988) X, Lee/Yang/Parr (1988)'
-          write (ilogfile,*) ' 10 GGA Perdew/Wang (1991) X, Lee/Yang/Parr (1988)'
-          write (ilogfile,*) ' 11 LDA exchange only'
-          write (ilogfile,*) ' 12 GGA Becke (1988) X, Lee/Yang/Parr (1988), but '
-          write (ilogfile,*) '    with mixing of exact exchange. '
+! begin iammaster
+          if (my_proc .eq. 0) then
+            write (ilogfile,*) ' We are reading in iexc from the pseudopotential file. '
+            write (ilogfile,*) ' This tells us which exchange-correlation approximation '
+            write (ilogfile,*) ' we are using. You have chosen iexc = ', iexc
+            write (ilogfile,*)
+            write (ilogfile,*) ' The available exchange-correlation options are: '
+            write (ilogfile,*) ' 1  LDA Wigner'
+            write (ilogfile,*) ' 2  LDA Hedin/Lundqvist'
+            write (ilogfile,*) ' 3  LDA Ceperley/Alder Perdew/Zunger (1980) '
+            write (ilogfile,*) ' 4  GGA Perdew/Wang (1991)'
+            write (ilogfile,*) ' 5  GGA Becke (1988) X, Perdew (1986)'
+            write (ilogfile,*) ' 6  GGA Perdew/Burke/Ernzerhof (1996)'
+            write (ilogfile,*) ' 7  LDA Zhao/Parr'
+            write (ilogfile,*) ' 8  LDA Ceperley/Alder Perdew/Wang (1991)'
+            write (ilogfile,*) ' 9  GGA Becke (1988) X, Lee/Yang/Parr (1988)'
+            write (ilogfile,*) ' 10 GGA Perdew/Wang (1991) X, Lee/Yang/Parr (1988)'
+            write (ilogfile,*) ' 11 LDA exchange only'
+            write (ilogfile,*) ' 12 GGA Becke (1988) X, Lee/Yang/Parr (1988), but '
+            write (ilogfile,*) '    with mixing of exact exchange. '
+          end if
 
 ! Read the number of shells
           read (88,*) species(ispecies)%nssh_PP
           allocate (species(ispecies)%shell_PP(species(ispecies)%nssh_PP))
           read (88,*) (species(ispecies)%shell_PP(issh)%lssh,                &
      &                         issh = 1, species(ispecies)%nssh_PP)
-          write (ilogfile,*)
-          write (ilogfile,*) ' # of pseudopotential shells = ',              &
-     &                species(ispecies)%nssh_PP
-          write (ilogfile,*) ' The L values = ',                             &
-     &      (species(ispecies)%shell_PP(issh)%lssh,                          &
-     &                                  issh = 1, species(ispecies)%nssh_PP)
+! begin iammaster
+          if (my_proc .eq. 0) then
+            write (ilogfile,*)
+            write (ilogfile,*) ' # of pseudopotential shells = ',            &
+     &                         species(ispecies)%nssh_PP
+            write (ilogfile,*) ' The L values = ',                           &
+     &        (species(ispecies)%shell_PP(issh)%lssh,                        &
+     &                                    issh = 1, species(ispecies)%nssh_PP)
+
+! end iammaster
+          end if
 
 ! allocate shells
           allocate (species_PP(ispecies)%shell_PP(species(ispecies)%nssh_PP))
@@ -258,7 +272,7 @@
           read (88,*) species(ispecies)%rcutoff_PP
 
 ! Read in the short-range local part  - this is not needed for the crtor
-          write (ilogfile,*) ' Reading short-range part of pseudopotential '
+          if (my_proc .eq. 0) write (ilogfile,*) ' Reading short-range part of pseudopotential '
           read (88,*) mesh
           species_PP(ispecies)%mesh_PP = mesh
           allocate (species_PP(ispecies)%r_short(mesh))
@@ -272,7 +286,7 @@
           species_PP(ispecies)%dr_min = species_PP(ispecies)%rcutoffA_max/real(mesh - 1)
 
 ! Read in the pseudopotential - this is not needed for the crtor
-          write (ilogfile,*) ' Reading non-local part of pseudopotential '
+          if (my_proc .eq. 0) write (ilogfile,*) ' Reading non-local part of pseudopotential '
           do issh = 1, species(ispecies)%nssh_PP
             read (88,201) mesh
             species_PP(ispecies)%shell_PP(issh)%mesh_NL = mesh
@@ -296,7 +310,7 @@
      &          status = 'unknown')
 
 ! Now read in the points for the non-local part
-          write (ilogfile,*) ' Reading pseudopotential '
+          if (my_proc .eq. 0) write (ilogfile,*) ' Reading pseudopotential '
           do issh = 1, species(ispecies)%nssh_PP
             read (88,202) mesh, species(ispecies)%shell_PP(issh)%cl
             write (87,*) species(ispecies)%shell_PP(issh)%cl
@@ -329,9 +343,15 @@
             write (ilogfile,*) ' has not been implemented into CREATE yet. '
             write (ilogfile,*) ' Choose a different one, and restart. '
           end if
-          write (ilogfile,*)
-          write (ilogfile,*) ' *---------------- END READvPP -------------------*'
-          write (ilogfile,*)
+
+! begin iammaster
+          if (my_proc .eq. 0) then
+            write (ilogfile,*)
+            write (ilogfile,*) ' *---------------- END READvPP -------------------*'
+            write (ilogfile,*)
+
+! end iammaster
+          end if
         end do ! ispecies
 
 ! Deallocate Arrays

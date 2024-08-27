@@ -64,6 +64,9 @@
         use M_xc_1c
         use M_xc_2c
 
+! /MPI
+        use M_MPI
+
 ! Type Declaration
 ! ===========================================================================
 ! This type contains the two-center density and derivatives on rho, z grid
@@ -204,12 +207,15 @@
 
 ! Procedure
 ! ===========================================================================
-        write (ilogfile,*)
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*) '        E X C H A N G E   C O R R E L A T I O N          '
-        write (ilogfile,*) '                  I N T E R A C T I O N S                '
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*)
+! begin iammaster
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*) '        E X C H A N G E   C O R R E L A T I O N          '
+          write (ilogfile,*) '                  I N T E R A C T I O N S                '
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*)
+        end if
 
 ! We are doing Harris interactions here, so we set Qneutral_ion to the
 ! non-charged atom before calculating the densities.  The Qneutral is used
@@ -222,11 +228,15 @@
          end do
         end do
 
-        write (ilogfile,*) ' Calling one-center case. '
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling one-center case. '
         call vxc_1c_Harris
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Building the two center density on grid '
+! begin iammaster
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) then
+          write (ilogfile,*) ' Building the two center density on grid '
+        end if
+
         allocate (rho_2c_bundle (nspecies, nspecies))
         do ispecies = 1, nspecies
           do jspecies = 1, nspecies
@@ -234,16 +244,16 @@
           end do
         end do
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling correction case. '
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling correction case. '
         call uxc_Harris
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling ontop case. '
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling ontop case. '
         call vxc_ontop_Harris
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling atom case. '
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling atom case. '
         call vxc_atom_Harris
 
 ! Deallocate Arrays
@@ -493,7 +503,7 @@
           rhomax = species(ispecies)%rcutoffA_max
 
 ! Loop over grid
-          write (ilogfile,100) species(ispecies)%nZ
+          if (my_proc .eq. 0) write (ilogfile,100) species(ispecies)%nZ
 
 ! ***************************************************************************
 ! exc_1c piece:
@@ -1212,6 +1222,11 @@
             nME2c_max = pFdata_cell%nME
             allocate (pFdata_cell%fofx(nME2c_max))
 
+! begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
+            end if
+
             ! Open ouput file for this species pair
             write (filename, '("/uxc_", i2.2,".",i2.2,".",i2.2,".dat")') &
      &             ideriv, species(ispecies)%nZ, species(jspecies)%nZ
@@ -1252,7 +1267,6 @@
      &                    index_2c = 1, nME2c_max)
 
 ! Loop over grid
-            write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
             do igrid = 1, ndd_uxc
               d = d + drr
 
@@ -1672,6 +1686,11 @@
             nME2c_max = pFdata_cell%nME
             allocate (pFdata_cell%fofx(nME2c_max))
 
+! begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
+            end if
+
             ! Open ouput file for this species pair
             write (filename, '("/vxc_ontop_", i2.2,".",i2.2,".",i2.2,".dat")')&
      &  	       ideriv, species(ispecies)%nZ, species(jspecies)%nZ
@@ -1713,7 +1732,6 @@
      &                    index_2c = 1, nME2c_max)
 
 ! Loop over grid
-            write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
             do igrid = 1, ndd_vxc
               d = d + drr
 
@@ -2106,6 +2124,11 @@
             nME2c_max = pFdata_cell%nME
             allocate (pFdata_cell%fofx(nME2c_max))
 
+! begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
+            end if
+
             ! Open ouput file for this species pair
             write (filename, '("/vxc_atom_", i2.2,".",i2.2,".",i2.2,".dat")') &
      &             ideriv, species(ispecies)%nZ, species(jspecies)%nZ
@@ -2146,7 +2169,6 @@
      &                    index_2c = 1, nME2c_max)
 
 ! Loop over grid
-            write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
             do igrid = 1, ndd_vxc
               d = d + drr
 

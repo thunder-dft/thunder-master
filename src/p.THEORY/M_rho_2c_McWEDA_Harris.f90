@@ -59,7 +59,8 @@
 ! /CREATE
         use M_vna_HARRIS
 
-        implicit none
+! /MPI
+        use M_MPI
 
 ! Type Declaration
 ! ============================================================================
@@ -175,21 +176,25 @@
 
 ! Procedure
 ! ===========================================================================
-        write (ilogfile,*)
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*) '        N E U T R A L   A T O M    D E N S I T Y         '
-        write (ilogfile,*) '                  I N T E R A C T I O N S                '
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling ontop left case. '
+! begin iammaster
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*) '        N E U T R A L   A T O M    D E N S I T Y         '
+          write (ilogfile,*) '                  I N T E R A C T I O N S                '
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*)
+          write (ilogfile,*) ' Calling ontop left case. '
+! end iammaster
+        end if
         call rho_ontopL_Harris
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling ontop right case. '
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling ontop right case. '
         call rho_ontopR_Harris
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling atom case. '
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling atom case. '
         call rho_atom_Harris
 
 ! Format Statements
@@ -295,38 +300,49 @@
               nME2c_max = pFdata_cell%nME
               allocate (pFdata_cell%fofx(nME2c_max))
 
-              ! Open ouput file for this species pair
-              write (filename, '("/rho_ontopL_", i2.2,".",i2.2,".",i2.2,".dat")')&
+! begin iammaster
+              if (my_proc .eq. 0) then
+                write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
+              end if
+
+              ! Open output file for this species pair
+              write (filename,                                               &
+     &               '("/rho_ontopL_", i2.2,".",i2.2,".",i2.2,".dat")')&
      &          isorp, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
               if (skip) cycle
-              open (unit = 11, file = trim(Fdata_location)//trim(filename),    &
+              open (unit = 11, file = trim(Fdata_location)//trim(filename),  &
      &              status = 'unknown')
 
               ! open directory file
-              write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')             &
+              write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')           &
      &          species(ispecies)%nZ, species(jspecies)%nZ
-              open (unit = 13, file = trim(Fdata_location)//trim(interactions),&
+! Do not need the append here
+              open (unit = 13,                                               &
+     &              file = trim(Fdata_location)//trim(interactions),         &
+!    &              status = 'unknown', position = 'append')
      &              status = 'unknown', position = 'append')
-              write (13,100) pFdata_bundle%nFdata_cell_2c, P_rho_ontopL, isorp,&
-     &                       filename(2:30), pFdata_cell%nME, ndd_rho, dmax
+              write (13,100) pFdata_bundle%nFdata_cell_2c, P_rho_ontopL,     &
+     &                       isorp, filename(2:30), pFdata_cell%nME, ndd_rho,&
+     &                       dmax
               close (unit = 13)
 
               ! Open mu, nu, mvalue file and write out values.
-              write (filename, '("/",i2.2, "_munu_2c.",i2.2,".",i2.2,".dat")') &
+              write (filename,                                               &
+     &               '("/",i2.2, "_munu_2c.",i2.2,".",i2.2,".dat")')         &
      &               P_rho_ontopL, species(ispecies)%nZ, species(jspecies)%nZ
-              open (unit = 12, file = trim(Fdata_location)//trim(filename),    &
+              open (unit = 12, file = trim(Fdata_location)//trim(filename),  &
      &              status = 'unknown', position = 'append')
 
               ! write the mapping - stored in mu, nu, and mvalue
               write (12,*) (pFdata_cell%mu_2c(index_2c), index_2c = 1, nME2c_max)
               write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
-              write (12,*) (pFdata_cell%mvalue_2c(index_2c),                   &
+              write (12,*) (pFdata_cell%mvalue_2c(index_2c),                 &
      &                      index_2c = 1, nME2c_max)
+              close (unit = 12)
 
 ! Loop over grid
               d = -drr
-              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
               do igrid = 1, ndd_rho
                 d = d + drr
 
@@ -357,7 +373,7 @@
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
 200     format (2x, ' Evaluating rho ontopL integrals for nZ = ', i3,          &
-     &              ' and nZ = ', i3)
+     &              ' and nZ = ', i3, ', isorp = ', i3)
 
 ! End Subroutine
 ! ===========================================================================
@@ -572,8 +588,14 @@
               nME2c_max = pFdata_cell%nME
               allocate (pFdata_cell%fofx(nME2c_max))
 
+! begin iammaster
+              if (my_proc .eq. 0) then
+                write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
+              end if
+
               ! Open ouput file for this species pair
-              write (filename, '("/rho_ontopR_", i2.2,".",i2.2,".",i2.2,".dat")')&
+              write (filename,                                               &
+     &               '("/rho_ontopR_", i2.2,".",i2.2,".",i2.2,".dat")')      &
      &          isorp, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
               if (skip) cycle
@@ -583,15 +605,18 @@
               ! open directory file
               write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')           &
      &          species(ispecies)%nZ, species(jspecies)%nZ
-              open (unit = 13, file = trim(Fdata_location)//trim(interactions),&
+              open (unit = 13,                                               &
+     &              file = trim(Fdata_location)//trim(interactions),         &
      &              status = 'unknown', position = 'append')
-              write (13,100) pFdata_bundle%nFdata_cell_2c, P_rho_ontopR, isorp,&
-     &                       filename(2:30), pFdata_cell%nME, ndd_rho, dmax
+              write (13,100) pFdata_bundle%nFdata_cell_2c, P_rho_ontopR,     &
+     &                       isorp, filename(2:30), pFdata_cell%nME, ndd_rho,&
+     &                       dmax
               close (unit = 13)
 
               ! Open mu, nu, mvalue file and write out values.
-              write (filename, '("/",i2.2, "_munu_2c.",i2.2,".",i2.2,".dat")')&
-     &               P_rho_ontopR, species(ispecies)%nZ, species(jspecies)%nZ
+              write (filename,                                               &
+     &               '("/",i2.2, "_munu_2c.",i2.2,".",i2.2,".dat")')         &
+     &          P_rho_ontopR, species(ispecies)%nZ, species(jspecies)%nZ
               open (unit = 12, file = trim(Fdata_location)//trim(filename),  &
      &              status = 'unknown', position = 'append')
 
@@ -599,11 +624,11 @@
               write (12,*) (pFdata_cell%mu_2c(index_2c), index_2c = 1, nME2c_max)
               write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
               write (12,*) (pFdata_cell%mvalue_2c(index_2c),                 &
-     &                      index_2c = 1, nME2c_max)
+     &                                            index_2c = 1, nME2c_max)
+              close (unit = 12)
 
 ! Loop over grid
               d = -drr
-              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
               do igrid = 1, ndd_rho
                 d = d + drr
 
@@ -634,7 +659,7 @@
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
 200     format (2x, ' Evaluating rho ontopR integrals for nZ = ', i3,        &
-     &              ' and nZ = ', i3)
+     &              ' and nZ = ', i3, ', isorp = ', i3)
 
 ! End Subroutine
 ! ===========================================================================
@@ -849,8 +874,14 @@
               nME2c_max = pFdata_cell%nME
               allocate (pFdata_cell%fofx(nME2c_max))
 
+! begin iammaster
+              if (my_proc .eq. 0) then
+                write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
+              end if
+
               ! Open ouput file for this species pair
-              write (filename, '("/rho_atom_", i2.2,".",i2.2,".",i2.2,".dat")')&
+              write (filename,                                               &
+     &               '("/rho_atom_", i2.2,".",i2.2,".",i2.2,".dat")')        &
      &          isorp, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
               if (skip) cycle
@@ -860,7 +891,8 @@
               ! open directory file
               write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')           &
      &          species(ispecies)%nZ, species(jspecies)%nZ
-              open (unit = 13, file = trim(Fdata_location)//trim(interactions),&
+              open (unit = 13,                                               &
+     &              file = trim(Fdata_location)//trim(interactions),&
      &              status = 'unknown', position = 'append')
               write (13,100) pFdata_bundle%nFdata_cell_2c, P_rho_atom, isorp,&
      &                       filename(2:30), pFdata_cell%nME, ndd_rho, dmax
@@ -876,11 +908,11 @@
               write (12,*) (pFdata_cell%mu_2c(index_2c), index_2c = 1, nME2c_max)
               write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
               write (12,*) (pFdata_cell%mvalue_2c(index_2c),                 &
-     &                      index_2c = 1, nME2c_max)
+     &                                            index_2c = 1, nME2c_max)
+              close (unit = 12)
 
 ! Loop over remaining grid
               d = -drr
-              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
               do igrid = 1, ndd_rho
                 d = d + drr
 
@@ -912,7 +944,7 @@
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
 200     format (2x, ' Evaluating rho atom integrals for nZ = ', i3,        &
-     &              ' and nZ = ', i3)
+     &              ' and nZ = ', i3, ', isorp = ', i3)
 
 ! End Subroutine
 ! =============================================================================

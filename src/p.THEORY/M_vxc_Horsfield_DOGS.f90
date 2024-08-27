@@ -93,6 +93,9 @@
         use M_xc_1c
         use M_xc_2c
 
+! /MPI
+        use M_MPI
+
 ! Type Declaration
 ! ===========================================================================
 ! The charge transfer bit = need a +-dq on each orbital.
@@ -390,7 +393,7 @@
             rhomax = species(ispecies)%rcutoffA_max
 
 ! Loop over grid
-            write (ilogfile,100) species(ispecies)%nZ
+            if (my_proc .eq. 0) write (ilogfile,100) species(ispecies)%nZ
 
 ! ***************************************************************************
 ! exc_1c piece:
@@ -597,16 +600,23 @@
               nME2c_max = pFdata_cell%nME
               allocate (pFdata_cell%fofx(nME2c_max))
 
+! begin iammaster
+              if (my_proc .eq. 0) then
+                write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
+              end if
+
               ! Open ouput file for this species pair
               write (filename, '("/uxc_", i2.2,".",i2.2,".",i2.2,".dat")') &
      &               ideriv, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-              if (skip) then
-                pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
-                pFdata_bundle%nFdata_cell_2c =                                &
-                  pFdata_bundle%nFdata_cell_2c + (ideriv_max - ideriv_min) + 1
-                cycle
-              end if
+! Skipping causes issues in parallel if resetting bundle size
+              if (skip) cycle
+!             if (skip) then
+!               pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
+!               pFdata_bundle%nFdata_cell_2c =                                &
+!                 pFdata_bundle%nFdata_cell_2c + (ideriv_max - ideriv_min) + 1
+!               cycle
+!             end if
               open (unit = 11, file = trim(Fdata_location)//trim(filename),     &
      &              status = 'unknown')
 
@@ -647,9 +657,9 @@
               write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
               write (12,*) (pFdata_cell%mvalue_2c(index_2c),                  &
      &                      index_2c = 1, nME2c_max)
+              close (unit = 12)
 
 ! Loop over grid
-              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, ideriv
               do igrid = 1, ndd_uxc
                 d = d + drr
 
@@ -680,8 +690,8 @@
 ! Format Statements
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
-200     format (2x, ' Evaluating uxc integrals for nZ = ', i3,                &
-     &              ' and nZ = ', i3, ', ideriv = ', i3)
+200     format (2x, ' Evaluating uxc integrals for ideriv = ', i3,            &
+     &              ' nZ = ', i3, ' and nZ = ', i3)
 
 ! End Subroutine
 ! ===========================================================================
@@ -775,16 +785,23 @@
 ! For the once center case we only do +- dq changes in the density.
             do ideriv = ideriv_min, ideriv_max
 
+! begin iammaster
+              if (my_proc .eq. 0) then
+                write (ilogfile,200) iderv, species(ispecies)%nZ, species(jspecies)%nZ
+              end if
+
               ! Open ouput file for this species pair
               write (filename, '("/vxc_ontop_", i2.2,".",i2.2,".",i2.2,".dat")')&
      &               ideriv, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
+ ! Skipping causes issues in parallel if resetting bundle size
               if (skip) then
-                pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
-                pFdata_bundle%nFdata_cell_2c =                                &
-                  pFdata_bundle%nFdata_cell_2c + (ideriv_max - ideriv_min) + 1
-                cycle
-              end if
+ !            if (skip) then
+ !              pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
+ !              pFdata_bundle%nFdata_cell_2c =                                &
+ !                pFdata_bundle%nFdata_cell_2c + (ideriv_max - ideriv_min) + 1
+ !              cycle
+ !            end if
               open (unit = 11, file = trim(Fdata_location)//trim(filename),   &
      &            status = 'unknown')
 
@@ -861,9 +878,9 @@
               write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
               write (12,*) (pFdata_cell%mvalue_2c(index_2c),                  &
      &                      index_2c = 1, nME2c_max)
+              close (unit = 12)
 
 ! Loop over grid
-              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, ideriv
               do igrid = 1, ndd_vxc
                 d = d + drr
 
@@ -893,8 +910,8 @@
 ! Format Statements
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
-200     format (2x, ' Evaluating vxc ontop integrals for nZ = ', i3,          &
-     &              ' and nZ = ', i3, ', ideriv = ', i3)
+200     format (2x, ' Evaluating vxc ontop integrals for ideriv = ', i3,      &
+     &              ' nZ = ', i3, ' and nZ = ', i3)
 
 ! End Subroutine
 ! ===========================================================================
@@ -988,16 +1005,23 @@
 ! For the once center case we only do +- dq changes in the density.
             do ideriv = ideriv_min, ideriv_max
 
+! begin iammaster
+              if (my_proc .eq. 0) then
+                write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
+              end if
+
               ! Open ouput file for this species pair
               write (filename, '("/vxc_atom_", i2.2,".",i2.2,".",i2.2,".dat")')&
      &               ideriv, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-              if (skip) then
-                pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
-                pFdata_bundle%nFdata_cell_2c =                                &
-                  pFdata_bundle%nFdata_cell_2c + (ideriv_max - ideriv_min) + 1
-                cycle
-              end if
+ ! Skipping causes issues in parallel if resetting bundle size
+              if (skip) cycle
+ !            if (skip) then
+ !              pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
+ !              pFdata_bundle%nFdata_cell_2c =                                &
+ !                pFdata_bundle%nFdata_cell_2c + (ideriv_max - ideriv_min) + 1
+ !              cycle
+ !            end if
               open (unit = 11, file = trim(Fdata_location)//trim(filename),   &
      &              status = 'unknown')
 
@@ -1105,8 +1129,8 @@
 ! Format Statements
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
-200     format (2x, ' Evaluating vxc atom integrals for nZ = ', i3,           &
-     &              ' and nZ = ', i3, ', ideriv = ', i3)
+200     format (2x, ' Evaluating vxc atom integrals for ideriv = ', i3,       &
+                    ' nZ = ', i3, ' and nZ = ', i3)
 
 ! End Subroutine
 ! ===========================================================================

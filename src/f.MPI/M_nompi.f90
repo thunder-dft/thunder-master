@@ -52,10 +52,7 @@
 ! Variable Declaration and Description
 ! ===========================================================================
         integer my_proc
-        integer nprocessors
-
-        logical iammaster
-        logical iammpi
+        integer nprocs
 
 ! module procedures
         contains
@@ -88,9 +85,7 @@
 ! Procedure
 ! ===========================================================================
         my_proc = 0
-        nprocessors = 1
-        iammaster = .true.
-        iammpi = .false.
+        nprocs = 1
 
 ! Format Statements
 ! ===========================================================================

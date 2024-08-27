@@ -33,6 +33,7 @@ include include/OPTIONS
 # the machines file below as a starting point.  
 include MACHINES/GENERIC
 include MACHINES/HKQAI
+include MACHINES/ICC
 
 ##############################################################################
 ###
@@ -51,7 +52,7 @@ GLOBAL = M_precision.o M_assemble_blocks.o M_welcome.o
 FUNCTIONS = clebsch_gordan.o clm.o factorial.o simpson.o distance.o magnitude.o smoother.o Ylm.o a_cross_b.o Depsilon_2c.o Depsilon_3c.o invert3x3.o mult3x1.o mult3x3.o Dsmoother.o
 
 # Objects from c.SYSTEM
-SYSTEM_BEGIN =  M_species.o M_atom_functions.o M_atomPP_functions_KB.o M_atomPP_ion_functions_KB.o M_integrals_2c.o
+SYSTEM_BEGIN = M_species.o M_atom_functions.o M_atomPP_functions_KB.o M_atomPP_ion_functions_KB.o M_integrals_2c.o
 SYSTEM_LOOPRC = M_species.o M_atom_functions.o M_atomPP_functions_KB.o M_integrals_2c.o
 SYSTEM_CREATE = M_species.o M_atom_functions.o M_integrals_2c.o M_integrals_3c.o M_atomPP_functions_KB.o M_atomPP_ion_functions_KB.o
 SYSTEM_LIGHTNING = M_species.o M_kpoints.o M_configuraciones.o M_atom_functions.o M_neighbors.o M_neighbors_PP.o M_rotations.o M_grid.o rotate_PP.o
@@ -77,6 +78,10 @@ XC_FUNCTIONALS = M_xc_option3_1c.o M_xc_option3_2c.o
 
 # McWEDA is default - we change later if we want to do Horsfield
 CREATE = M_overlap.o M_Goverlap.o M_kinetic.o M_Coulomb.o M_dipole_z.o M_vna_Harris.o M_vna_DOGS.o M_vnl_KB.o M_rho_2c_McWEDA_Harris.o M_rhoS_2c_McWEDA_Harris.o M_rho_3c_McWEDA_Harris.o M_rhoS_3c_McWEDA_Harris.o M_vxc_McWEDA_Harris.o M_vxc_McWEDA_DOGS.o M_bcna_Harris.o M_bcna_DOGS.o
+ifneq (,$(findstring TRUE, ${MPI}))
+CREATE = M_overlap.o M_Goverlap.o M_kinetic.o M_Coulomb.o M_dipole_z.o M_vna_Harris.o M_vna_DOGS.o M_vnl_KB.o M_rho_2c_McWEDA_Harris.o M_rhoS_2c_McWEDA_Harris.o M_rho_3c_McWEDA_Harris.o M_rhoS_3c_McWEDA_Harris.o M_vxc_McWEDA_Harris.o M_vxc_McWEDA_DOGS.o M_bcna_Harris.o M_bcna_DOGS.o
+PARALLEL = M_mpi.o
+endif
 # ****************************************************************************
 # END                     GENERICALLY COMPILED ROUTINES
 # ****************************************************************************
@@ -197,7 +202,7 @@ endif
 
 OBJECTS_LOOPRC = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN_LOOPRC)
 OBJECTS_BEGIN = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN)
-OBJECTS_CREATE = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_CREATE) $(XC_FUNCTIONALS) $(PARALLEL) $(CREATE)
+OBJECTS_CREATE = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_CREATE) $(XC_FUNCTIONALS) $(CREATE)
 OBJECTS_LIGHTNING = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
 OBJECTS_FIREBALL = $(GLOBAL) $(FUNCTIONS) $(SYSTEM) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(PARALLEL) $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(OUTPUT) $(SOCKETS) $(UTIL)
 OBJECTS_MDET = $(GLOBAL) $(FUNCTIONS) $(SYSTEM)  $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(NAMD) $(OUTPUT)
@@ -262,13 +267,14 @@ clean:
 	rm -f -r p.THEORY/*.o p.THEORY/*.mod p.THEORY/*.mod.*
 
 veryclean: clean
-	rm -f begin-looprc.x begin.x create.x lightning.x lightning-grid.x \
+	rm -f begin-looprc.x begin.x create.x create-MPI.x lightning.x lightning-grid.x \
 			fireball.x fireball-ase.x fireball-MDET.x 
 
 all:
 	make begin-looprc.x
 	make begin.x
 	make create.x
+	make create-MPI.x
 	make fireball.x
 	make fireball-ase.x
 	make fireball-MDET.x
@@ -669,6 +675,8 @@ create_Horsfield.o : x.DRIVERS/create_Horsfield.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^ 
 create_McWEDA.o : x.DRIVERS/create_McWEDA.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^ 
+create_McWEDA_MPI.o : x.DRIVERS/create_McWEDA_MPI.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^ 		
 fireball.o : x.DRIVERS/fireball.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 fireball-ase.o : x.DRIVERS/fireball-ase.f90

@@ -11,7 +11,7 @@ ifneq (,$(findstring HKQAI,${MACHINE}))
 			OMP = -qopenmp -fpp -auto
 		endif
 		ifneq (,$(findstring TRUE,${MPI}))
-			F90 = mpiifort
+			F90 = mpiifx
 		endif
         CC = icx
         CFLAGS = -ipo

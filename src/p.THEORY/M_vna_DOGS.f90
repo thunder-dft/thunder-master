@@ -58,6 +58,9 @@
 ! /CREATE
         use M_vna_HARRIS
 
+! /MPI
+        use M_MPI
+
 ! Type Declaration
 ! ===========================================================================
 ! None
@@ -173,21 +176,24 @@
 
 ! Procedure
 ! ===========================================================================
-        write (ilogfile,*)
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*) '        C H A R G E D   A T O M    H A R T R E E         '
-        write (ilogfile,*) '                  I N T E R A C T I O N S                '
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling Ontop Left case. '
+! begin iammaster
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*) '        C H A R G E D   A T O M    H A R T R E E         '
+          write (ilogfile,*) '                  I N T E R A C T I O N S                '
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*)
+          write (ilogfile,*) ' Calling Ontop Left case. '
+        end if
         call vna_ontopL_DOGS
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling Ontop Right case. '
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling Ontop Right case. '
         call vna_ontopR_DOGS
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling Atom case. '
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling Atom case. '
         call vna_atom_DOGS
 
 ! Deallocate Arrays
@@ -295,16 +301,23 @@
               nME2c_max = pFdata_cell%nME
               allocate (pFdata_cell%fofx(nME2c_max))
 
+! begin iammaster
+              if (my_proc .eq. 0) then
+                write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
+              end if
+
               ! Open ouput file for this species pair
               write (filename, '("/vna_ontopL_", i2.2,".",i2.2,".",i2.2,".dat")')&
      &          isorp, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-              if (skip) then
-                pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
-                pFdata_bundle%nFdata_cell_2c =                                &
-                  pFdata_bundle%nFdata_cell_2c + species(ispecies)%nssh
-                cycle
-              end if
+! Skipping causes issues in parallel if resetting bundle size
+              if (skip) cycle
+!             if (skip) then
+!               pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
+!               pFdata_bundle%nFdata_cell_2c =                                &
+!                 pFdata_bundle%nFdata_cell_2c + species(ispecies)%nssh
+!               cycle
+!             end if
               open (unit = 11, file = trim(Fdata_location)//trim(filename),  &
      &              status = 'unknown')
 
@@ -324,15 +337,15 @@
               open (unit = 12, file = trim(Fdata_location)//trim(filename),  &
      &              status = 'unknown', position = 'append')
 
-            ! write the mapping - stored in mu, nu, and mvalue
+             ! write the mapping - stored in mu, nu, and mvalue
               write (12,*) (pFdata_cell%mu_2c(index_2c), index_2c = 1, nME2c_max)
               write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
               write (12,*) (pFdata_cell%mvalue_2c(index_2c),                 &
      &                      index_2c = 1, nME2c_max)
+              close (unit = 12)
 
 ! Loop over grid
               d = -drr
-              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
               do igrid = 1, ndd_vna
                 d = d + drr
 
@@ -462,16 +475,23 @@
               nME2c_max = pFdata_cell%nME
               allocate (pFdata_cell%fofx(nME2c_max))
 
+! begin iammaster
+              if (my_proc .eq. 0) then
+                write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
+              end if
+
               ! Open ouput file for this species pair
               write (filename, '("/vna_ontopR_", i2.2,".",i2.2,".",i2.2,".dat")')&
      &               isorp, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-              if (skip) then
-                pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
-                pFdata_bundle%nFdata_cell_2c =                                &
-                  pFdata_bundle%nFdata_cell_2c + species(jspecies)%nssh
-                cycle
-              end if
+! Skipping causes issues in parallel if resetting bundle size
+              if (skip) cycle
+!             if (skip) then
+!               pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
+!               pFdata_bundle%nFdata_cell_2c =                                &
+!                 pFdata_bundle%nFdata_cell_2c + species(jspecies)%nssh
+!               cycle
+!             end if
               open (unit = 11, file = trim(Fdata_location)//trim(filename),  &
      &              status = 'unknown')
 
@@ -496,10 +516,10 @@
               write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
               write (12,*) (pFdata_cell%mvalue_2c(index_2c),                 &
      &                      index_2c = 1, nME2c_max)
+              close (unit = 12)
 
 ! Loop over grid
               d = -drr
-              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
               do igrid = 1, ndd_vna
                 d = d + drr
 
@@ -631,16 +651,23 @@
               nME2c_max = pFdata_cell%nME
               allocate (pFdata_cell%fofx(nME2c_max))
 
+! begin iammaster
+              if (my_proc .eq. 0) then
+                write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
+              end if
+
               ! Open ouput file for this species pair
               write (filename, '("/vna_atom_", i2.2,".",i2.2,".",i2.2,".dat")')&
      &          isorp, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-              if (skip) then
-                pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
-                pFdata_bundle%nFdata_cell_2c =                                &
-                  pFdata_bundle%nFdata_cell_2c + species(jspecies)%nssh
-                cycle
-              end if
+! Skipping causes issues in parallel if resetting bundle size
+              if (skip) cycle
+!             if (skip) then
+!               pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
+!               pFdata_bundle%nFdata_cell_2c =                                &
+!                 pFdata_bundle%nFdata_cell_2c + species(jspecies)%nssh
+!               cycle
+!             end if
               open (unit = 11, file = trim(Fdata_location)//trim(filename),  &
      &              status = 'unknown')
 
@@ -664,10 +691,10 @@
               write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
               write (12,*) (pFdata_cell%mvalue_2c(index_2c),                 &
      &                      index_2c = 1, nME2c_max)
+              close (unit = 12)
 
 ! Loop over grid - first do d = 0.0d0 case, then loop over other distances.
               d = -drr
-              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
 
               ! d = 0.0d0 case - no smoothing function here.
               d = d + drr

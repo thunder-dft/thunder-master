@@ -60,6 +60,9 @@
         use M_xc_2c
         use M_vxc_Harris
 
+! /MPI
+        use M_MPI
+
 ! module procedures
         contains
 
@@ -168,25 +171,28 @@
 
 ! Procedure
 ! ===========================================================================
-        write (ilogfile,*)
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*) '        E X C H A N G E   C O R R E L A T I O N          '
-        write (ilogfile,*) '        C H A R G E D   I N T E R A C T I O N S          '
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*)
+! begin iammaster
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*) '        E X C H A N G E   C O R R E L A T I O N          '
+          write (ilogfile,*) '        C H A R G E D   I N T E R A C T I O N S          '
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*)
+        end if
 
-        write (ilogfile,*) ' Calling one-center case. '
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling one-center case. '
         call nuxc_1c
 
-        write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*)
         call exc_1c
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling two-center dnuxc_ontopL case. '
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling two-center dnuxc_ontopL case. '
         call dnuxc_ontopL
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling two-center dnuxc_ontopR case. '
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling two-center dnuxc_ontopR case. '
         call dnuxc_ontopR
 
 ! Deallocate Arrays
@@ -278,7 +284,7 @@
           open (unit = 11, file = trim(Fdata_location)//trim(filename),      &
      &          status = 'unknown')
 
-          write (ilogfile,100) species(ispecies)%nZ
+          if (my_proc .eq. 0) write (ilogfile,100) species(ispecies)%nZ
 
           do isorp = 1, species(ispecies)%nssh
             call make_munuS (nFdata_cell_1c, ispecies, ispecies)
@@ -632,7 +638,7 @@
           open (unit = 11, file = trim(Fdata_location)//trim(filename),      &
      &          status = 'unknown')
 
-          write (ilogfile,100) species(ispecies)%nZ
+          if (my_proc .eq. 0) write (ilogfile,100) species(ispecies)%nZ
 
           do isorp = 1, species(ispecies)%nssh
             call make_munuS (nFdata_cell_1c, ispecies, ispecies)
@@ -978,7 +984,6 @@
         ideriv = 999
         if (.false.) ideriv = jspecies
 
-
 ! Loop over species
         do ispecies = 1, nspecies
           do jspecies = 1, nspecies
@@ -1004,17 +1009,24 @@
               nME2c_max = pFdata_cell%nME
               allocate (pFdata_cell%fofx(nME2c_max))
 
+! begin iammaster
+              if (my_proc .eq. 0) then
+                write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
+              end if
+
               ! Open ouput file for this species pair
               write (filename, '("/dnuxc_ontopL_", i2.2, ".", i2.2, ".",     &
      &                           i2.2, ".dat")')                             &
      &          isorp, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-              if (skip) then
-                pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
-                pFdata_bundle%nFdata_cell_2c =                                &
-                  pFdata_bundle%nFdata_cell_2c + species(ispecies)%nssh
-                cycle
-              end if
+! Skipping causes issues in parallel if resetting bundle size
+              if (skip) cycle
+!             if (skip) then
+!               pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
+!               pFdata_bundle%nFdata_cell_2c =                                &
+!                 pFdata_bundle%nFdata_cell_2c + species(ispecies)%nssh
+!               cycle
+!             end if
               open (unit = 11, file = trim(Fdata_location)//trim(filename),  &
      &              status = 'unknown')
 
@@ -1038,9 +1050,9 @@
               write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
               write (12,*) (pFdata_cell%mvalue_2c(index_2c),                   &
      &                      index_2c = 1, nME2c_max)
+              close (unit = 12)
 
 ! Loop over grid
-              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
               d = -drr
               do igrid = 1, ndd_vxc
                 d = d + drr
@@ -1299,20 +1311,26 @@
 
               call make_munu (nFdata_cell_2c, ispecies, jspecies)
               nME2c_max = pFdata_cell%nME
-
               allocate (pFdata_cell%fofx(nME2c_max))
+
+! begin iammaster
+              if (my_proc .eq. 0) then
+                write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
+              end if
 
               ! Open ouput file for this species pair
               write (filename, '("/dnuxc_ontopR_", i2.2, ".", i2.2, ".",     &
      &                           i2.2, ".dat")')                             &
      &          isorp, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-              if (skip) then
-                pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
-                pFdata_bundle%nFdata_cell_2c =                                &
-                  pFdata_bundle%nFdata_cell_2c + species(jspecies)%nssh
-                cycle
-              end if
+! Skipping causes issues in parallel if resetting bundle size
+              if (skip) cycle
+!             if (skip) then
+!               pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
+!               pFdata_bundle%nFdata_cell_2c =                                &
+!                 pFdata_bundle%nFdata_cell_2c + species(jspecies)%nssh
+!               cycle
+!             end if
               open (unit = 11, file = trim(Fdata_location)//trim(filename),  &
      &              status = 'unknown')
 
@@ -1336,9 +1354,9 @@
               write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
               write (12,*) (pFdata_cell%mvalue_2c(index_2c),                   &
      &                      index_2c = 1, nME2c_max)
+              close (unit = 12)
 
 ! Loop over grid
-              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
               d = -drr
               do igrid = 1, ndd_vxc
                 d = d + drr

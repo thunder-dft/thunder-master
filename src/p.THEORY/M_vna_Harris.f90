@@ -56,6 +56,9 @@
         use M_species
         use M_integrals_2c
 
+! /MPI
+        use M_MPI
+
 ! Type Declaration
 ! ===========================================================================
 ! None
@@ -163,21 +166,26 @@
 
 ! Procedure
 ! ===========================================================================
-        write (ilogfile,*)
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*) '        N E U T R A L   A T O M    H A R T R E E         '
-        write (ilogfile,*) '                  I N T E R A C T I O N S                '
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling ontop left case. '
+! begin iammaster
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*) '        N E U T R A L   A T O M    H A R T R E E         '
+          write (ilogfile,*) '                  I N T E R A C T I O N S                '
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*)
+          write (ilogfile,*) ' Calling ontop left case. '
+! end iammaster
+        end if
+
         call vna_ontopL_Harris
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling ontop right case. '
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling ontop right case. '
         call vna_ontopR_Harris
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling atom case. '
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling atom case. '
         call vna_atom_Harris
 
 ! Deallocate Arrays
@@ -274,6 +282,11 @@
             nME2c_max = pFdata_cell%nME
             allocate (pFdata_cell%fofx(nME2c_max))
 
+! begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
+            end if
+
             ! Open ouput file for this species pair
             write (filename, '("/vna_ontopL_", i2.2,".",i2.2,".",i2.2,".dat")')&
      &        isorp, species(ispecies)%nZ, species(jspecies)%nZ
@@ -294,8 +307,9 @@
      &        species(ispecies)%nZ, species(jspecies)%nZ
             open (unit = 13, file = trim(Fdata_location)//trim(interactions),&
      &            status = 'unknown', position = 'append')
-            write (13,100) pFdata_bundle%nFdata_cell_2c, P_vna_ontopL, isorp,   &
-     &                     filename(2:30), pFdata_cell%nME, ndd_vna, dmax
+            write (13,100) pFdata_bundle%nFdata_cell_2c, P_vna_ontopL,       &
+     &                     isorp, filename(2:30), pFdata_cell%nME, ndd_vna,  &
+     &                     dmax
             close (unit = 13)
 
             ! Open mu, nu, mvalue file and write out values.
@@ -305,17 +319,19 @@
      &            status = 'unknown', position = 'append')
 
             ! write the mapping - stored in mu, nu, and mvalue
-            write (12,*) (pFdata_cell%mu_2c(index_2c), index_2c = 1, nME2c_max)
-            write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
+            write (12,*) (pFdata_cell%mu_2c(index_2c),                       &
+     &                                      index_2c = 1, nME2c_max)
+            write (12,*) (pFdata_cell%nu_2c(index_2c),                       &
+     &                                      index_2c = 1, nME2c_max)
             write (12,*) (pFdata_cell%mvalue_2c(index_2c),                   &
-     &                    index_2c = 1, nME2c_max)
+     &                                          index_2c = 1, nME2c_max)
+            close (unit = 12)
 
             ! Set integration limits
             rhomin = 0.0d0
             rhomax = min(rcutoff1, rcutoff2)
 
 ! Loop over grid
-            write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
             do igrid = 1, ndd_vna
               d = d + drr
 
@@ -328,6 +344,7 @@
      &                                   d, nz_vna, nrho_vna,                &
      &                                   rint_vna_ontopL, phifactor, zmin,   &
      &                                   zmax, rhomin, rhomax, pFdata_cell%fofx)
+
               ! Write out details.
               write (11,*) (pFdata_cell%fofx(index_2c),                      &
 	 &                                       index_2c = 1, nME2c_max)
@@ -344,7 +361,7 @@
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
 200     format (2x, ' Evaluating vna ontopL integrals for nZ = ', i3,        &
-     &              ' and nZ = ', i3)
+     &              ' and nZ = ', i3, ', isorp =', i3)
 
 ! End Subroutine
 ! ===========================================================================
@@ -546,9 +563,15 @@
             nME2c_max = pFdata_cell%nME
             allocate (pFdata_cell%fofx(nME2c_max))
 
+! begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
+            end if
+
             ! Open ouput file for this species pair
-            write (filename, '("/vna_ontopR_", i2.2,".",i2.2,".",i2.2,".dat")')&
-     &        isorp, species(ispecies)%nZ, species(jspecies)%nZ
+            write (filename,                                                 &
+     &             '("/vna_ontopR_", i2.2,".",i2.2,".",i2.2,".dat")')        &
+     &             isorp, species(ispecies)%nZ, species(jspecies)%nZ
             inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
             if (skip) cycle
             open (unit = 11, file = trim(Fdata_location)//trim(filename),    &
@@ -566,7 +589,7 @@
      &        species(ispecies)%nZ, species(jspecies)%nZ
             open (unit = 13, file = trim(Fdata_location)//trim(interactions),&
      &            status = 'unknown', position = 'append')
-            write (13,100) pFdata_bundle%nFdata_cell_2c, P_vna_ontopR, isorp,   &
+            write (13,100) pFdata_bundle%nFdata_cell_2c, P_vna_ontopR, isorp,&
      &                     filename(2:30), pFdata_cell%nME, ndd_vna, dmax
             close (unit = 13)
 
@@ -586,7 +609,6 @@
             rhomax = min(rcutoff1, rcutoff2)
 
 ! Loop over grid
-            write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
             do igrid = 1, ndd_vna
               d = d + drr
               ! Set integration limits
@@ -594,7 +616,7 @@
               zmax = min(rcutoff1, d + rcutoff2)
               call evaluate_integral_2c (nFdata_cell_2c, ispecies, jspecies, &
      &                                   isorp, ideriv, rcutoff1, rcutoff2,  &
-     &                                   d,  nz_vna, nrho_vna,          &
+     &                                   d,  nz_vna, nrho_vna,               &
      &                                   rint_vna_ontopR, phifactor, zmin,   &
      &                                   zmax, rhomin, rhomax, pFdata_cell%fofx)
               ! Write out details.
@@ -613,7 +635,7 @@
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
 200     format (2x, ' Evaluating vna ontopR integrals for nZ = ', i3,        &
-     &              ' and nZ = ', i3)
+      &             ' and nZ = ', i3, ', isorp = ', i3)
 
 ! End Subroutine
 ! ===========================================================================
@@ -818,6 +840,11 @@
             nME2c_max = pFdata_cell%nME
             allocate (pFdata_cell%fofx(nME2c_max))
 
+! begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
+            end if
+
             ! Open ouput file for this species pair
             write (filename, '("/vna_atom_", i2.2,".",i2.2,".",i2.2,".dat")')&
      &        isorp, species(ispecies)%nZ, species(jspecies)%nZ
@@ -858,7 +885,6 @@
      &                    index_2c = 1, nME2c_max)
 
 ! Loop over grid
-            write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
             do igrid = 1, ndd_vna
               d = d + drr
 
@@ -888,7 +914,7 @@
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
 200     format (2x, ' Evaluating vna atom integrals for nZ = ', i3,          &
-     &              ' and nZ = ', i3)
+      &             ' and nZ = ', i3, ' isorp = ', i3)
 
 ! End Subroutine
 ! ===========================================================================
