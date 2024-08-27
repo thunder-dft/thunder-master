@@ -61,8 +61,11 @@
 ! ===========================================================================
         module M_species
 
+! /GLOBAL
         use M_precision
-        implicit none
+
+! /MPI
+        use M_mpi
 
 ! Type Declaration
 ! ===========================================================================
@@ -216,7 +219,7 @@
 ! Procedure
 ! ===========================================================================
 ! Read in the species file.
-        write (ilogfile,*) ' Reading: Fdata.inp  '
+        if (my_proc .eq. 0) write (ilogfile,*) ' Reading: Fdata.inp  '
         inquire(file = "Fdata.inp", exist = file_exists)   ! file_exists will be TRUE if the file
                                                            ! exists and FALSE otherwise
         if ( file_exists ) then
@@ -233,7 +236,7 @@
         end do
 
         read (11,*) Fdata_location
-        write (ilogfile,101) Fdata_location
+        if (my_proc .eq. 0) write (ilogfile,101) Fdata_location
         close (11)
 
 ! Deallocate Arrays
@@ -791,8 +794,14 @@
 ! ===========================================================================
 ! We now read in a create.input file. This determines the number of atoms
 ! and the types of atoms.
-        write (ilogfile,*) '  '
-        write (ilogfile,*) ' We now read create.inp '
+! begin iammaster
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,*) ' We now read create.inp '
+
+! end iammaster
+        end if
+
         open (unit = 11, file = 'create.inp', status = 'old')
         read (11, 101) signature
 
@@ -825,8 +834,15 @@
 ! Check whether you put in the correct nz for that atom.
 ! Go through the periodic table and check.
           atomcheck = periodic(species(ispecies)%nZ)
-          write (ilogfile,201) ispecies, species(ispecies)%nZ,               &
-     &                 species(ispecies)%symbol, atomcheck
+
+! begin iammaster
+          if (my_proc .eq. 0) then
+            write (ilogfile,201) ispecies, species(ispecies)%nZ,             &
+     &                                     species(ispecies)%symbol, atomcheck
+
+! end iammaster
+          end if
+
           if (species(ispecies)%symbol .ne. atomcheck) stop                  &
      &      ' wrong nz(nuc) for atom!!'
 

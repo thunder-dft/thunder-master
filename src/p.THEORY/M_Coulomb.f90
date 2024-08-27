@@ -58,7 +58,8 @@
         use M_atom_functions
         use M_integrals_2c
 
-        implicit none
+! /MPI
+        use M_MPI
 
 ! Type Declaration
 ! ============================================================================
@@ -202,10 +203,13 @@
 
 ! Procedure
 ! ============================================================================
-        write (ilogfile,*)
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*) '          C O U L O M B   I N T E R A C T I O N S        '
-        write (ilogfile,*) ' ******************************************************* '
+! begin iammaster
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*) '          C O U L O M B   I N T E R A C T I O N S        '
+          write (ilogfile,*) ' ******************************************************* '
+        end if
 
 ! Assign values to the unrequired variables for this specific interaction.
         isorp = 0
@@ -225,6 +229,11 @@
             call make_munuS (nFdata_cell_2c, ispecies, jspecies)
             nME2c_max = pFdata_cell%nME
             allocate (pFdata_cell%fofx(nME2c_max))
+
+! begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
+            end if
 
             ! Open ouput file for this species pair
             write (filename, '("/coulomb",".",i2.2,".",i2.2,".dat")')        &
@@ -266,9 +275,9 @@
             write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
             write (12,*) (pFdata_cell%mvalue_2c(index_2c),                   &
      &                     index_2c = 1, nME2c_max)
+            close (unit = 12)
 
 ! Loop over grid
-            write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
             do igrid = 1, ndd_coulomb
               d = d + drr
               call evaluate_integral_2c (nFdata_cell_2c, ispecies, jspecies,&

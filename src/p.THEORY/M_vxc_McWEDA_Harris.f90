@@ -59,6 +59,9 @@
         use M_xc_1c
         use M_xc_2c
 
+! /MPI
+        use M_MPI
+
 ! Type Declaration
 ! ===========================================================================
 ! This type contains the two-center density and derivatives on rho, z grid
@@ -191,22 +194,26 @@
 
 ! Procedure
 ! ===========================================================================
-        write (ilogfile,*)
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*) '        E X C H A N G E   C O R R E L A T I O N          '
-        write (ilogfile,*) '                  I N T E R A C T I O N S                '
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*)
+! begin iammaster
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*) '        E X C H A N G E   C O R R E L A T I O N          '
+          write (ilogfile,*) '                  I N T E R A C T I O N S                '
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*)
+! end iammaster
+        end if
 
-        write (ilogfile,*) ' Calling one-center case. '
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling one-center case. '
         call vxc_1c
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Building the two center density on grid '
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*) ' Building the two center density on grid '
         call rho_2c_store
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling two-center vxc_ontop case. '
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling two-center vxc_ontop case. '
         call vxc_ontop_Harris
 
 ! Deallocate Arrays
@@ -442,7 +449,7 @@
           rhomax = rcutoff1
 
 ! Loop over grid
-          write (ilogfile,100) species(ispecies)%nZ
+          if (my_proc .eq. 0) write (ilogfile,100) species(ispecies)%nZ
           d = 0.0d0
 
           ! Set integration limits
@@ -1048,7 +1055,11 @@
             rhomax = max(rcutoff1, rcutoff2)
 
 ! Loop over grid
-            write (ilogfile,100) species(ispecies)%nZ, species(jspecies)%nZ
+! begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,100) species(ispecies)%nZ, species(jspecies)%nZ
+            end if
+
             allocate (prho_bundle%rho_2c_store(ndd_vxc))
             do igrid = 1, ndd_vxc
               prho_2c => prho_bundle%rho_2c_store(igrid)
@@ -1301,6 +1312,11 @@
             nME2c_max = pFdata_cell%nME
             allocate (pFdata_cell%fofx(nME2c_max))
 
+! begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
+            end if
+
             ! Open ouput file for this species pair
             write (filename, '("/vxc_ontop_", i2.2, ".", i2.2, ".", i2.2,    &
      &                         ".dat")')                                     &
@@ -1341,9 +1357,9 @@
             write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
             write (12,*) (pFdata_cell%mvalue_2c(index_2c),                   &
      &                    index_2c = 1, nME2c_max)
+            close (unit = 12)
 
 ! Loop over grid
-            write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
             do igrid = 1, ndd_vxc
               d = d + drr
 

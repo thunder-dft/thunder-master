@@ -344,10 +344,14 @@
 !
 ! C A L C U L A T E   K I N E T I C   E N E R G Y
 ! ***************************************************************************
-        write (ilogfile,*)
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*) '          K I N E T I C   I N T E R A C T I O N S        '
-        write (ilogfile,*) ' ******************************************************* '
+! begin iammaster
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*) '          K I N E T I C   I N T E R A C T I O N S        '
+          write (ilogfile,*) ' ******************************************************* '
+! end iammaster
+        end if
 
 ! We are ready to go
         do ispecies = 1, nspecies
@@ -361,6 +365,11 @@
             call make_munu (nFdata_cell_2c, ispecies, jspecies)
             nME2c_max = pFdata_cell%nME
             allocate (pFdata_cell%fofx(nME2c_max))
+
+!begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
+            end if
 
             ! Open ouput file for this species pair
             write (filename, '("/kinetic.",i2.2,".",i2.2,".dat")')           &
@@ -414,7 +423,6 @@
 ! Some preliminaries. Set up simpson rule factors and eV.
 ! Do a convergence test for d = 0.0
 ! ***************************************************************************
-            write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
             dr = (wf(ispecies)%rcutoffA_max                                  &
      &            + wf(jspecies)%rcutoffA_max)/real(ndd_ke - 1)
             dmax = (wf(ispecies)%rcutoffA_max + wf(jspecies)%rcutoffA_max)
@@ -439,7 +447,8 @@
             write (12,*) (pFdata_cell%mu_2c(index_2c), index_2c = 1, nME2c_max)
             write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
             write (12,*) (pFdata_cell%mvalue_2c(index_2c),                   &
-     &                    index_2c = 1, nME2c_max)
+     &                                          index_2c = 1, nME2c_max)
+            close (unit = 12)
 
             do idgrid = 1, ndd_ke
               d = d + dr

@@ -56,7 +56,8 @@
         use M_atomPP_functions
         use M_integrals_2c
 
-        implicit none
+! /MPI
+        use M_MPI
 
 ! Type Declaration
 ! ============================================================================
@@ -217,10 +218,14 @@
 
 ! Procedure
 ! ============================================================================
-        write (ilogfile,*)
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*) '              P P   I N T E R A C T I O N S              '
-        write (ilogfile,*) ' ******************************************************* '
+! begin iammaster
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*) '              P P   I N T E R A C T I O N S              '
+          write (ilogfile,*) ' ******************************************************* '
+! end iammaster
+        end if
 
 ! Assign values to the unrequired variables for this specific interaction.
         isorp = 0
@@ -237,6 +242,11 @@
             call make_munu_PP (nFdata_cell_2c, ispecies, jspecies)
             nME2c_max = pFdata_cell%nME
             allocate (pFdata_cell%fofx(nME2c_max))
+
+! begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
+            end if
 
             ! Open ouput file for this species pair
             write (filename, '("/vnl.",i2.2,".",i2.2,".dat")')               &
@@ -262,7 +272,7 @@
      &        species(ispecies)%nZ, species(jspecies)%nZ
             open (unit = 13, file = trim(Fdata_location)//trim(interactions),&
      &            status = 'unknown', position = 'append')
-            write (13,100) pFdata_bundle%nFdata_cell_2c, P_vnl, isorp,   &
+            write (13,100) pFdata_bundle%nFdata_cell_2c, P_vnl, isorp,       &
      &                     filename(2:30), pFdata_cell%nME, ndd_vnl, dmax
             close (unit = 13)
 
@@ -278,7 +288,6 @@
             write (12,*) (pFdata_cell%mvalue_2c(index_2c), index_2c = 1, nME2c_max)
 
 ! Loop over grid
-            write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
             do igrid = 1, ndd_vnl
               d = d + drr
 

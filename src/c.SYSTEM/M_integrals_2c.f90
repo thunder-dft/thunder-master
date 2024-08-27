@@ -65,6 +65,9 @@
        use M_atom_functions
        use M_species
 
+! /MPI
+       use M_MPI
+
        include '../include/interactions_2c.h'
 
 ! Type Declaration
@@ -163,14 +166,17 @@
 
 ! Procedure
 ! ===========================================================================
-        write (ilogfile, *)
-        write (ilogfile, *) ' Sizing two-center integrals: '
+        if (my_proc .eq. 0) write (ilogfile, *)
+        if (my_proc .eq. 0) write (ilogfile, *) ' Sizing two-center integrals: '
         do ispecies = 1, nspecies
           do jspecies = 1, nspecies
 
             ! cut some lengthy notation
             pFdata_bundle=>Fdata_bundle_2c(ispecies, jspecies)
-            write (ilogfile,100) ispecies, jspecies, pFdata_bundle%nFdata_cell_2c
+! begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,100) ispecies, jspecies, pFdata_bundle%nFdata_cell_2c
+            end if
             allocate (pFdata_bundle%Fdata_cell_2c(pFdata_bundle%nFdata_cell_2c))
 
 ! Set this back to zero and then start counting as interactions are computed.

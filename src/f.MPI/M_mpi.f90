@@ -52,11 +52,9 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
+        integer ierr_mpi
         integer my_proc
-        integer nprocessors
-
-        logical iammaster
-        logical iammpi
+        integer nprocs
 
 ! module procedures
         contains
@@ -87,8 +85,7 @@
 
 ! Argument Declaration and Description
 ! ===========================================================================
-! Output
-
+! None
 
 ! Local Parameters and Data Declaration
 ! ===========================================================================
@@ -105,19 +102,18 @@
           write(*,*) 'mpi error MPI_Init'
           stop
         end if
+
         call MPI_COMM_RANK (MPI_COMM_WORLD, my_proc, ierr_mpi)
         if (ierr_mpi .ne. 0) then
           write (*,*) ' mpi error MPI_COMM_RANK'
           stop
         end if
-        call MPI_COMM_SIZE (MPI_COMM_WORLD, nprocessors, ierr_mpi)
+
+        call MPI_COMM_SIZE (MPI_COMM_WORLD, nprocs, ierr_mpi)
         if (ierr_mpi .ne. 0) then
           write (*,*) 'mpi error MPI_COMM_SIZE'
           stop
         end if
-        iammaster = .false.
-        if (my_proc .eq. 0) iammaster = .true.
-        iammpi = .true.
 
 ! Format Statements
 ! ===========================================================================

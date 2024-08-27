@@ -64,6 +64,9 @@
 ! /SYSTEM
         use M_species
 
+! /MPI
+        use M_mpi
+
 ! Type Declaration
 ! ===========================================================================
         type T_data_shell
@@ -203,9 +206,14 @@
 ! Procedure
 ! ============================================================================
 ! Loop over all the species.
-        write (ilogfile,*)
-        write (ilogfile,'(A)') 'Reading atomic wavefunctions '
-        write (ilogfile,'(A)') '---------------------------- '
+! begin iammaster
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,'(A)') 'Reading atomic wavefunctions '
+          write (ilogfile,'(A)') '---------------------------- '
+
+! end iammaster
+        end if
 
         do ispecies = 1, nspecies
           nssh = species(ispecies)%nssh
@@ -213,10 +221,14 @@
           wf(ispecies)%rcutoffA_max = -99.0d0
           wf(ispecies)%dr_min = 99.0d0
 
-          write (ilogfile,*)
-          write (ilogfile,'(a36,i3,a4,i3,a1)')                               &
-     &           '### Atomic wavefunctions for species: ', ispecies,         &
-     &           ' (Z=', species(ispecies)%nZ, ')'
+! begin iammaster
+          if (my_proc .eq. 0) then
+            write (ilogfile,*)
+            write (ilogfile,'(a36,i3,a4,i3,a1)')                             &
+     &        '### Atomic wavefunctions for species: ', ispecies,            &
+     &       ' (Z=', species(ispecies)%nZ, ')'
+! end iammaster
+          end if
 
 ! Loop over the shells.
           do issh = 1, species(ispecies)%nssh
@@ -284,7 +296,7 @@
 
 ! Set up calculations
             rcutoffA = species(ispecies)%shell(issh)%rcutoffA
-            write (ilogfile,101) rcutoff_in, rcutoffA
+            if (my_proc .eq. 0) write (ilogfile,101) rcutoff_in, rcutoffA
 
             wf(ispecies)%shell_data(issh)%rcutoff = rcutoff
             wf(ispecies)%rcutoffA_max = max(wf(ispecies)%rcutoffA_max,rcutoffA)
@@ -298,12 +310,18 @@
           mesh_max = int(wf(ispecies)%rcutoffA_max/wf(ispecies)%dr_min) + 1
           wf(ispecies)%mesh_max = mesh_max
           rcutoffA_max = float(mesh_max - 1)*wf(ispecies)%dr_min
-          write (ilogfile,*)
-          write (ilogfile,'(4x, A)') ' Compare max cutoffs:  '
-          write (ilogfile,'(4x, a31, F9.5, A2)') ' rcutoffA_max (from mesh*dr) = ', &
-     &                                              rcutoffA_max, '  '
-          write (ilogfile,'(4x, a31, F9.5, A2)') ' rcutoffA_max (from files)   = ', &
-     &                                              wf(ispecies)%rcutoffA_max, '  '
+
+! begin iammaster
+          if (my_proc .eq. 0) then
+            write (ilogfile,*)
+            write (ilogfile,'(4x, A)') ' Compare max cutoffs:  '
+            write (ilogfile,'(4x, a31, F9.5, A2)')                           &
+     &        ' rcutoffA_max (from mesh*dr) = ', rcutoffA_max, '  '
+            write (ilogfile,'(4x, a31, F9.5, A2)')                           &
+     &        ' rcutoffA_max (from files)   = ', wf(ispecies)%rcutoffA_max, '  '
+
+! end iammaster
+          end if
 
 ! Loop over the shells and read in the data.
           do issh = 1, species(ispecies)%nssh
@@ -328,8 +346,14 @@
             close (unit = 12)
 
 ! Check normalization
-            write (ilogfile,*)
-            write (ilogfile,'(4x, A)') ' Checking normalization [NORM(l) should be 1]  '
+! begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,*)
+              write (ilogfile,'(4x, A)') ' Checking normalization [NORM(l) should be 1]  '
+
+! end iammaster
+            end if
+
             dr = wf(ispecies)%shell_data(issh)%dr
             r = - dr
             do ipoint = 1, mesh
@@ -340,12 +364,12 @@
             end do
 
             xnorm = simpson (mesh, psitemp, dr)
-            write (ilogfile,201) issh, xnorm
+            if (my_proc .eq. 0) write (ilogfile,201) issh, xnorm
             wf(ispecies)%shell_data(issh)%FofR = wf(ispecies)%shell_data(issh)%FofR/sqrt(xnorm)
             deallocate (psitemp)
           end do ! end loop over shells
         end do ! end loop over nspecies
-        write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*)
 
 ! Format Statements
 ! ===========================================================================
@@ -576,11 +600,16 @@
           na(ispecies)%rcutoffA_max = -99.0d0
           na(ispecies)%dr_min = 99.0d0
 
-          write (ilogfile,*)
-          write (ilogfile,*) ' *-----------------------------------------------* '
-          write (ilogfile,*) ' |              Welcome to READVNN               | '
-          write (ilogfile,*) ' |  Reading (non)-neutral potential of the atoms | '
-          write (ilogfile,*) ' *-----------------------------------------------* '
+! begin iammaster
+          if (my_proc .eq. 0) then
+            write (ilogfile,*)
+            write (ilogfile,*) ' *-----------------------------------------------* '
+            write (ilogfile,*) ' |              Welcome to READVNN               | '
+            write (ilogfile,*) ' |  Reading (non)-neutral potential of the atoms | '
+            write (ilogfile,*) ' *-----------------------------------------------* '
+
+! end iammaster
+          end if
 
 ! Loop over the shells.
           do issh = 0, species(ispecies)%nssh    ! 0 is the pure Neutral Atom
@@ -605,8 +634,14 @@
             if (issh .eq. 0) then
               rcutoff =  species(ispecies)%rcutoffA_max/P_abohr
               read (12) species(ispecies)%atomicE
-              write (ilogfile,*) ' Atomic total energy for species:', ispecies,&
-     &                           ' is ', species(ispecies)%atomicE
+
+! begin iammaster
+              if (my_proc .eq. 0) then
+                write (ilogfile,*) ' Atomic total energy for species:',      &
+     &            ispecies, ' is ', species(ispecies)%atomicE
+
+! end iammaster
+              end if
             else
               rcutoff = species(ispecies)%shell(issh)%rcutoff
             end if
@@ -650,9 +685,16 @@
           mesh_max = int(na(ispecies)%rcutoffA_max/na(ispecies)%dr_min) + 1
           na(ispecies)%mesh_max = mesh_max
           rcutoffA_max = float(mesh_max - 1)*na(ispecies)%dr_min
-          write (ilogfile,*)
-          write (ilogfile,*) ' rcutoffA_max (from mesh*dr) = ', rcutoffA_max
-          write (ilogfile,*) ' rcutoffA_max (from files) = ', na(ispecies)%rcutoffA_max
+
+! begin iammaster
+          if (my_proc .eq. 0) then
+            write (ilogfile,*)
+            write (ilogfile,*) ' rcutoffA_max (from mesh*dr) = ', rcutoffA_max
+            write (ilogfile,*) ' rcutoffA_max (from files) = ',              &
+     &                         na(ispecies)%rcutoffA_max
+
+! end iammaster
+          end if
 
 ! Loop over the shells and read in the data.
           do issh = 0, species(ispecies)%nssh
@@ -680,9 +722,14 @@
           end do
         end do
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' *---------------- END READVNN -----------------* '
-        write (ilogfile,*)
+! begin iammaster
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,*) ' *---------------- END READVNN -----------------* '
+          write (ilogfile,*)
+
+! end iammaster
+        end if
 
 ! Format Statements
 ! ===========================================================================

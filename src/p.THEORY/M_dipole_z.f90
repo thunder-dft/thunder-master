@@ -59,6 +59,9 @@
         use M_species
         use M_integrals_2c
 
+! /MPI
+        use M_MPI
+
 ! Type Declaration
 ! ============================================================================
 ! None
@@ -194,10 +197,14 @@
 
 ! Procedure
 ! ============================================================================
-        write (ilogfile,*)
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*) '        D I P O L E ( Z )   I N T E R A C T I O N S      '
-        write (ilogfile,*) ' ******************************************************* '
+! begin iammaster
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*) '        D I P O L E ( Z )   I N T E R A C T I O N S      '
+          write (ilogfile,*) ' ******************************************************* '
+! end iammaster
+        end if
 
 ! Assign values to the unrequired variables for this specific interaction.
         isorp = 0
@@ -214,6 +221,11 @@
             call make_munu (nFdata_cell_2c, ispecies, jspecies)
             nME2c_max = pFdata_cell%nME
             allocate (pFdata_cell%fofx(nME2c_max))
+
+! begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
+            end if
 
             ! Open ouput file for this species pair
             write (filename, '("/dipole_z.",i2.2,".",i2.2,".dat")')          &
@@ -254,9 +266,9 @@
             write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
             write (12,*) (pFdata_cell%mvalue_2c(index_2c),                   &
      &                    index_2c = 1, nME2c_max)
+            close (unit = 12)
 
 ! Loop over grid
-            write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
             do igrid = 1, ndd_dipole_z
               d = d + drr
 

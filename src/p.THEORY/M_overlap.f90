@@ -66,6 +66,9 @@
         use M_species
         use M_integrals_2c
 
+! /MPI
+        use M_mpi
+
 ! Type Declaration
 ! ===========================================================================
 ! None
@@ -203,10 +206,14 @@
 
 ! Procedure
 ! ============================================================================
-        write (ilogfile,*)
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*) '          O V E R L A P   I N T E R A C T I O N S        '
-        write (ilogfile,*) ' ******************************************************* '
+! begin iammaster
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*) '          O V E R L A P   I N T E R A C T I O N S        '
+          write (ilogfile,*) ' ******************************************************* '
+ ! end iammaster
+        end if
 
 ! Assign values to the unrequired variables for this specific interaction.
         isorp = 0
@@ -227,11 +234,17 @@
             nME2c_max = pFdata_cell%nME
             allocate (pFdata_cell%fofx(nME2c_max))
 
+! begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
+            end if
+
             ! Open output file for this species pair
             write (filename, '("/overlap.",i2.2,".",i2.2,".dat")')            &
      &             species(ispecies)%nZ, species(jspecies)%nZ
             inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-            if (skip) cycle
+! Do not skip overlap - we always need to calculate for MCWEDA
+!           if (skip) cycle
             open (unit = 11, file = trim(Fdata_location)//trim(filename),     &
      &            status = 'unknown')
 
@@ -248,18 +261,25 @@
             ! open directory file
             write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')              &
      &        species(ispecies)%nZ, species(jspecies)%nZ
+! Do not need the append here
             open (unit = 13, file = trim(Fdata_location)//trim(interactions), &
      &            status = 'unknown', position = 'append')
-            write (13,100) pFdata_bundle%nFdata_cell_2c, P_overlap, isorp,    &
-     &                     filename(2:30), pFdata_cell%nME, ndd_overlap, dmax
+! begin iammaster
+            if (my_proc .eq. 0) then
+              write (13,100) pFdata_bundle%nFdata_cell_2c, P_overlap, isorp,  &
+     &                       filename(2:30), pFdata_cell%nME, ndd_overlap, dmax
+            end if
             close (unit = 13)
 
             ! Open mu, nu, mvalue file and write out values.
             write (filename, '("/",i2.2, "_munu_2c.",i2.2,".",i2.2,".dat")')  &
      &             P_overlap, species(ispecies)%nZ, species(jspecies)%nZ
+! Do not need the append here
             open (unit = 12, file = trim(Fdata_location)//trim(filename),     &
-     &            status = 'unknown', position = 'append')
+     &            status = 'unknown')
+!    &            status = 'unknown', position = 'append')
 
+! begin iammaster
             ! write the mapping - stored in mu, nu, and mvalue
             write (12,*) (pFdata_cell%mu_2c(index_2c), index_2c = 1, nME2c_max)
             write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
@@ -267,7 +287,6 @@
      &                    index_2c = 1, nME2c_max)
 
 ! Loop over grid
-            write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
             do igrid = 1, ndd_overlap
               d = d + drr
 
@@ -280,6 +299,7 @@
      &                                   d, nz_overlap, nrho_overlap,         &
      &                                   rint_overlap, phifactor, zmin, zmax, &
      &                                   rhomin, rhomax, pFdata_cell%fofx)
+
               ! Write out details.
               write (11,*) (pFdata_cell%fofx(index_2c),                       &
      &                                       index_2c = 1, nME2c_max)
