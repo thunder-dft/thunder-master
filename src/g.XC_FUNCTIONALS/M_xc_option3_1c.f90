@@ -109,7 +109,7 @@
 ! Program Declaration
 ! ===========================================================================
         subroutine get_potxc_1c (iexc, xc_fraction, r, rho, rhop, rhopp,   &
-     &                           newexc, vpxc, dnuxc, dnuxcs, dexc)
+     &                           rhopap, newexc, vpxc, dnuxc, dnuxcs, dexc)
         implicit none
 
 !! Argument Declaration and Description
@@ -124,6 +124,7 @@
         real, intent (inout) :: rho      ! return zero value if rho is small
         real, intent (in) :: rhop
         real, intent (in) :: rhopp
+        real, intent (in) :: rhopap
 
 ! Output
         real, intent (out) :: newexc
@@ -152,6 +153,7 @@
         dummy = xc_fraction
         dummy = rhop
         dummy = rhopp
+        dummy = rhopap
 
 ! Initialize variables
         newexc = 0.0d0
