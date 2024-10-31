@@ -117,8 +117,8 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine get_potxc_1c (iexc, xc_fraction, r, rho, rhop, rhopp,   &
-     &                           newexc, vpxc, dnuxc, dnuxcs, dexc)
+        subroutine get_potxc_1c (iexc, xc_fraction, r, rho, rhop, rhopp,     &
+     &                           rhopap, newexc, vpxc, dnuxc, dnuxcs, dexc)
         implicit none
 
 ! Argument Declaration and Description
@@ -133,6 +133,7 @@
         real, intent (inout) :: rho      ! return zero value if rho is small
         real, intent (in) :: rhop
         real, intent (in) :: rhopp
+        real, intent (in) :: rhopap
 
 ! Output
         real, intent (out) :: newexc
@@ -170,7 +171,7 @@
 ! If r is really small, then set to manageably small number.
         if (r .lt. 1.0d-4) r = 1.0d-4
 
-! Rho must be positive, but not too small
+! rho must be positive, but not too small
         if (rho .lt. 1.0d-8) then
           rho = 0.0d0
           return
@@ -218,7 +219,6 @@
 ! ===========================================================================
 ! Program Description
 ! ===========================================================================
-!
 !      This routine calculates the exchange potential and energy density.
 ! Spherical symmetry is used. LSDA - GGA
 !
@@ -473,7 +473,6 @@
 ! ===========================================================================
 ! Program Description
 ! ===========================================================================
-!
 !      This routine calculates the correlation potential and energy density.
 ! Spherical symmetry is used. LSDA - GGA
 !
@@ -535,33 +534,11 @@
 
 ! Local Variable Declaration and Description
 ! ===========================================================================
-!       real alfc
         real density
         real densityp
-!       real densityp11
-!       real densityp12
-!       real densityp22
         real densitypp
-!       real ec
-!       real ecrs
-!       real eczet
-!       real fermik
-!       real g
-!       real gsfermik
-!       real h
         real r
-!       real rs
-!       real sfermik
-!       real t
-!       real uu
-!       real vv
-!       real ww
-!       real zet
-!       real ztp
-!       real fk
-!       real sk
 
-!       real, dimension (2) :: dvc, vc
         real, dimension (2) :: flip
 
 ! Allocate Arrays

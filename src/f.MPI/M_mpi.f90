@@ -52,7 +52,6 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer ierr_mpi
         integer my_proc
         integer nprocs
 

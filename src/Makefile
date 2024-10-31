@@ -1,4 +1,4 @@
-# @Copyright 2022
+# @Copyright 2024
 # FIREBALL Committee
 # Hong Kong University, Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
 # Universidad Autonoma de Madrid - Jose Ortega
@@ -79,7 +79,6 @@ XC_FUNCTIONALS = M_xc_option3_1c.o M_xc_option3_2c.o
 # McWEDA is default - we change later if we want to do Horsfield
 CREATE = M_overlap.o M_Goverlap.o M_kinetic.o M_Coulomb.o M_dipole_z.o M_vna_Harris.o M_vna_DOGS.o M_vnl_KB.o M_rho_2c_McWEDA_Harris.o M_rhoS_2c_McWEDA_Harris.o M_rho_3c_McWEDA_Harris.o M_rhoS_3c_McWEDA_Harris.o M_vxc_McWEDA_Harris.o M_vxc_McWEDA_DOGS.o M_bcna_Harris.o M_bcna_DOGS.o
 ifneq (,$(findstring TRUE, ${MPI}))
-CREATE = M_overlap.o M_Goverlap.o M_kinetic.o M_Coulomb.o M_dipole_z.o M_vna_Harris.o M_vna_DOGS.o M_vnl_KB.o M_rho_2c_McWEDA_Harris.o M_rhoS_2c_McWEDA_Harris.o M_rho_3c_McWEDA_Harris.o M_rhoS_3c_McWEDA_Harris.o M_vxc_McWEDA_Harris.o M_vxc_McWEDA_DOGS.o M_bcna_Harris.o M_bcna_DOGS.o
 PARALLEL = M_mpi.o
 endif
 # ****************************************************************************
@@ -199,14 +198,17 @@ endif
 ifneq (,$(findstring BLYP, ${XC}))
 XC_FUNCTIONALS = M_xc_option9_1c.o M_xc_option9_2c.o
 endif
+ifneq (,$(findstring PBE, ${XC}))
+XC_FUNCTIONALS = M_xc_option6_1c.o M_xc_option9_2c.o
+endif
 
-OBJECTS_LOOPRC = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN_LOOPRC)
-OBJECTS_BEGIN = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN)
+OBJECTS_LOOPRC = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN_LOOPRC)
+OBJECTS_BEGIN = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN)
 OBJECTS_CREATE = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_CREATE) $(XC_FUNCTIONALS) $(CREATE)
-OBJECTS_LIGHTNING = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
-OBJECTS_FIREBALL = $(GLOBAL) $(FUNCTIONS) $(SYSTEM) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(PARALLEL) $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(OUTPUT) $(SOCKETS) $(UTIL)
-OBJECTS_MDET = $(GLOBAL) $(FUNCTIONS) $(SYSTEM)  $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(NAMD) $(OUTPUT)
-OBJECTS_LIGHTNING_GRID = $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(GRID) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
+OBJECTS_LIGHTNING = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
+OBJECTS_FIREBALL = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(PARALLEL) $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(OUTPUT) $(SOCKETS) $(UTIL)
+OBJECTS_MDET = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM)  $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(NAMD) $(OUTPUT)
+OBJECTS_LIGHTNING_GRID = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(GRID) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
 ##############################################################################
 ###
 ### END LISTING OBJECTS
@@ -409,6 +411,8 @@ M_xc_option3_1c.o : g.XC_FUNCTIONALS/M_xc_option3_1c.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_xc_option3_2c.o : g.XC_FUNCTIONALS/M_xc_option3_2c.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_xc_option6_1c.o : g.XC_FUNCTIONALS/M_xc_option6_1c.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^		
 M_xc_option9_1c.o : g.XC_FUNCTIONALS/M_xc_option9_1c.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_xc_option9_2c.o : g.XC_FUNCTIONALS/M_xc_option9_2c.f90
