@@ -1,5 +1,6 @@
 ! copyright info:
 !
+<<<<<<< HEAD
 !                             @Copyright 2022
 !                           Fireball Committee
 ! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
@@ -12,15 +13,34 @@
 ! California Institute of Technology - Brandon Keith
 ! Czech Institute of Physics - Prokop Hapala
 ! Czech Institute of Physics - Vladimír Zobač
+=======
+!                             @Copyright 2013
+!                           Fireball Committee
+! West Virginia University - James P. Lewis, Chair
+! Arizona State University - Otto F. Sankey
+! Universidad de Madrid - Jose Ortega
+! Academy of Sciences of the Czech Republic - Pavel Jelinek
+
+! Previous and/or current contributors:
+! Auburn University - Jian Jun Dong
+! Caltech - Brandon Keith
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! Dublin Institute of Technology - Barry Haycock
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
+<<<<<<< HEAD
 ! Synfuels China Technology Co., Ltd. - Pengju Ren
+=======
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
+<<<<<<< HEAD
+=======
+
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -28,7 +48,11 @@
 ! { (b) (3) (ii) } of the Rights in Technical Data and Computer Software
 ! clause at 52.227-7013.
 
+<<<<<<< HEAD
 ! M_xc
+=======
+! M_xc_1c
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! Program Description
 ! ===========================================================================
 !      This is a module containing a collection of exchange-correlation
@@ -37,20 +61,33 @@
 ! ===========================================================================
 ! Code written by:
 ! James P. Lewis
+<<<<<<< HEAD
 ! Unit 909 of Buidling 17W
 ! 17 Science Park West Avenue
 ! Pak Shek Kok, New Territories 999077
 ! Hong Kong
 !
 ! Phone: +852 6612 9539 (mobile)
+=======
+! Box 6315, 209 Hodges Hall
+! Department of Physics
+! West Virginia University
+! Morgantown, WV 26506-6315
+!
+! (304) 293-3422 x1409 (office)
+! (304) 293-5732 (FAX)
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! ===========================================================================
 ! Module Declaration
 ! ===========================================================================
         module M_xc_1c
 
+<<<<<<< HEAD
 ! /GLOBAL
         use M_precision
 
+=======
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! Type Declaration
 ! ===========================================================================
 ! None
@@ -59,7 +96,11 @@
         contains
 
 ! ===========================================================================
+<<<<<<< HEAD
 ! get_potxc1c.f90
+=======
+! get_potxc_1c
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! ===========================================================================
 ! Program Description
 ! ===========================================================================
@@ -75,9 +116,13 @@
 !          8  LDA   Ceperley/Alder Perdew/Wang (1991)
 !          9  GGA   Becke (1988) X, Lee/Yang/Parr (1988) C
 !         10  GGA   Perdew/Wang (1991) X, Lee/Yang/Parr (1988) C
+<<<<<<< HEAD
 !         11  LSDA  Vosko/Wilk/Nusair (1980)
 !         12  GGA   Becke (1988) X, Lee/Yang/Parr (1988) C
 !                   with exact exchange
+=======
+!         11  LSDA  Volko/Wilk/Nusair (1980)
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! The numerical value above is assigned to the variable iexc output
 ! exchange-correlation potential. This program has been modified to account
 ! for the fact that the density is a sum of two densities at two different
@@ -90,10 +135,16 @@
 !    rho         sum of atomic density in au
 !    rhop        sum of atomic density gradient (with respect to r) in au
 !    rhopp       sum of second gradient (with respect to r) in au
+<<<<<<< HEAD
+=======
+!    rhoz        sum of atomic density gradient (with respect to z) in au
+!    rhozz       sum of second gradient (with respect to z) in au
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 !
 ! output
 !    vpxc        xc potential
 !    newexc      xc energy
+<<<<<<< HEAD
 !    dnuxc
 !    dnuxcs
 ! ===========================================================================
@@ -125,6 +176,40 @@
         real, intent (in) :: rhopp
         real, intent (in) :: rhopap      ! grad(abs(grad rho))
 
+=======
+!
+! ===========================================================================
+! Code written by:
+! James P. Lewis
+! Box 6315, 209 Hodges Hall
+! Department of Physics
+! West Virginia University
+! Morgantown, WV 26506-6315
+!
+! (304) 293-3422 x1409 (office)
+! (304) 293-5732 (FAX)
+! ===========================================================================
+!
+! Program Declaration
+! ===========================================================================
+        subroutine get_potxc_1c (iexc, xc_fraction, r, rho, rhop, rhopp,arhop, &
+     &                           newexc, vpxc, dnuxc, dnuxcs, dexc)
+        implicit none
+
+!! Argument Declaration and Description
+! ===========================================================================
+! Input
+        integer iexc
+
+        real, intent (in) :: xc_fraction
+        real, intent (inout) :: r        ! radial distance
+
+        ! density and derivatives
+        real*8, intent (inout) :: rho      ! return zero value if rho is small
+        real*8, intent (in) :: rhop
+        real*8, intent (in) :: rhopp
+        real*8, intent (in) :: arhop
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! Output
         real, intent (out) :: newexc
         real, intent (out) :: vpxc
@@ -134,6 +219,7 @@
 
 ! Local Parameters and Data Declaration
 ! ===========================================================================
+<<<<<<< HEAD
 ! None
 
 ! Local Variable Declaration and Description
@@ -166,16 +252,67 @@
 ! Procedure
 ! ===========================================================================
 ! Initialize to zero.
+=======
+	real*8, parameter :: thrd=1.d0/3.d0
+
+
+! Local Variable Declaration and Description
+! ===========================================================================
+	integer ispin
+	integer lpot, lgga
+        
+	real*8 dummy
+
+        real*8 exc                     ! exchange-correlation energy
+        real*8 ex                      ! exchange potential
+        real*8 dec, dex                ! derivative of correlation and exchange
+        real*8 fx
+        real*8 fxc
+        
+        real*8 dup, ddn, d
+        real*8 dpup, dpdn
+        real*8 dppup, dppdn
+        real*8 adpup, adpdn            !grad(abs(grad rho)) first derivative of abs of grad of rho
+
+        real*8 agrup, agrdn, agrad
+        real*8 delgrup, delgrdn, delgrad
+        real*8 uplap, dnlap
+        
+        real*8 exlsd,vxuplsd,vxdnlsd,eclsd,vcuplsd,vcdnlsd			!Outputs
+        real*8 expw91,vxuppw91,vxdnpw91,ecpw91,vcuppw91,vcdnpw91                  !Outputs
+        real*8 expbe,vxuppbe,vxdnpbe,ecpbe,vcuppbe,vcdnpbe			!Outputs
+        
+        real*8 pi
+                
+! Procedure
+! ===========================================================================
+! Initialize some dummy variables for warning removal
+        dummy = xc_fraction
+        dummy = rhop
+        dummy = rhopp
+        dummy = arhop
+
+! Initialize variables
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
         newexc = 0.0d0
         vpxc = 0.0d0
         dnuxc = 0.0d0
         dnuxcs = 0.0d0
         dexc = 0.0d0
+<<<<<<< HEAD
 
 ! If r is really small, then set to manageably small number.
         if (r .lt. 1.0d-4) r = 1.0d-4
 
 ! rho must be positive, but not too small
+=======
+	pi = 4.0d0*atan(1.0d0)
+
+! If r is real*8ly small, then set to manageably small number.
+        if (r .lt. 1.0d-4) r = 1.0d-4
+
+! Rho must be positive, but not too small
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
         if (rho .lt. 1.0d-8) then
           rho = 0.0d0
           return
@@ -183,6 +320,7 @@
           rho = 1.0d-5
         end if
 
+<<<<<<< HEAD
 ! Determine exchange-correlation potentials
 ! Perdew-Burke-Ernzerhof GGA
 ! as parameterized by J.P. Perdew, K. Burke, M. Ernzerhof, Phys Rev Lett 77, 3865 (1996)
@@ -218,6 +356,61 @@
           vpxc = vxuppbe + vcuppbe
 
 ! Outputs:
+=======
+     
+! XC Perdew-Burke-Ernzerhof GGA
+! as parameterized by J.P. Perdew, K. Burke, M. Ernzerhof, Phys Rev Lett 77, 3865 (1996)
+        if (iexc .eq. 6) then
+        
+!	PBE Parameters
+	lgga = 1.0d0             !flag to do gga (0=>LSD only)
+	lpot = 1.0d0             !flag to do potential (0=>energy only)
+
+	
+! Input variables are assigned to local variables for clarity
+	adpup = 0.5d0*arhop  ! grad(abs(grad rho_up))
+	adpdn = 0.5d0*arhop  ! grad(abs(grad rho_dn))
+	dpup = 0.5d0*rhop   !grad(rho_up)
+	dpdn = 0.5d0*rhop   !grad(rho_dn)
+	dppup = 0.5d0*rhopp
+	dppdn = 0.5d0*rhopp
+
+	
+! Input variab required by easypbe subroutine
+					      ! As per the definitions of the original code
+	dup = 0.5d0*rho  ! spin up density    !DUP=FUP*(ZUP**3/PI)*DEXP(-2.D0*ZUP*R)
+	ddn = 0.5d0*rho  ! spin dn density    !DDN=FDN*(ZDN**3/PI)*DEXP(-2.D0*ZDN*R)
+	agrup = abs(dpup)                          !agrup=2.d0*zup*dup          
+	delgrup = dpup*adpup                  !8.d0*(zup**3)*dup*dup
+        uplap = (dpup/r) + dppup      !4.d0*zup*dup*(zup-1.d0/r)
+	
+	agrdn = abs(dpdn)                          !2.d0*zdn*ddn
+	delgrdn = dpdn*adpdn                  !8.d0*(zdn**3)*ddn*ddn
+	dnlap = (dpdn/r) + dppdn              !4.d0*zdn*ddn*(zdn-1.d0/r)
+        d = dup+ddn
+        agrad = abs(rhop)                     ! agrad=|grad rho|
+	delgrad = rhop*arhop                  !4.d0*agrad*(zup**2*dup+zdn**2*ddn)
+	
+        
+    call  easypbe(dup,agrup,delgrup,uplap,ddn,agrdn,delgrdn, &		!Inputs
+                dnlap,agrad,delgrad,1,1, &					!Inputs
+                exlsd,vxuplsd,vxdnlsd,eclsd,vcuplsd,vcdnlsd, &			!Outputs
+                expw91,vxuppw91,vxdnpw91,ecpw91,vcuppw91,vcdnpw91, &		!Outputs
+                expbe,vxuppbe,vxdnpbe,ecpbe,vcuppbe,vcdnpbe)			!Outputs
+                
+    newexc = expbe + ecpbe       ! exchange + corellation energy densities
+	vpxc = vxuppbe + vxdnpbe + vcuppbe + vcdnpbe
+!          vpxc = 0.0d0  
+    newexc = real(newexc)
+	vpxc = real(vpxc)
+    dnuxc = real(dnuxc)
+    dnuxcs = real(dnuxcs)
+    dexc = real(dexc)
+
+
+          
+! outputs:
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! exlsd = LSD exchange energy density, so that
 ! ExLSD = int d^3r rho(r) exlsd(r)
 ! vxuplsd = up LSD exchange potential
@@ -235,17 +428,25 @@
 ! vcuppbe = up  PBE exchange-correlation potential
 ! vcdnpbe = down  PBE exchange-correlation potential
 
+<<<<<<< HEAD
 
 ! If the improper iexc option was entered then the program will stop.
         else
           write (*,*) ' In get_potxc_1c.f90 - '
           write (*,*) ' You must recomplile create.x for iexc = 6 '
           write (*,*) ' Set XC = BLYP in include/OPTIONS and recompile. '
+=======
+! If the improper iexc option was entered then the program will stop.
+        else
+          write (*,*) ' In get_potxc_1c.f90 - '
+          write (*,*) ' stop: xc option not implemented', iexc
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
           stop
         end if
 
 ! Calculate the exchange energy by combining the exchange and correlation
 ! energies and subtracting the exchange/correlation potential energy
+<<<<<<< HEAD
 ! This comment seems to be old fashioned
         dec = ecpbe
         dex = expbe
@@ -253,13 +454,52 @@
 
 ! Format Statements
 ! ===========================================================================
+=======
+
+! Deallocate Arrays
+! ===========================================================================
+! None
+
+! Format Statements
+! ===========================================================================
+! None
+
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
         return
         end subroutine get_potxc_1c
 
 
+<<<<<<< HEAD
 
 
 
+=======
+! ===========================================================================
+! ceperley_alder
+! ===========================================================================
+! Program Description
+! ===========================================================================
+!       This routine compute the ceperley-alder form of the LDA as
+! parameterized by Perdew and Zunger, Phys. Rev. B23, 5048 (1981).  The units
+! of this program are in atomic units, so the density but be changed to atomic
+! units after input and the final answer converted to eV-Angstrom units.
+!
+! ===========================================================================
+! Code written by:
+! James P. Lewis
+! Box 6315, 209 Hodges Hall
+! Department of Physics
+! West Virginia University
+! Morgantown, WV 26506-6315
+!
+! (304) 293-3422 x1409 (office)
+! (304) 293-5732 (FAX)
+! ===========================================================================
+!
+! Program Declaration
+! ===========================================================================
+ 
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! c----------------------------------------------------------------------
 ! c######################################################################
 ! c----------------------------------------------------------------------
@@ -273,6 +513,7 @@
 ! c EASYPBE is a driver for the PBE subroutines, using simple inputs
 ! c K. Burke, May 14, 1996.
 ! c inputs: up=up density
+<<<<<<< HEAD
 ! c : agrup=|grad up|
 ! c : delgrup=(grad up).(grad |grad up|)
 ! c : uplap=grad^2 up=Laplacian of up
@@ -288,6 +529,23 @@
 ! c        : exclsd=LSD exchange-correlation energy density
 ! c  : vxcuplsd=up LSD exchange-correlation potential
 ! c  : vxcdnlsd=down LSD exchange-correlation potential
+=======
+! c	: agrup=|grad up|
+! c	: delgrup=(grad up).(grad |grad up|) 
+! c	: uplap=grad^2 up=Laplacian of up
+! c	: dn,agrdn,delgrdn,dnlap=corresponding down quantities
+! c	: agr=|grad rho|
+! c	: delgr=(grad rho).(grad |grad rho|) 
+! c	: lcor=flag to do correlation(=0=>don't)
+! c	: lpot=flag to do potential(=0=>don't)
+! c outputs: exlsd=LSD exchange energy density, so that
+! c		ExLSD=int d^3r rho(r) exlsd(r)
+! c	 : vxuplsd=up LSD exchange potential
+! c	 : vxdnlsd=down LSD exchange potential
+! c        : exclsd=LSD exchange-correlation energy density
+! c	 : vxcuplsd=up LSD exchange-correlation potential
+! c	 : vxcdnlsd=down LSD exchange-correlation potential
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! c        : expw91,vxuppw91,vxdnpw91,ecpw91,etc.=PW91 quantities
 ! c        : expbe,vxuppbe,vxdnpbe,ecpbe,etc.=PBE quantities
 ! c----------------------------------------------------------------------
@@ -297,13 +555,21 @@
 ! c alpha=(9pi/4)**thrd
 !       implicit real*8 (a-h,o-z)
       implicit none
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
       real*8, parameter :: thrd=1.d0/3.d0
       real*8, parameter :: thrd2=2.d0*thrd
       real*8, parameter :: pi32=29.608813203268075856503472999628d0
       real*8, parameter :: pi=3.1415926535897932384626433832795d0
       real*8, parameter :: alpha=1.91915829267751300662482032624669d0
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
       real*8 rho2, up, fk, s, u ,v, dn, agrdn,delgrdn,dnlap, rho
       real*8 exdnlsd, vxdnlsd, exdnpw91, vxdnpw91, exdnpbe, vxdnpbe
       real*8 exuplsd, vxuplsd, exuppw91, vxuppw91,exuppbe, vxuppbe
@@ -313,50 +579,86 @@
       real*8 ECRS, ECZET, ALFC, ecpw91, vcuppw91, vcdnpw91
       real*8 agrup, delgrup, delgr, vcdnlsd
       integer lpot, lcor
+<<<<<<< HEAD
 
 
 
+=======
+      
+      
+    
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! c----------------------------------------------------------------------
 ! c----------------------------------------------------------------------
 ! c PBE exchange
 ! c use  Ex[up,dn]=0.5*(Ex[2*up]+Ex[2*dn]) (i.e., exact spin-scaling)
 ! c do up exchange
+<<<<<<< HEAD
 ! c fk=local Fermi wavevector for 2*up=(3 pi^2 (2up))^(1/3)
+=======
+! c fk=local Fermi wavevector for 2*up=(3 pi^2 (2up))^(1/3) 
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! c s=dimensionless density gradient=|grad rho|/ (2*fk*rho)_(rho=2*up)
 ! c u=delgrad/(rho^2*(2*fk)**3)_(rho=2*up)
 ! c v=Laplacian/(rho*(2*fk)**2)_(rho=2*up)
       rho2=2.d0*up
       if(rho2.gt.1d-18)then
         fk=(pi32*rho2)**thrd
+<<<<<<< HEAD
 
         s=2.d0*agrup/(2.d0*fk*rho2)
         u=4.d0*delgrup/(rho2*rho2*(2.d0*fk)**3)
         v=2.d0*uplap/(rho2*(2.d0*fk)**2)
 
+=======
+        
+        s=2.d0*agrup/(2.d0*fk*rho2)
+        u=4.d0*delgrup/(rho2*rho2*(2.d0*fk)**3)
+        v=2.d0*uplap/(rho2*(2.d0*fk)**2)
+        
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
         call exchpbe(rho2,s,u,v,0,lpot,exuplsd,vxuplsd)
         call exchpw91(rho2,s,u,v,exuppw91,vxuppw91)
         call exchpbe(rho2,s,u,v,1,lpot,exuppbe,vxuppbe)
       else
+<<<<<<< HEAD
     exuplsd=0.d0
     vxuplsd=0.d0
     exuppw91=0.d0
     vxuppw91=0.d0
     exuppbe=0.d0
     vxuppbe=0.d0
+=======
+	exuplsd=0.d0
+	vxuplsd=0.d0
+	exuppw91=0.d0
+	vxuppw91=0.d0
+	exuppbe=0.d0
+	vxuppbe=0.d0
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
       endif
 ! c repeat for down
       rho2=2.d0*dn
       if(rho2.gt.1d-18)then
         fk=(pi32*rho2)**thrd
+<<<<<<< HEAD
 
         s=2.d0*agrdn/(2.d0*fk*rho2)
         u=4.d0*delgrdn/(rho2*rho2*(2.d0*fk)**3)
         v=2.d0*dnlap/(rho2*(2.d0*fk)**2)
 
+=======
+        
+        s=2.d0*agrdn/(2.d0*fk*rho2)
+        u=4.d0*delgrdn/(rho2*rho2*(2.d0*fk)**3)
+        v=2.d0*dnlap/(rho2*(2.d0*fk)**2)
+        
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
         call exchpbe(rho2,s,u,v,0,lpot,exdnlsd,vxdnlsd)
         call exchpw91(rho2,s,u,v,exdnpw91,vxdnpw91)
         call exchpbe(rho2,s,u,v,1,lpot,exdnpbe,vxdnpbe)
       else
+<<<<<<< HEAD
     exdnlsd=0.d0
     vxdnlsd=0.d0
     exdnpw91=0.d0
@@ -365,6 +667,16 @@
     vxdnpbe=0.d0
       endif
 10    continue
+=======
+	exdnlsd=0.d0
+	vxdnlsd=0.d0
+	exdnpw91=0.d0
+	vxdnpw91=0.d0
+	exdnpbe=0.d0
+	vxdnpbe=0.d0
+      endif
+10    continue 
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! c construct total density and contribution to ex
       rho=up+dn
       exlsd=(exuplsd*up+exdnlsd*dn)/rho
@@ -397,13 +709,21 @@
       rs=alpha/fk
       sk=sqrt(4.d0*fk/pi)
       twoksg=2.d0*sk*g
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
       t=agr/(twoksg*rho)
       uu=delgr/(rho*rho*twoksg**3)
       rholap=uplap+dnlap
       vv=rholap/(rho*twoksg**2)
       ww=(agrup**2-agrdn**2-zet*agr**2)/(rho*rho*twoksg**2)
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
       call CORPBE(RS,ZET,T,UU,VV,WW,1,lpot,ec,vcup,vcdn, &
                        H,DVCUP,DVCDN)
       eclsd=ec
@@ -446,11 +766,19 @@
 ! c----------------------------------------------------------------------
 ! c----------------------------------------------------------------------
 ! c Formulas:
+<<<<<<< HEAD
 ! c     e_x[unif]=ax*rho^(4/3)  [LDA]
 ! c ax = -0.75*(3/pi)^(1/3)
 ! c e_x[PBE]=e_x[unif]*FxPBE(s)
 ! c FxPBE(s)=1+uk-uk/(1+ul*s*s)                 [a](13)
 ! c uk, ul defined after [a](13)
+=======
+! c   	e_x[unif]=ax*rho^(4/3)  [LDA]
+! c ax = -0.75*(3/pi)^(1/3)
+! c	e_x[PBE]=e_x[unif]*FxPBE(s)
+! c	FxPBE(s)=1+uk-uk/(1+ul*s*s)                 [a](13)
+! c uk, ul defined after [a](13) 
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! c----------------------------------------------------------------------
 ! c----------------------------------------------------------------------
 !       IMPLICIT real*8 (A-H,O-Z)
@@ -462,18 +790,31 @@
       real*8, parameter :: um=0.2195149727645171d0
       real*8, parameter :: uk=0.8040d0
       real*8, parameter :: ul=um/uk
+<<<<<<< HEAD
 
       real*8 exunif, rho, ex, vx, s2,s,u,v,P0
       real*8 FxPBE, Fs, Fss
       integer lgga,  lpot
+=======
+      
+      real*8 exunif, rho, ex, vx, s2,s,u,v,P0
+      real*8 FxPBE, Fs, Fss
+      integer lgga,  lpot 
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! c----------------------------------------------------------------------
 ! c----------------------------------------------------------------------
 ! c construct LDA exchange energy density
       exunif = AX*rho**THRD
       if(lgga.eq.0)then
+<<<<<<< HEAD
     ex=exunif
         vx=ex*thrd4
     return
+=======
+	ex=exunif
+        vx=ex*thrd4
+	return
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
       endif
 ! c----------------------------------------------------------------------
 ! c----------------------------------------------------------------------
@@ -493,7 +834,11 @@
       Fss=-4.d0*ul*S*Fs/P0
 ! c----------------------------------------------------------------------
 ! c----------------------------------------------------------------------
+<<<<<<< HEAD
 ! c calculate potential from [b](24)
+=======
+! c calculate potential from [b](24) 
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
       VX = exunif*(THRD4*FxPBE-(U-THRD4*S2*s)*FSS-V*FS)
       RETURN
       END subroutine EXCHPBE
@@ -522,7 +867,11 @@
 ! c----------------------------------------------------------------------
 ! c----------------------------------------------------------------------
 ! c References:
+<<<<<<< HEAD
 ! c [a] J.P.~Perdew, K.~Burke, and M.~Ernzerhof,
+=======
+! c [a] J.P.~Perdew, K.~Burke, and M.~Ernzerhof, 
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! c     {\sl Generalized gradient approximation made simple}, sub.
 ! c     to Phys. Rev.Lett. May 1996.
 ! c [b] J. P. Perdew, K. Burke, and Y. Wang, {\sl real*8-space cutoff
@@ -540,7 +889,11 @@
 ! c numbers for construction of PBE
 ! c      gamma=(1-log(2))/pi^2
 ! c      bet=coefficient in gradient expansion for correlation, [a](4).
+<<<<<<< HEAD
 ! c      eta=small number to stop d phi/ dzeta from blowing up at
+=======
+! c      eta=small number to stop d phi/ dzeta from blowing up at 
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! c          |zeta|=1.
       real*8, parameter :: thrd=1.d0/3.d0
       real*8, parameter :: thrdm=-thrd
@@ -553,11 +906,16 @@
       real*8, parameter :: bet=0.06672455060314922d0
       real*8, parameter :: delt=bet/gamma
       real*8, parameter :: eta=1.d-12
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
       real*8 rs,zet,t,uu,vv,ww,ec,vcup,vcdn, h,dvcup,dvcdn
       integer lgga,lpot
       real*8 rtrs, z4, eu, eurs, ep, eprs, alfm,alfrsm,alfc
       real*8  f, ecrs, fz,  comm
+<<<<<<< HEAD
 
       real*8 g, g3, pon, b,b2, t2, t4, rs2,rs3
       real*8 q4, q5, g4, t6, rsthrd,gz, fac,bg,bec,q8,q9,hb
@@ -569,6 +927,19 @@
       real*8 num21,num22,num23,num24,num25, num26
       real*8 num31,num32,num33,num34,num35,num36
 
+=======
+      
+      real*8 g, g3, pon, b,b2, t2, t4, rs2,rs3
+      real*8 q4, q5, g4, t6, rsthrd,gz, fac,bg,bec,q8,q9,hb 
+      real*8 hrs,fact0,fact1,hbt,hrst,hz,ht,hzt,fact2,fact3
+      real*8 htt, pref, fact5, eczet
+      
+      
+      real*8 num11,num12,num13,num14,num15,num16
+      real*8 num21,num22,num23,num24,num25, num26
+      real*8 num31,num32,num33,num34,num35,num36
+      
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! c----------------------------------------------------------------------
 ! c----------------------------------------------------------------------
 ! c find LSD energy contributions, using [c](10) and Table I[c].
@@ -671,7 +1042,11 @@ num31=0.0168869D0;num32=0.11125D0;num33=10.357D0;num34=3.6231D0;num35=0.88026D0;
       implicit none
       real*8 a,a1,b1,b2,b3,b4,rtrs
       real*8 q0,q1,q2,gg,q3,ggrs
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
       Q0 = -2.D0*A*(1.D0+A1*rtrs*rtrs)
       Q1 = 2.D0*A*rtrs*(B1+rtrs*(B2+rtrs*(B3+B4*rtrs)))
       Q2 = LOG(1.D0+1.D0/Q1)
@@ -701,11 +1076,19 @@ num31=0.0168869D0;num32=0.11125D0;num33=10.357D0;num34=3.6231D0;num35=0.88026D0;
       real*8, parameter :: b1=0.004d0
       real*8, parameter :: thrd=0.333333333333D0
       real*8, parameter :: thrd4=1.33333333333D0
+<<<<<<< HEAD
 
       real*8 d,s,u,v
       real*8 fac,s2,s3,s4,p0,p1,p2,p3,p4,f,ex
       real*8 p5, p6, p7, fs, p8, p9, p10, p11, fss, vx
 
+=======
+      
+      real*8 d,s,u,v
+      real*8 fac,s2,s3,s4,p0,p1,p2,p3,p4,f,ex
+      real*8 p5, p6, p7, fs, p8, p9, p10, p11, fss, vx
+      
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! c for Becke exchange, set a3=b1=0
       FAC = AX*D**THRD
       S2 = S*S
@@ -750,19 +1133,32 @@ num31=0.0168869D0;num32=0.11125D0;num33=10.357D0;num34=3.6231D0;num35=0.88026D0;
       real*8, parameter :: fzz=1.709921D0
       real*8, parameter :: thrd=0.333333333333D0
       real*8, parameter :: thrd4=1.333333333333D0
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
       real*8 rs,zet,eu, eurs, ep, eprs, alfm, alfrsm
       real*8 f, alfc, z4, ec, ecrs, fz,eczet, comm,vcup,vcdn
 
       real*8 num11,num12,num13,num14,num15,num16,num17
       real*8 num21,num22,num23,num24,num25,num26,num27
       real*8 num31,num32,num33,num34,num35,num36,num37
+<<<<<<< HEAD
 
       num11 = 0.0310907D0; num12=0.21370D0; num13=7.5957D0; num14=3.5876D0; num15=1.6382D0; num16=0.49294D0; num17=1.00D0;
       num21 = 0.01554535D0; num22=0.20548D0; num23=14.1189D0; num24=6.1977D0; num25=3.3662D0; num26=0.62517D0; num27=1.00D0;
       num31 = 0.0168869D0;num32 =0.11125D0; num33 =10.357D0; num34 =3.6231D0; num35 =0.88026D0; num36 =0.49671D0; num37 = 1.00D0;
 
 
+=======
+      
+      num11 = 0.0310907D0; num12=0.21370D0; num13=7.5957D0; num14=3.5876D0; num15=1.6382D0; num16=0.49294D0; num17=1.00D0;
+      num21 = 0.01554535D0; num22=0.20548D0; num23=14.1189D0; num24=6.1977D0; num25=3.3662D0; num26=0.62517D0; num27=1.00D0;
+      num31 = 0.0168869D0;num32 =0.11125D0; num33 =10.357D0; num34 =3.6231D0; num35 =0.88026D0; num36 =0.49671D0; num37 = 1.00D0;
+      
+      
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
       F = ((1.D0+ZET)**THRD4+(1.D0-ZET)**THRD4-2.D0)/GAM
       CALL GCOR(num11,num12,num13,num14,num15,num16,num17,RS,EU,EURS)
       CALL GCOR(num21,num22,num23,num24,num25,num26,num27,RS,EP,EPRS)
@@ -789,8 +1185,13 @@ num31=0.0168869D0;num32=0.11125D0;num33=10.357D0;num34=3.6231D0;num35=0.88026D0;
 !       IMPLICIT real*8 (A-H,O-Z)
       implicit  none
       real*8 a,a1,b1,b2,b3,b4,rs
+<<<<<<< HEAD
       real*8 p1,p,q0, rs12, rs32, rsp, q1,q2,gg,q3,ggrs
 
+=======
+      real*8 p1,p,q0, rs12, rs32, rsp, q1,q2,gg,q3,ggrs       
+      
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
       P1 = P + 1.D0
       Q0 = -2.D0*A*(1.D0+A1*RS)
       RS12 = SQRT(RS)
@@ -808,7 +1209,11 @@ num31=0.0168869D0;num32=0.11125D0;num33=10.357D0;num34=3.6231D0;num35=0.88026D0;
 ! c----------------------------------------------------------------------
       SUBROUTINE CORpw91(RS,ZET,G,EC,ECRS,ECZET,T,UU,VV,WW,H, &
                         DVCUP,DVCDN)
+<<<<<<< HEAD
 ! C  pw91 CORRELATION, modified by K. Burke to put all arguments
+=======
+! C  pw91 CORRELATION, modified by K. Burke to put all arguments 
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 ! c  as variables in calling statement, rather than in common block
 ! c  May, 1996.
 ! C  INPUT RS: SEITZ RADIUS
@@ -834,6 +1239,7 @@ num31=0.0168869D0;num32=0.11125D0;num33=10.357D0;num34=3.6231D0;num35=0.88026D0;
       real*8, parameter :: a4 = 100.D0
       real*8, parameter :: thrdm = -0.333333333333D0
       real*8, parameter :: thrd2 = 0.666666666667D0
+<<<<<<< HEAD
 
       real*8 rs,zet,g,ec,ecrs,eczet,t,uu,vv,ww
       real*8 bet, delt
@@ -842,6 +1248,16 @@ num31=0.0168869D0;num32=0.11125D0;num33=10.357D0;num34=3.6231D0;num35=0.88026D0;
       real*8 fact0,fact1,h0bt,h0rst,h0z,h0t,h0zt,fact2,fact3,h0tt,h1rs,fact4,h1rst,h1z
       real*8 h1t,h1zt,h1tt,hrs,hrst,ht,htt,hz,hzt,comm,pref,fact5,dvcup,dvcdn
 
+=======
+      
+      real*8 rs,zet,g,ec,ecrs,eczet,t,uu,vv,ww
+      real*8 bet, delt
+      real*8 g3,g4,pon,b,b2,t2,t4,t6,rs2,rs3,q4,q5,q6,q7,cc,r0,r1,coeff,r2,r3,h0
+      real*8 h1,h,ccrs,rsthrd,r4,gz,fac,bg,bec,q8,q9,h0b,h0rs 
+      real*8 fact0,fact1,h0bt,h0rst,h0z,h0t,h0zt,fact2,fact3,h0tt,h1rs,fact4,h1rst,h1z
+      real*8 h1t,h1zt,h1tt,hrs,hrst,ht,htt,hz,hzt,comm,pref,fact5,dvcup,dvcdn 
+            
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
 
       BET = XNU*CC0
       DELT = 2.D0*ALF/BET
@@ -918,7 +1334,11 @@ num31=0.0168869D0;num32=0.11125D0;num33=10.357D0;num34=3.6231D0;num35=0.88026D0;
       END subroutine CORPW91
 ! c----------------------------------------------------------------------
 
+<<<<<<< HEAD
 
 ! End Module
 ! =============================================================================
         end module
+=======
+end module
+>>>>>>> bf11e27e142385b9a32329c1311c5e7a8061f949
