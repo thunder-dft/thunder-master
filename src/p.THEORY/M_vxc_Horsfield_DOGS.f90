@@ -240,26 +240,28 @@
 
 ! Procedure
 ! ===========================================================================
-        write (ilogfile,*)
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*) '        E X C H A N G E   C O R R E L A T I O N          '
-        write (ilogfile,*) '        C H A R G E D   I N T E R A C T I O N S          '
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*)
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*) '        E X C H A N G E   C O R R E L A T I O N          '
+          write (ilogfile,*) '        C H A R G E D   I N T E R A C T I O N S          '
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*)
 
-        write (ilogfile,*) ' Calling one-center case. '
-        call vxc_1c_DOGS
+          write (ilogfile,*) ' Calling one-center case. '
+          call vxc_1c_DOGS
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling correction case. '
+          write (ilogfile,*)
+          write (ilogfile,*) ' Calling correction case. '
+        end if
         call uxc_DOGS
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling ontop case. '
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling ontop case. '
         call vxc_ontop_DOGS
 
-        write (ilogfile,*)
-        write (ilogfile,*) ' Calling atom case. '
+        if (my_proc .eq. 0) write (ilogfile,*)
+        if (my_proc .eq. 0) write (ilogfile,*) ' Calling atom case. '
         call vxc_atom_DOGS
 
 ! Deallocate Arrays
@@ -588,6 +590,23 @@
                 end do
               end if
 
+              ! Set up grid loop control constants
+              rcutoff1 = species(ispecies)%rcutoffA_max
+              rcutoff2 = species(jspecies)%rcutoffA_max
+              dmax = wf(ispecies)%rcutoffA_max + na(jspecies)%rcutoffA_max
+              drr = dmax/float(ndd_uxc - 1)
+              d = -drr
+
+              ! Set final integration limit
+              rhomax = min(rcutoff1, rcutoff2)
+
+! ****************************************************************************
+! Calling rho2c_store for new densities.
+! Because we change the charge states for the densities, then we need to
+! recalculate the density for the ispecies, jspecies pair and store again.
+! ****************************************************************************
+              call rho_2c_store (ispecies, jspecies)
+
               ! cut some lengthy notation with pointers
               pFdata_bundle=>Fdata_bundle_2c(ispecies, jspecies)
               pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c + 1
@@ -601,41 +620,16 @@
               allocate (pFdata_cell%fofx(nME2c_max))
 
 ! begin iammaster
-              if (my_proc .eq. 0) then
-                write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
-              end if
+              if (my_proc .eq. 0)                                            &
+     &          write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, ideriv
 
               ! Open ouput file for this species pair
               write (filename, '("/uxc_", i2.2,".",i2.2,".",i2.2,".dat")') &
      &               ideriv, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-! Skipping causes issues in parallel if resetting bundle size
               if (skip) cycle
-!             if (skip) then
-!               pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
-!               pFdata_bundle%nFdata_cell_2c =                                &
-!                 pFdata_bundle%nFdata_cell_2c + (ideriv_max - ideriv_min) + 1
-!               cycle
-!             end if
               open (unit = 11, file = trim(Fdata_location)//trim(filename),     &
      &              status = 'unknown')
-
-! ****************************************************************************
-! Calling rho2c_store for new densities.
-! Because we change the charge states for the densities, then we need to
-! recalculate the density for the ispecies, jspecies pair and store again.
-! ****************************************************************************
-              call rho_2c_store (ispecies, jspecies)
-
-              ! Set up grid loop control constants
-              rcutoff1 = species(ispecies)%rcutoffA_max
-              rcutoff2 = species(jspecies)%rcutoffA_max
-              dmax = wf(ispecies)%rcutoffA_max + na(jspecies)%rcutoffA_max
-              drr = dmax/float(ndd_uxc - 1)
-              d = -drr
-
-              ! Set final integration limit
-              rhomax = min(rcutoff1, rcutoff2)
 
               ! open directory file
               write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')            &
@@ -690,8 +684,8 @@
 ! Format Statements
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
-200     format (2x, ' Evaluating uxc integrals for ideriv = ', i3,            &
-     &              ' nZ = ', i3, ' and nZ = ', i3)
+200     format (2x, ' Evaluating uxc integrals for nZ = ', i3,               &
+     &              ' and nZ = ', i3, ', ideriv = ', i3)
 
 ! End Subroutine
 ! ===========================================================================
@@ -785,26 +779,6 @@
 ! For the once center case we only do +- dq changes in the density.
             do ideriv = ideriv_min, ideriv_max
 
-! begin iammaster
-              if (my_proc .eq. 0) then
-                write (ilogfile,200) iderv, species(ispecies)%nZ, species(jspecies)%nZ
-              end if
-
-              ! Open ouput file for this species pair
-              write (filename, '("/vxc_ontop_", i2.2,".",i2.2,".",i2.2,".dat")')&
-     &               ideriv, species(ispecies)%nZ, species(jspecies)%nZ
-              inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
- ! Skipping causes issues in parallel if resetting bundle size
-              if (skip) then
- !            if (skip) then
- !              pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
- !              pFdata_bundle%nFdata_cell_2c =                                &
- !                pFdata_bundle%nFdata_cell_2c + (ideriv_max - ideriv_min) + 1
- !              cycle
- !            end if
-              open (unit = 11, file = trim(Fdata_location)//trim(filename),   &
-     &            status = 'unknown')
-
               ! Set the values of Qneutral_ion to the original Qneutral
               do issh = 1, species(ispecies)%nssh
                 species(ispecies)%shell(issh)%Qneutral_ion =                  &
@@ -830,6 +804,16 @@
                 end do
               end if
 
+              ! Set up grid loop control constants
+              rcutoff1 = species(ispecies)%rcutoffA_max
+              rcutoff2 = species(jspecies)%rcutoffA_max
+              dmax = wf(ispecies)%rcutoffA_max + wf(jspecies)%rcutoffA_max
+              drr = dmax/float(ndd_vxc - 1)
+              d = -drr
+
+              ! Set integration limits
+              rhomax = min(rcutoff1, rcutoff2)
+
 ! ****************************************************************************
 ! Calling rho2c_store for new densities.
 ! Because we change the charge states for the densities, then we need to
@@ -847,16 +831,17 @@
               nME2c_max = pFdata_cell%nME
               allocate (pFdata_cell%fofx(nME2c_max))
 
-              ! Set up grid loop control constants
-              rcutoff1 = species(ispecies)%rcutoffA_max
-              rcutoff2 = species(jspecies)%rcutoffA_max
-              dmax = wf(ispecies)%rcutoffA_max + wf(jspecies)%rcutoffA_max
-              drr = dmax/float(ndd_vxc - 1)
-              d = -drr
+! begin iammaster
+              if (my_proc .eq. 0)                                            &
+     &          write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, ideriv
 
-              ! Set integration limits
-	          rhomin = 0.0d0
-    	      rhomax = min(rcutoff1, rcutoff2)
+              ! Open ouput file for this species pair
+              write (filename, '("/vxc_ontop_", i2.2,".",i2.2,".",i2.2,".dat")')&
+     &          ideriv, species(ispecies)%nZ, species(jspecies)%nZ
+              inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
+              if (skip) cycle
+              open (unit = 11, file = trim(Fdata_location)//trim(filename),   &
+     &            status = 'unknown')
 
               ! open directory file
               write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')            &
@@ -892,7 +877,7 @@
      &                                     isorp, ideriv, rcutoff1, rcutoff2, &
      &                                     d, nz_vxc, nrho_vxc,               &
      &                                     rint_vxc_ontop, phifactor, zmin,   &
-     &                                      zmax, rhomin, rhomax, pFdata_cell%fofx)
+     &                                     zmax, rhomin, rhomax, pFdata_cell%fofx)
 
                 ! Write out details.
                 write (11,*) (pFdata_cell%fofx(index_2c),                     &
@@ -910,8 +895,8 @@
 ! Format Statements
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
-200     format (2x, ' Evaluating vxc ontop integrals for ideriv = ', i3,      &
-     &              ' nZ = ', i3, ' and nZ = ', i3)
+200     format (2x, ' Evaluating vxc ontop integrals for nZ = ', i3,      &
+     &              ' and nZ = ', i3, ', ideriv = ', i3)
 
 ! End Subroutine
 ! ===========================================================================
@@ -1005,26 +990,6 @@
 ! For the once center case we only do +- dq changes in the density.
             do ideriv = ideriv_min, ideriv_max
 
-! begin iammaster
-              if (my_proc .eq. 0) then
-                write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
-              end if
-
-              ! Open ouput file for this species pair
-              write (filename, '("/vxc_atom_", i2.2,".",i2.2,".",i2.2,".dat")')&
-     &               ideriv, species(ispecies)%nZ, species(jspecies)%nZ
-              inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
- ! Skipping causes issues in parallel if resetting bundle size
-              if (skip) cycle
- !            if (skip) then
- !              pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
- !              pFdata_bundle%nFdata_cell_2c =                                &
- !                pFdata_bundle%nFdata_cell_2c + (ideriv_max - ideriv_min) + 1
- !              cycle
- !            end if
-              open (unit = 11, file = trim(Fdata_location)//trim(filename),   &
-     &              status = 'unknown')
-
               ! Set the values of Qneutral_ion to the original Qneutral
               do issh = 1, species(ispecies)%nssh
                 species(ispecies)%shell(issh)%Qneutral_ion =                  &
@@ -1050,6 +1015,16 @@
                 end do
               end if
 
+              ! Set up grid loop control constants
+              rcutoff1 = species(ispecies)%rcutoffA_max
+              rcutoff2 = species(jspecies)%rcutoffA_max
+              dmax = wf(ispecies)%rcutoffA_max + na(jspecies)%rcutoffA_max
+              drr = dmax/float(ndd_vxc - 1)
+              d = -drr
+
+              ! Set final integration limit
+              rhomax = min(rcutoff1, rcutoff2)
+
 ! ****************************************************************************
 ! Calling rho2c_store for new densities.
 ! Because we change the charge states for the densities, then we need to
@@ -1067,15 +1042,17 @@
               nME2c_max = pFdata_cell%nME
               allocate (pFdata_cell%fofx(nME2c_max))
 
-              ! Set up grid loop control constants
-              rcutoff1 = species(ispecies)%rcutoffA_max
-              rcutoff2 = species(jspecies)%rcutoffA_max
-              dmax = wf(ispecies)%rcutoffA_max + na(jspecies)%rcutoffA_max
-              drr = dmax/float(ndd_vxc - 1)
-              d = -drr
+! begin iammaster
+              if (my_proc .eq. 0)                                            &
+     &          write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, ideriv
 
-              ! Set final integration limit
-              rhomax = min(rcutoff1, rcutoff2)
+              ! Open ouput file for this species pair
+              write (filename, '("/vxc_atom_", i2.2,".",i2.2,".",i2.2,".dat")')&
+     &               ideriv, species(ispecies)%nZ, species(jspecies)%nZ
+              inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
+              if (skip) cycle
+              open (unit = 11, file = trim(Fdata_location)//trim(filename),   &
+     &              status = 'unknown')
 
               ! open directory file
               write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')            &
@@ -1097,9 +1074,9 @@
               write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
               write (12,*) (pFdata_cell%mvalue_2c(index_2c),                  &
      &                      index_2c = 1, nME2c_max)
+              close (unit = 12)
 
 ! Loop over grid
-              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, ideriv
               do igrid = 1, ndd_vxc
                 d = d + drr
 
@@ -1129,8 +1106,8 @@
 ! Format Statements
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
-200     format (2x, ' Evaluating vxc atom integrals for ideriv = ', i3,       &
-                    ' nZ = ', i3, ' and nZ = ', i3)
+200     format (2x, ' Evaluating vxc atom integrals for nZ = ', i3,          &
+                    ' and nZ = ', i3, ', ideriv = ', i3)
 
 ! End Subroutine
 ! ===========================================================================

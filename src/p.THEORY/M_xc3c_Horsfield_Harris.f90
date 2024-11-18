@@ -162,16 +162,11 @@
         integer ibcba, inaba, itheta    ! looping counters
         integer index_3c, nME3c_max     ! different mu, nu types
         integer iounit                  ! file for writing
-!       integer isuperloop              ! counter over species**3 - parallel
         integer ispecies, jspecies, kspecies  ! species numbers
-!       integer itemp                   ! used to find species values
         integer nFdata_cell_3c          !< indexing of interactions
 
         ! different derivative cases
         integer ideriv, ideriv_min, ideriv_max
-! MPI
-!       integer my_proc, nproc
-!       logical iammaster, iammpi
 
         real dbc, dna                  ! distances between centers
         real dbcx, dnax, distance_bc
@@ -192,14 +187,16 @@
 
 ! Procedure
 ! ===========================================================================
-        write (ilogfile,*)
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*) '          E X C H A N G E   C O R R E L A T I O N        '
-        write (ilogfile,*) '                T H R E E - C E N T E R                  '
-        write (ilogfile,*) '                 (X C 3 C) M A T R I X                   '
-        write (ilogfile,*) '                I N T E R A C T I O N S                  '
-        write (ilogfile,*) ' ******************************************************* '
-        write (ilogfile,*)
+        if (my_proc .eq. 0) then
+          write (ilogfile,*)
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*) '          E X C H A N G E   C O R R E L A T I O N        '
+          write (ilogfile,*) '                T H R E E - C E N T E R                  '
+          write (ilogfile,*) '                 (X C 3 C) M A T R I X                   '
+          write (ilogfile,*) '                I N T E R A C T I O N S                  '
+          write (ilogfile,*) ' ******************************************************* '
+          write (ilogfile,*)
+        end if
 
 ! Initialize the Legendre coefficients
         call gleg (ctheta, ctheta_weights, P_ntheta)
@@ -214,17 +211,6 @@
         do ispecies = 1, nspecies
           do jspecies = 1, nspecies
             do kspecies = 1, nspecies
-!             do isuperloop = 1, nspecies*nspecies*nspecies
-
-! Establish which species are on this processor
-!               if (mod(isuperloop, nproc) .eq. my_proc) then
-!               itemp = isuperloop
-!               kspecies = 1 + int((itemp - 1)/(nspecies*nspecies))
-!               itemp = itemp - (kspecies - 1)*(nspecies*nspecies)
-!               jspecies = 1 + int((itemp - 1)/(nspecies))
-!               itemp   = itemp - (jspecies - 1)*(nspecies)
-!               ispecies = itemp
-
               pFdata_bundle=>Fdata_bundle_3c(ispecies, jspecies, kspecies)
               pFdata_bundle%nFdata_cell_3c = pFdata_bundle%nFdata_cell_3c + 1
               nFdata_cell_3c = pFdata_bundle%nFdata_cell_3c
@@ -239,15 +225,6 @@
               allocate (qpl(P_ntheta, nME3c_max, ideriv_min:(ideriv_max - ideriv_min + 1)))
               qpl = 0.0d0
 
-              ! Test output file for this species triplet
-              itheta = 1
-              write (filename, '("/", "xc3c_", i2.2, "_", i2.2, ".", i2.2,   &
-     &                                       ".", i2.2, ".", i2.2, ".dat")') &
-     &               itheta, ideriv, species(ispecies)%nZ,                   &
-     &                               species(jspecies)%nZ, species(kspecies)%nZ
-              inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-              if (skip) cycle
-
               ! Set up grid loop control constants
               rcutoff1 = species(ispecies)%rcutoffA_max
               rcutoff2 = species(jspecies)%rcutoffA_max
@@ -258,56 +235,79 @@
               pFdata_bundle%nFdata_cell_3c = pFdata_bundle%nFdata_cell_3c - 1
               do itheta = 1, P_ntheta
                 pFdata_bundle%nFdata_cell_3c = pFdata_bundle%nFdata_cell_3c + 1
+              end do
 
-                write (filename, '("/", "xc3c_", i2.2, "_", i2.2, ".", i2.2,   &
-     &                                      ".", i2.2, ".", i2.2, ".dat")')    &
-     &            itheta, ideriv, species(ispecies)%nZ, species(jspecies)%nZ,  &
+! begin iammaster
+              if (my_proc .eq. 0) then
+                write (ilogfile,200) species(ispecies)%nZ,                   &
+     &                               species(jspecies)%nZ, species(kspecies)%nZ
+                do itheta = 1, P_ntheta
+                  pFdata_bundle%nFdata_cell_3c = pFdata_bundle%nFdata_cell_3c - 1
+                end do
+
+                do itheta = 1, P_ntheta
+                  pFdata_bundle%nFdata_cell_3c = pFdata_bundle%nFdata_cell_3c + 1
+                  write (filename, '("/", "xc3c_", i2.2, "_", i2.2, ".",     &
+     &                               i2.2, ".", i2.2, ".", i2.2, ".dat")')   &
+     &            itheta, ideriv, species(ispecies)%nZ, species(jspecies)%nZ,&
      &                            species(kspecies)%nZ
 
-                ! open directory file
-                write (interactions,                                           &
-     &                 '("/3c.",i2.2,".",i2.2,".",i2.2,".dir")')               &
-     &            species(ispecies)%nZ, species(jspecies)%nZ,                  &
-     &            species(kspecies)%nZ
-                open (unit = 13,                                               &
-     &                file = trim(Fdata_location)//trim(interactions),         &
-     &                status = 'unknown', position = 'append')
-                write (13,100) pFdata_bundle%nFdata_cell_3c, P_xc3c, ideriv,   &
-     &                         itheta, filename(2:30), pFdata_cell%nME,        &
-     &                         nna_xc3c, dna, nbc_xc3c, dbc
-                close (unit = 13)
+                  ! open directory file
+                  write (interactions,                                       &
+     &                   '("/3c.",i2.2,".",i2.2,".",i2.2,".dir")')           &
+     &              species(ispecies)%nZ, species(jspecies)%nZ,              &
+     &              species(kspecies)%nZ
+                  open (unit = 13,                                           &
+     &                  file = trim(Fdata_location)//trim(interactions),     &
+     &                  status = 'unknown', position = 'append')
+                  write (13,100) pFdata_bundle%nFdata_cell_3c, P_xc3c,       &
+     &                           ideriv, itheta, filename(2:30),             &
+     &                           pFdata_cell%nME, nna_xc3c, dna, nbc_xc3c, dbc
+                  close (unit = 13)
 
-                ! Open mu, nu, mvalue file and write out values.
-                write (filename, '("/",i2.2, "_munu_3c.",                      &
-     &                                 i2.2,".",i2.2,".",i2.2,".dat")')        &
-     &             P_xc3c, species(ispecies)%nZ, species(jspecies)%nZ,         &
-     &                     species(kspecies)%nZ
-                open (unit = 12, file = trim(Fdata_location)//trim(filename),  &
-     &                status = 'unknown', position = 'append')
+                  ! Open mu, nu, mvalue file and write out values.
+                  write (filename, '("/",i2.2, "_munu_3c.",                  &
+     &                               i2.2,".",i2.2,".",i2.2,".dat")')        &
+     &              P_xc3c, species(ispecies)%nZ, species(jspecies)%nZ,      &
+     &                      species(kspecies)%nZ
+                  open (unit = 12,                                           &
+     &                  file = trim(Fdata_location)//trim(filename),         &
+     &                  status = 'unknown', position = 'append')
 
-                ! Write out the mapping - stored in mu, nu, and mvalue
-                write (12,*) (pFdata_cell%mu_3c(index_3c),                     &
-     &                                          index_3c = 1, nME3c_max)
-                write (12,*) (pFdata_cell%nu_3c(index_3c),                     &
-     &                                              index_3c = 1, nME3c_max)
-                write (12,*) (pFdata_cell%mvalue_3c(index_3c),                 &
-     &                                                  index_3c = 1, nME3c_max)
-              end do ! end loop over itheta (defining files)
-              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, &
-     &                             species(kspecies)%nZ
+                  ! Write out the mapping - stored in mu, nu, and mvalue
+                  write (12,*) (pFdata_cell%mu_3c(index_3c),                 &
+     &                                            index_3c = 1, nME3c_max)
+                  write (12,*) (pFdata_cell%nu_3c(index_3c),                 &
+     &                                            index_3c = 1, nME3c_max)
+                  write (12,*) (pFdata_cell%mvalue_3c(index_3c),             &
+     &                                                index_3c = 1, nME3c_max)
+                  close (unit = 12)
+                end do ! end loop over itheta (defining files)
+
+! end iammaster
+              end if
+
+              ! Test output file for this species triplet
+              itheta = 1
+              write (filename, '("/", "xc3c_", i2.2, "_", i2.2, ".",         &
+     &                               i2.2, ".", i2.2, ".", i2.2, ".dat")')   &
+     &           itheta, ideriv, species(ispecies)%nZ,                       &
+     &                           species(jspecies)%nZ, species(kspecies)%nZ
+              inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
+              if (skip) cycle
 
 ! Open all the output files.
               iounit = 12
               do itheta = 1, P_ntheta
                 iounit = iounit + 1
-                write (filename, '("/", "xc3c_", i2.2, "_", i2.2, ".", i2.2,   &
-     &                             ".", i2.2, ".", i2.2, ".dat")')             &
-     &                 itheta, ideriv, species(ispecies)%nZ,                   &
+                write (filename, '("/", "xc3c_", i2.2, "_", i2.2, ".", i2.2, &
+     &                             ".", i2.2, ".", i2.2, ".dat")')           &
+     &                 itheta, ideriv, species(ispecies)%nZ,                 &
      &                 species(jspecies)%nZ, species(kspecies)%nZ
 
 ! Write out the data...
-                open (unit = (iounit),                                         &
-     &                file = trim(Fdata_location)//trim(filename),             &
+                open (unit = (iounit),                                       &
+     &                file = trim(Fdata_location)//trim(filename),           &
      &                status = 'unknown')
               end do
 
@@ -355,17 +355,10 @@
                 iounit = iounit + 1
                 close (unit = iounit)
               end do
-
-!         end if ! MPI which node end if
-!       end do ! end loop over isuperloop
-
               deallocate (qpl)
             end do  ! end loop over kspecies
           end do  ! end loop over jspecies
         end do  ! end loop over ispecies
-
-! Finalize MPI
-!       call finalize_MPI
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -581,7 +574,9 @@
 
 ! Value of density and corresponding derivatives at the point r, z
 ! ....for one center piece
-        real density, density_p, density_pp
+        real density
+        real density_p, density_pp
+        real density_pap
 
 ! Value of density and corresponding derivatives at the point r, z
 ! Exchange-correlation potential and energies for two-center density
@@ -633,7 +628,8 @@
 ! Compute the exchange correlation potential for the one-center case
 ! ***************************************************************************
 ! Evaluate the density for the one-center - in1
-        call rho_1c (ispecies, r1, drho, density, density_p, density_pp)
+        call rho_1c (ispecies, r1, drho,                                     &
+     &               density, density_p, density_pp, density_pap)
         density_2c = density
 !       density_2c_p = density_p
 !       density_2c_pp = density_pp
@@ -642,7 +638,8 @@
 ! Compute the exchange correlation potential for the one-center case
 ! ***************************************************************************
 ! Evaluate the density for the one-center - in1
-        call rho_1c (jspecies, r2, drho, density, density_p, density_pp)
+        call rho_1c (jspecies, r2, drho,                                     &
+     &               density, density_p, density_pp, density_pap)
         density_2c = density_2c + density
 !       density_2c_p = density_2c_p + density_p
 !       density_2c_pp = density_2c_pp + density_pp
@@ -651,7 +648,8 @@
 ! Compute the exchange correlation potential for the one-center case
 ! ***************************************************************************
 ! Evaluate the density for the one-center - in1
-        call rho_1c (kspecies, r3, drho, density, density_p, density_pp)
+        call rho_1c (kspecies, r3, drho,                                     &
+     &               density, density_p, density_pp, density_pap)
         density_3c = density_2c + density
 !       density_3c_p = density_2c_p + density_p
 !       density_3c_pp = density_2c_pp + density_pp

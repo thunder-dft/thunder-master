@@ -205,8 +205,10 @@
 ! end iammaster
         end if
 
-        if (my_proc .eq. 0) write (ilogfile,*) ' Calling one-center case. '
-        call vxc_1c
+        if (my_proc .eq. 0) then
+          write (ilogfile,*) ' Calling one-center case. '
+          call vxc_1c
+        end if
 
         if (my_proc .eq. 0) write (ilogfile,*)
         if (my_proc .eq. 0) write (ilogfile,*) ' Building the two center density on grid '
@@ -1318,6 +1320,9 @@
 ! We are doing only Harris here, so set isorp = 0
         isorp = 0
 
+        ! Set initial integration limit
+        rhomin = 0.0d0
+
 ! Loop over species
         do ispecies = 1, nspecies
           do jspecies = 1, nspecies
@@ -1331,9 +1336,8 @@
             allocate (pFdata_cell%fofx(nME2c_max))
 
 ! begin iammaster
-            if (my_proc .eq. 0) then
-              write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
-            end if
+            if (my_proc .eq. 0)                                              &
+     &        write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ
 
             ! Open ouput file for this species pair
             write (filename, '("/vxc_ontop_", i2.2, ".", i2.2, ".", i2.2,    &
@@ -1352,7 +1356,6 @@
             d = -drr
 
             ! Set integration limits
-            rhomin = 0.0d0
             rhomax = min(rcutoff1, rcutoff2)
 
             ! open directory file

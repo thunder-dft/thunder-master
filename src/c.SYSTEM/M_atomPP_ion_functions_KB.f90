@@ -65,6 +65,9 @@
         use M_atom_functions
         use M_atomPP_functions
 
+! /MPI
+        use M_mpi
+
         implicit none
 
 ! Type Declaration
@@ -290,12 +293,17 @@
           open (unit = 88, file = trim(Fdata_location)//'/'//trim(file_in),  &
      &          status = 'old')
 
-          write (ilogfile,*)
-          write (ilogfile,*) ' *-----------------------------------------------* '
-          write (ilogfile,*) ' |           Welcome to READvPP for ion          | '
-          write (ilogfile,*) ' |  Reading pseudo-potential files of the atom   | '
-          write (ilogfile,*) ' *-----------------------------------------------* '
-          write (ilogfile, 101) file_in
+! begin iammaster
+          if (my_proc .eq. 0) then
+            write (ilogfile,*)
+            write (ilogfile,*) ' *-----------------------------------------------* '
+            write (ilogfile,*) ' |           Welcome to READvPP for ion          | '
+            write (ilogfile,*) ' |  Reading pseudo-potential files of the atom   | '
+            write (ilogfile,*) ' *-----------------------------------------------* '
+            write (ilogfile, 101) file_in
+
+! end iammaster
+          end if
 
 ! There are 14 message lines in each pseudopotential file
           do iline = 1, 14
@@ -312,9 +320,12 @@
             read (88,*) species_PP_ion(ispecies)%iexc, species_PP_ion(ispecies)%xc_fraction
           end if
           iexc = species_PP_ion(ispecies)%iexc
+
           if (iexc .ne. species_PP(ispecies)%iexc) then
-            write (ilogfile,*) ' The exchange-correlation options of the Z.pp and '
-            write (ilogfile,*) ' the Z++.pp files do not match! '
+            if (my_proc .eq. 0) then
+              write (ilogfile,*) ' The exchange-correlation options of the Z.pp and '
+              write (ilogfile,*) ' the Z++.pp files do not match! '
+            end if
             stop
           end if
 
@@ -322,15 +333,21 @@
           read (88,*) nssh_PP
 
           if (nssh_PP .ne. species(ispecies)%nssh_PP) then
-            write (ilogfile,*) ' nssh_PP does not match in Z.pp and Z++.pp '
+            ! begin iammaster
+            if (my_proc .eq. 0) then
+              write (ilogfile,*) ' nssh_PP does not match in Z.pp and Z++.pp '
+            end if
             stop
           end if
           allocate (lssh_PP (nssh_PP))
           read (88,*) (lssh_PP (issh), issh = 1, nssh_PP)
           do issh = 1, nssh_PP
             if (lssh_PP(issh) .ne. species(ispecies)%shell_PP(issh)%lssh) then
-              write (ilogfile,*) ' For issh = ', issh
-              write (ilogfile,*) ' lssh_PP does not match in Z.pp and Z++.pp '
+              ! begin iammaster
+              if (my_proc .eq. 0) then
+                write (ilogfile,*) ' For issh = ', issh
+                write (ilogfile,*) ' lssh_PP does not match in Z.pp and Z++.pp '
+              end if
               stop
             end if
           end do
@@ -350,7 +367,9 @@
           read (88,*) species(ispecies)%rcutoff_PP_ion
 
 ! Read in the short-range local part  - this is not needed for the crtor
-          write (ilogfile,*) ' Reading short-range part of pseudopotential '
+          ! begin iammaster
+          if (my_proc .eq. 0)                                                &
+     &      write (ilogfile,*) ' Reading short-range part of pseudopotential '
           read (88,*) mesh
           species_PP_ion(ispecies)%mesh_PP = mesh
           allocate (species_PP_ion(ispecies)%r_short(mesh))
@@ -364,7 +383,8 @@
           species_PP_ion(ispecies)%dr_min = species_PP_ion(ispecies)%rcutoffA_max/real(mesh - 1)
 
 ! Read in the pseudopotential - this is not needed for the crtor
-          write (ilogfile,*) ' Reading non-local part of pseudopotential '
+          if (my_proc .eq. 0)                                                &
+     &      write (ilogfile,*) ' Reading non-local part of pseudopotential '
           do issh = 1, species(ispecies)%nssh_PP
             read (88,201) mesh
             species_PP_ion(ispecies)%shell_PP(issh)%mesh_NL = mesh
@@ -383,7 +403,7 @@
           end do
 
 ! Now read in the points for the non-local part
-          write (ilogfile,*) ' Reading pseudopotential '
+          if (my_proc .eq. 0) write (ilogfile,*) ' Reading pseudopotential '
           do issh = 1, species(ispecies)%nssh_PP
             read (88,202) mesh
             species_PP_ion(ispecies)%shell_PP(issh)%mesh = mesh
@@ -408,9 +428,12 @@
             rcutoff = (mesh-1)*species_PP_ion(ispecies)%shell_PP(issh)%dr
           end do ! issh
 
-          write (ilogfile,*)
-          write (ilogfile,*) ' *------------- END READvPP for ion ----------------*'
-          write (ilogfile,*)
+! begin iammaster
+          if (my_proc .eq. 0) then
+            write (ilogfile,*)
+            write (ilogfile,*) ' *------------- END READvPP for ion ----------------*'
+            write (ilogfile,*)
+          end if
         end do ! ispecies
 
 ! Deallocate Arrays

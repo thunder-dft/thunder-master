@@ -364,6 +364,7 @@
                   close (unit = iounit)
                 end do
               end do  ! end isporp loop
+
               deallocate (qpl)
             end do  ! end loop over kspecies
           end do  ! end loop over jspecies
