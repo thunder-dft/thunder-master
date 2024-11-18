@@ -228,8 +228,10 @@
          end do
         end do
 
-        if (my_proc .eq. 0) write (ilogfile,*) ' Calling one-center case. '
-        call vxc_1c_Harris
+        if (my_proc .eq. 0) then
+          write (ilogfile,*) ' Calling one-center case. '
+          call vxc_1c_Harris
+        end if
 
 ! begin iammaster
         if (my_proc .eq. 0) write (ilogfile,*)
@@ -298,7 +300,7 @@
 !
 ! Program Declaration
 ! ====================================================================
-        subroutine rho_1c (ispecies, r, dr, rho, rhop, rhopp)
+        subroutine rho_1c (ispecies, r, dr, rho, rhop, rhopp, rhopap)
         implicit none
 
 ! Argument Declaration and Description
@@ -311,7 +313,7 @@
 
 ! Output
         ! density value and derivatives
-        real, intent (out) :: rho, rhop, rhopp
+        real, intent (out) :: rho, rhop, rhopp, rhopap
 
 ! Parameters and Data Declaration
 ! ===========================================================================
@@ -357,6 +359,7 @@
 ! Only calculate the derivatives if doing GGA exchange-correlation.
         rhop = 0.0d0
         rhopp = 0.0d0
+        rhopap = 0.0d0
         if (iexc .eq. 4 .or. iexc .eq. 5 .or. iexc .eq. 6 .or.                &
      &      iexc .eq. 9 .or. iexc .eq. 10) then
 
@@ -372,10 +375,9 @@
 ! Here the first and second derivatives of the density is computed.
           if ((r - dr) .gt. 1.0d-5) then
             rhop = (density_pdr - density_mdr)/(2.0d0*dr)
-            rhop = rhop/(4.0d0*4.0d0*atan(1.0d0))
-
             rhopp = (density_pdr - 2.0d0*density + density_mdr)/dr**2
-            rhopp = rhopp/(4.0d0*4.0d0*atan(1.0d0))
+            rhopap = (abs(density_pdr - density)                             &
+     &                - abs(density - density_mdr))/dr**2
           else
 
 ! At the endpoint do a forward difference. First, we need the point at r+2dr.
@@ -384,15 +386,20 @@
               xnocc = species(ispecies)%shell(issh)%Qneutral_ion
               rmax = species(ispecies)%shell(issh)%rcutoffA
               rin = r + 2.0d0*dr
-              density_p2dr =                                                  &
+              density_p2dr =                                                 &
      &          density_p2dr + xnocc*psiofr(rin, rmax, ispecies, issh)**2
             end do
 
-            rhop = (density_pdr - density)/(dr*(4.0d0*4.0d0*atan(1.0d0)))
-            rhopp = (density_p2dr - 2.0d0*density_pdr                         &
-     &                            + density)/(dr**2*(4.0d0*4.0d0*atan(1.0d0)))
+            rhop = (density_pdr - density)/dr
+            rhopp = (density_p2dr - 2.0d0*density_pdr                        &
+     &                            + density)/dr**2
+            rhopap = (abs(density - density_p2dr)                            &
+                      - abs(density_pdr - density_p2dr))/2.0*dr**2
           end if
         end if
+        rhop = rhop/(4.0d0*4.0d0*atan(1.0d0))
+        rhopp = rhopp/(4.0d0*4.0d0*atan(1.0d0))
+        rhopap = rhopap/(4.0d0*4.0d0*atan(1.0d0))
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -645,6 +652,7 @@
 ! Value of density and corresponding derivatives at the point r, z
         real density
         real density_p, density_pp
+        real density_pap
 
 ! Output from calling get_potxc_1c
         real exc
@@ -662,14 +670,20 @@
 ! Compute the exchange correlation potential for the one-center case
 ! ***************************************************************************
 ! Evaluate the density for the one-center - in1
-        call rho_1c (ispecies, r, drho, density, density_p, density_pp)
+        call rho_1c (ispecies, r, drho,                                      &
+     &               density, density_p, density_pp, density_pap)
 
         rin = r/P_abohr
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
+        density_pap = density_pap*P_abohr**5
+
+        exc = 0.0d0
+        vxc = 0.0d0
         call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,        &
-     &                     density_pp, exc, vxc, dnuxc, dnuxcs, dexc)
+     &                     density_pp, density_pap,                           &
+     &                     exc, vxc, dnuxc, dnuxcs, dexc)
 
 ! Answers are in Hartrees convert to eV.
         dexc_1c = P_hartree*(density/P_abohr**3)*(exc - vxc)
@@ -848,6 +862,9 @@
 ! Exchange-correlation potential and energies for three-center density
         real density
         real density_p, density_pp
+        real density_pap
+
+! Output from calling get_potxc_1c
         real dnuxc, dnuxcs
         real exc, vxc, dexc
 
@@ -860,14 +877,19 @@
 ! Compute the exchange correlation potential for the one-center case
 ! ***************************************************************************
 ! Evaluate the density for the one-center - in1
-        call rho_1c (ispecies, r1, drho, density, density_p, density_pp)
+        call rho_1c (ispecies, r1, drho,                                     &
+     &               density, density_p, density_pp, density_pap)
 
         rin = r1/P_abohr
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
+        density_pap = density_pap*P_abohr**5
+
+        vxc = 0.0d0
         call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,        &
-     &                     density_pp, exc, vxc, dnuxc, dnuxcs, dexc)
+     &                     density_pp, density_pap,                           &
+     &                     exc, vxc, dnuxc, dnuxcs, dexc)
 
 ! Answers are in Hartrees convert to eV.
         dvxc_1c = P_hartree*vxc
@@ -1223,16 +1245,15 @@
             allocate (pFdata_cell%fofx(nME2c_max))
 
 ! begin iammaster
-            if (my_proc .eq. 0) then
-              write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
-            end if
+            if (my_proc .eq. 0)                                              &
+     &        write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
 
             ! Open ouput file for this species pair
-            write (filename, '("/uxc_", i2.2,".",i2.2,".",i2.2,".dat")') &
+            write (filename, '("/uxc_", i2.2,".",i2.2,".",i2.2,".dat")')     &
      &             ideriv, species(ispecies)%nZ, species(jspecies)%nZ
             inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
             if (skip) cycle
-            open (unit = 11, file = trim(Fdata_location)//trim(filename),     &
+            open (unit = 11, file = trim(Fdata_location)//trim(filename),    &
      &            status = 'unknown')
 
             ! Set up grid loop control constants
@@ -1246,25 +1267,26 @@
             rhomax = min(rcutoff1, rcutoff2)
 
             ! open directory file
-            write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')              &
+            write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')             &
      &        species(ispecies)%nZ, species(jspecies)%nZ
-            open (unit = 13, file = trim(Fdata_location)//trim(interactions), &
+            open (unit = 13, file = trim(Fdata_location)//trim(interactions),&
      &            status = 'unknown', position = 'append')
-            write (13,100) pFdata_bundle%nFdata_cell_2c, P_uxc, ideriv,       &
+            write (13,100) pFdata_bundle%nFdata_cell_2c, P_uxc, ideriv,      &
      &                     filename(2:30), pFdata_cell%nME, ndd_uxc, dmax
             close (unit = 13)
 
             ! Open mu, nu, mvalue file and write out values.
-            write (filename, '("/",i2.2, "_munu_2c.",i2.2,".",i2.2,".dat")')  &
+            write (filename, '("/",i2.2, "_munu_2c.",i2.2,".",i2.2,".dat")') &
      &             P_uxc, species(ispecies)%nZ, species(jspecies)%nZ
-            open (unit = 12, file = trim(Fdata_location)//trim(filename),     &
+            open (unit = 12, file = trim(Fdata_location)//trim(filename),    &
      &            status = 'unknown', position = 'append')
 
             ! write the mapping - stored in mu, nu, and mvalue
             write (12,*) (pFdata_cell%mu_2c(index_2c), index_2c = 1, nME2c_max)
             write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
-            write (12,*) (pFdata_cell%mvalue_2c(index_2c),                    &
+            write (12,*) (pFdata_cell%mvalue_2c(index_2c),                   &
      &                    index_2c = 1, nME2c_max)
+            close (unit = 12)
 
 ! Loop over grid
             do igrid = 1, ndd_uxc
@@ -1274,14 +1296,14 @@
               zmin = max(-rcutoff1, d - rcutoff2)
               zmax = min(rcutoff1, d + rcutoff2)
 
-              call evaluate_integral_2c (nFdata_cell_2c, ispecies, jspecies,  &
-     &                                   isorp, ideriv, rcutoff1, rcutoff2,   &
-     &                                   d, nz_uxc, nrho_uxc, rint_uxc,       &
-     &                                   phifactor, zmin, zmax,               &
+              call evaluate_integral_2c (nFdata_cell_2c, ispecies, jspecies, &
+     &                                   isorp, ideriv, rcutoff1, rcutoff2,  &
+     &                                   d, nz_uxc, nrho_uxc, rint_uxc,      &
+     &                                   phifactor, zmin, zmax,              &
      &                                   rhomin, rhomax, pFdata_cell%fofx)
 
               ! Write out details.
-              write (11,*) (pFdata_cell%fofx(index_2c),                       &
+              write (11,*) (pFdata_cell%fofx(index_2c),                      &
      &                                       index_2c = 1, nME2c_max)
             end do ! igrid
             write (11,*)
@@ -1295,7 +1317,7 @@
 ! Format Statements
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
-200     format (2x, ' Evaluating uxc integrals for ideriv = ', i3,            &
+200     format (2x, ' Evaluating uxc integrals for ideriv = ', i3,           &
      &              ' nZ = ', i3, ' and nZ = ', i3)
 
 ! End Subroutine
@@ -1322,7 +1344,7 @@
 ! ===========================================================================
 ! Program Declaration
 ! ===========================================================================
-        real function rint_uxc (itype, ispecies, jspecies, isorp, d,          &
+        real function rint_uxc (itype, ispecies, jspecies, isorp, d,         &
      &                          rho, z1, z2, ideriv, index_2c)
         implicit none
 
@@ -1434,7 +1456,7 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        real function dexc_2c (iexc, xc_fraction, ispecies, jspecies,         &
+        real function dexc_2c (iexc, xc_fraction, ispecies, jspecies,        &
      &                         r, z, d, r1, r2)
         implicit none
 
@@ -1471,8 +1493,12 @@
 ! Value of density and corresponding derivatives at the point r, z
         real density
         real density_p, density_pp
+        real density_pap
+
         real density_z, density_zz
         real density_pz
+
+! Output from calling get_potxc_1c and potxc_2c
         real exc_1c, vxc_1c, dnuxc_1c, dnuxcs_1c, dexc_1c
         real exc_2c, vxc_2c, dnuxc_2c, dnuxcs_2c
 
@@ -1503,25 +1529,27 @@
 
 ! Interpolate the density and gradients of the density at the given
 ! point (r, z).
-        call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax, dz,  &
+        call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax, dz, &
                                  nnrho, nnz, prho_2c%rho, density)
 
 ! Only interpolate the derivatives if doing GGA exchange-correlation.
-        if (iexc .eq. 4 .or. iexc .eq. 5 .or. iexc .eq. 6 .or.                &
+        if (iexc .eq. 4 .or. iexc .eq. 5 .or. iexc .eq. 6 .or.               &
             iexc .eq. 9 .or. iexc .eq. 10) then
-          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,    &
+          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,   &
      &                             dz, nnrho, nnz, prho_2c%rhop, density_p)
-          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,    &
+          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,   &
                                    dz, nnrho, nnz, prho_2c%rhopp, density_pp)
-          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,    &
+          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,   &
                                    dz, nnrho, nnz, prho_2c%rhoz, density_z)
-          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,    &
+          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,   &
                                    dz, nnrho, nnz, prho_2c%rhozz, density_zz)
-          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,    &
+          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,   &
                                    dz, nnrho, nnz, prho_2c%rhopz, density_pz)
         else
           density_p = 0.0d0
           density_pp = 0.0d0
+          density_pap = 0.0d0
+
           density_z = 0.0d0
           density_zz = 0.0d0
           density_pz = 0.0d0
@@ -1532,6 +1560,8 @@
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
+        density_pap = density_pap*P_abohr**5
+
         density_z = density_z*P_abohr**4
         density_zz = density_zz*P_abohr**5
         density_pz = density_pz*P_abohr**5
@@ -1542,8 +1572,8 @@
 ! point (r, z).
 
 ! Here energy and potential due to exchange and correlation are calculated.
-        call get_potxc_2c (iexc, xc_fraction, rin, density, density_p,        &
-     &                     density_pp, density_z, density_zz, density_pz,     &
+        call get_potxc_2c (iexc, xc_fraction, rin, density, density_p,       &
+     &                     density_pp, density_z, density_zz, density_pz,    &
      &                     exc_2c, vxc_2c, dnuxc_2c, dnuxcs_2c)
 
 ! Answers are in Hartrees convert to eV.
@@ -1564,14 +1594,20 @@
         drho = species(ispecies)%rcutoffA_max/dfloat(nrho_rho_store)
 
 ! Evaluate the density for the one-center - in1
-        call rho_1c (ispecies, r1, drho, density, density_p, density_pp)
+        call rho_1c (ispecies, r1, drho,                                     &
+     &               density, density_p, density_pp, density_pap)
 
         rin = r1/P_abohr
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
-        call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,        &
-     &                     density_pp, exc_1c, vxc_1c, dnuxc_1c, dnuxcs_1c, dexc_1c)
+        density_pap = density_pap*P_abohr**5
+
+        exc_1c = 0.0d0
+        vxc_1c = 0.0d0
+        call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,       &
+     &                     density_pp, density_pap,                          &
+     &                     exc_1c, vxc_1c, dnuxc_1c, dnuxcs_1c, dexc_1c)
 
 ! Answers are in Hartrees convert to eV.
         dexc_2c = dexc_2c - P_Hartree*(density/P_abohr**3)*(exc_1c - vxc_1c)
@@ -1583,14 +1619,20 @@
         drho = species(jspecies)%rcutoffA_max/dfloat(nrho_rho_store)
 
 ! Evaluate the density for the one-center - in1
-        call rho_1c (jspecies, r2, drho, density, density_p, density_pp)
+        call rho_1c (jspecies, r2, drho,                                    &
+     &               density, density_p, density_pp, density_pap)
 
         rin = r2/P_abohr
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
-        call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,        &
-     &                     density_pp, exc_1c, vxc_1c, dnuxc_1c, dnuxcs_1c, dexc_1c)
+        density_pap = density_pap*P_abohr**5
+
+        exc_1c = 0.0d0
+        vxc_1c = 0.0d0
+        call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,       &
+     &                     density_pp, density_pap,                          &
+     &                     exc_1c, vxc_1c, dnuxc_1c, dnuxcs_1c, dexc_1c)
 
 ! Answers are in Hartrees convert to eV.
         dexc_2c = dexc_2c - P_Hartree*(density/P_abohr**3)*(exc_1c - vxc_1c)
@@ -1687,16 +1729,15 @@
             allocate (pFdata_cell%fofx(nME2c_max))
 
 ! begin iammaster
-            if (my_proc .eq. 0) then
-              write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
-            end if
+            if (my_proc .eq. 0)                                              &
+     &        write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
 
             ! Open ouput file for this species pair
             write (filename, '("/vxc_ontop_", i2.2,".",i2.2,".",i2.2,".dat")')&
      &  	       ideriv, species(ispecies)%nZ, species(jspecies)%nZ
             inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
             if (skip) cycle
-            open (unit = 11, file = trim(Fdata_location)//trim(filename),     &
+            open (unit = 11, file = trim(Fdata_location)//trim(filename),    &
      &            status = 'unknown')
 
             ! Set up grid loop control constants
@@ -1711,25 +1752,26 @@
     	    rhomax = min(rcutoff1, rcutoff2)
 
             ! open directory file
-            write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')              &
+            write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')             &
      &        species(ispecies)%nZ, species(jspecies)%nZ
-            open (unit = 13, file = trim(Fdata_location)//trim(interactions), &
+            open (unit = 13, file = trim(Fdata_location)//trim(interactions),&
      &            status = 'unknown', position = 'append')
-            write (13,100) pFdata_bundle%nFdata_cell_2c, P_vxc_ontop, ideriv, &
+            write (13,100) pFdata_bundle%nFdata_cell_2c, P_vxc_ontop, ideriv,&
      &                     filename(2:30), pFdata_cell%nME, ndd_vxc, dmax
             close (unit = 13)
 
             ! Open mu, nu, mvalue file and write out values.
-            write (filename, '("/",i2.2, "_munu_2c.",i2.2,".",i2.2,".dat")')  &
+            write (filename, '("/",i2.2, "_munu_2c.",i2.2,".",i2.2,".dat")') &
      &             P_vxc_ontop, species(ispecies)%nZ, species(jspecies)%nZ
-            open (unit = 12, file = trim(Fdata_location)//trim(filename),     &
+            open (unit = 12, file = trim(Fdata_location)//trim(filename),    &
      &            status = 'unknown', position = 'append')
 
             ! write the mapping - stored in mu, nu, and mvalue
             write (12,*) (pFdata_cell%mu_2c(index_2c), index_2c = 1, nME2c_max)
             write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
-            write (12,*) (pFdata_cell%mvalue_2c(index_2c),                    &
+            write (12,*) (pFdata_cell%mvalue_2c(index_2c),                   &
      &                    index_2c = 1, nME2c_max)
+            close (unit = 12)
 
 ! Loop over grid
             do igrid = 1, ndd_vxc
@@ -1739,14 +1781,14 @@
               zmin = max(-rcutoff1, d - rcutoff2)
               zmax = min(rcutoff1, d + rcutoff2)
 
-              call evaluate_integral_2c (nFdata_cell_2c, ispecies, jspecies,  &
-     &                                   isorp, ideriv, rcutoff1, rcutoff2,   &
-     &                                   d, nz_vxc, nrho_vxc,                 &
-     &                                   rint_vxc_ontop, phifactor, zmin,     &
+              call evaluate_integral_2c (nFdata_cell_2c, ispecies, jspecies, &
+     &                                   isorp, ideriv, rcutoff1, rcutoff2,  &
+     &                                   d, nz_vxc, nrho_vxc,                &
+     &                                   rint_vxc_ontop, phifactor, zmin,    &
      &                                   zmax, rhomin, rhomax, pFdata_cell%fofx)
 
               ! Write out details.
-              write (11,*) (pFdata_cell%fofx(index_2c),                       &
+              write (11,*) (pFdata_cell%fofx(index_2c),                      &
      &                                       index_2c = 1, nME2c_max)
             end do ! igrid
             write (11,*)
@@ -1760,7 +1802,7 @@
 ! Format Statements
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
-200     format (2x, ' Evaluating vxc ontop integrals for ideriv = ', i3,      &
+200     format (2x, ' Evaluating vxc ontop integrals for ideriv = ', i3,     &
      &              ' nZ = ', i3, ' and nZ = ', i3)
 
 ! End Subroutine
@@ -1788,7 +1830,7 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        real function rint_vxc_ontop (itype, ispecies, jspecies, isorp, d,    &
+        real function rint_vxc_ontop (itype, ispecies, jspecies, isorp, d,   &
      &                                rho, z1, z2, ideriv, index_2c)
         implicit none
 
@@ -1952,8 +1994,12 @@
 ! Value of density and corresponding derivatives at the point r, z
         real density
         real density_p, density_pp
+        real density_pap
+
         real density_z, density_zz
         real density_pz
+
+! Output from calling get_potxc_1c
         real dnuxc, dnuxcs
         real exc, vxc
 
@@ -1984,25 +2030,26 @@
 
 ! Interpolate the density and gradients of the density at the given
 ! point (r, z).
-        call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax, dz,  &
+        call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax, dz, &
                                  nnrho, nnz, prho_2c%rho, density)
 
 ! Only interpolate the derivatives if doing GGA exchange-correlation.
-        if (iexc .eq. 4 .or. iexc .eq. 5 .or. iexc .eq. 6 .or.                &
+        if (iexc .eq. 4 .or. iexc .eq. 5 .or. iexc .eq. 6 .or.               &
             iexc .eq. 9 .or. iexc .eq. 10) then
-          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,    &
+          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,   &
      &                             dz, nnrho, nnz, prho_2c%rhop, density_p)
-          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,    &
+          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,   &
                                    dz, nnrho, nnz, prho_2c%rhopp, density_pp)
-          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,    &
+          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,   &
                                    dz, nnrho, nnz, prho_2c%rhoz, density_z)
-          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,    &
+          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,   &
                                    dz, nnrho, nnz, prho_2c%rhozz, density_zz)
-          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,    &
+          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,   &
                                    dz, nnrho, nnz, prho_2c%rhopz, density_pz)
         else
           density_p = 0.0d0
           density_pp = 0.0d0
+          density_pap = 0.0d0
           density_z = 0.0d0
           density_zz = 0.0d0
           density_pz = 0.0d0
@@ -2013,6 +2060,8 @@
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
+        density_pap = density_pap*P_abohr**5
+
         density_z = density_z*P_abohr**4
         density_zz = density_zz*P_abohr**5
         density_pz = density_pz*P_abohr**5
@@ -2023,8 +2072,8 @@
 ! point (r, z).
 
 ! Here energy and potential due to exchange and correlation are calculated.
-        call get_potxc_2c (iexc, xc_fraction, rin, density, density_p,        &
-     &                     density_pp, density_z, density_zz, density_pz,     &
+        call get_potxc_2c (iexc, xc_fraction, rin, density, density_p,       &
+     &                     density_pp, density_z, density_zz, density_pz,    &
      &                     exc, vxc, dnuxc, dnuxcs)
 
 ! Answers are in Hartrees convert to eV.
@@ -2125,16 +2174,15 @@
             allocate (pFdata_cell%fofx(nME2c_max))
 
 ! begin iammaster
-            if (my_proc .eq. 0) then
-              write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
-            end if
+            if (my_proc .eq. 0)                                              &
+     &        write (ilogfile,200) ideriv, species(ispecies)%nZ, species(jspecies)%nZ
 
             ! Open ouput file for this species pair
-            write (filename, '("/vxc_atom_", i2.2,".",i2.2,".",i2.2,".dat")') &
+            write (filename, '("/vxc_atom_", i2.2,".",i2.2,".",i2.2,".dat")')&
      &             ideriv, species(ispecies)%nZ, species(jspecies)%nZ
             inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
             if (skip) cycle
-            open (unit = 11, file = trim(Fdata_location)//trim(filename),     &
+            open (unit = 11, file = trim(Fdata_location)//trim(filename),    &
      &            status = 'unknown')
 
             ! Set up grid loop control constants
@@ -2148,25 +2196,26 @@
             rhomax = min(rcutoff1, rcutoff2)
 
             ! open directory file
-            write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')              &
+            write (interactions,'("/2c.",i2.2,".",i2.2,".dir")')             &
      &        species(ispecies)%nZ, species(jspecies)%nZ
-            open (unit = 13, file = trim(Fdata_location)//trim(interactions), &
+            open (unit = 13, file = trim(Fdata_location)//trim(interactions),&
      &            status = 'unknown', position = 'append')
-            write (13,100) pFdata_bundle%nFdata_cell_2c, P_vxc_atom, ideriv,  &
+            write (13,100) pFdata_bundle%nFdata_cell_2c, P_vxc_atom, ideriv, &
      &                     filename(2:30), pFdata_cell%nME, ndd_vxc, dmax
             close (unit = 13)
 
             ! Open mu, nu, mvalue file and write out values.
-            write (filename, '("/",i2.2, "_munu_2c.",i2.2,".",i2.2,".dat")')  &
+            write (filename, '("/",i2.2, "_munu_2c.",i2.2,".",i2.2,".dat")') &
      &             P_vxc_atom, species(ispecies)%nZ, species(jspecies)%nZ
-            open (unit = 12, file = trim(Fdata_location)//trim(filename),     &
+            open (unit = 12, file = trim(Fdata_location)//trim(filename),    &
      &            status = 'unknown', position = 'append')
 
             ! write the mapping - stored in mu, nu, and mvalue
             write (12,*) (pFdata_cell%mu_2c(index_2c), index_2c = 1, nME2c_max)
             write (12,*) (pFdata_cell%nu_2c(index_2c), index_2c = 1, nME2c_max)
-            write (12,*) (pFdata_cell%mvalue_2c(index_2c),                    &
+            write (12,*) (pFdata_cell%mvalue_2c(index_2c),                   &
      &                    index_2c = 1, nME2c_max)
+            close (unit = 12)
 
 ! Loop over grid
             do igrid = 1, ndd_vxc
@@ -2176,14 +2225,14 @@
               zmin = max(-rcutoff1, d - rcutoff2)
               zmax = min(rcutoff1, d + rcutoff2)
 
-              call evaluate_integral_2c (nFdata_cell_2c, ispecies, jspecies,  &
-     &                                   isorp, ideriv, rcutoff1, rcutoff2,   &
-     &                                   d, nz_vxc, nrho_vxc,                 &
-     &                                   rint_vxc_atom, phifactor, zmin,      &
+              call evaluate_integral_2c (nFdata_cell_2c, ispecies, jspecies, &
+     &                                   isorp, ideriv, rcutoff1, rcutoff2,  &
+     &                                   d, nz_vxc, nrho_vxc,                &
+     &                                   rint_vxc_atom, phifactor, zmin,     &
      &                                   zmax, rhomin, rhomax, pFdata_cell%fofx)
 
               ! Write out details.
-              write (11,*) (pFdata_cell%fofx(index_2c),                       &
+              write (11,*) (pFdata_cell%fofx(index_2c),                      &
      &                                       index_2c = 1, nME2c_max)
             end do ! igrid
             write (11,*)
@@ -2197,7 +2246,7 @@
 ! Format Statements
 ! ===========================================================================
 100     format (2x, i3, 1x, i3, 1x, i3, 1x, a29, 1x, i3, 1x, i4, 1x, f9.6)
-200     format (2x, ' Evaluating vxc atom integrals for ideriv = ', i3,       &
+200     format (2x, ' Evaluating vxc atom integrals for ideriv = ', i3,      &
                     ' nZ = ', i3, ' and nZ = ', i3)
 
 ! End Subroutine
@@ -2225,7 +2274,7 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        real function rint_vxc_atom (itype, ispecies, jspecies, isorp, d,     &
+        real function rint_vxc_atom (itype, ispecies, jspecies, isorp, d,    &
      &                               rho, z1, z2, ideriv, index_2c)
         implicit none
 
@@ -2355,7 +2404,7 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        real function dvxc_2c (iexc, xc_fraction, ispecies, jspecies,         &
+        real function dvxc_2c (iexc, xc_fraction, ispecies, jspecies,        &
      &                         r, z, d, r1)
         implicit none
 
@@ -2392,8 +2441,12 @@
 ! Value of density and corresponding derivatives at the point r, z
         real density
         real density_p, density_pp
+        real density_pap
+
         real density_z, density_zz
         real density_pz
+
+! Output from calling get_potxc_2c
         real dnuxc_2c, dnuxcs_2c
         real exc_2c, vxc_2c
 
@@ -2424,21 +2477,21 @@
 
 ! Interpolate the density and gradients of the density at the given
 ! point (r, z).
-        call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax, dz,  &
+        call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax, dz, &
                                  nnrho, nnz, prho_2c%rho, density)
 
 ! Only interpolate the derivatives if doing GGA exchange-correlation.
-        if (iexc .eq. 4 .or. iexc .eq. 5 .or. iexc .eq. 6 .or.                &
+        if (iexc .eq. 4 .or. iexc .eq. 5 .or. iexc .eq. 6 .or.               &
             iexc .eq. 9 .or. iexc .eq. 10) then
-          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,    &
+          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,   &
      &                             dz, nnrho, nnz, prho_2c%rhop, density_p)
-          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,    &
+          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,   &
                                    dz, nnrho, nnz, prho_2c%rhopp, density_pp)
-          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,    &
+          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,   &
                                    dz, nnrho, nnz, prho_2c%rhoz, density_z)
-          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,    &
+          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,   &
                                    dz, nnrho, nnz, prho_2c%rhozz, density_zz)
-          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,    &
+          call interpolate_rho_2c (r, rhomin, rhomax, drho, z, zmin, zmax,   &
                                    dz, nnrho, nnz, prho_2c%rhopz, density_pz)
         else
           density_p = 0.0d0
@@ -2463,8 +2516,8 @@
 ! point (r, z).
 
 ! Here energy and potential due to exchange and correlation are calculated.
-        call get_potxc_2c (iexc, xc_fraction, rin, density, density_p,        &
-     &                     density_pp, density_z, density_zz, density_pz,     &
+        call get_potxc_2c (iexc, xc_fraction, rin, density, density_p,       &
+     &                     density_pp, density_z, density_zz, density_pz,    &
      &                     exc_2c, vxc_2c, dnuxc_2c, dnuxcs_2c)
 
 ! Answers are in Hartrees convert to eV.
@@ -2503,7 +2556,7 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine interpolate_rho_2c (rho, rhomin, rhomax, drho, z, zmin,   &
+        subroutine interpolate_rho_2c (rho, rhomin, rhomax, drho, z, zmin,  &
                                        zmax, dz, nnrho, nnz, frho, answer)
         implicit none
 

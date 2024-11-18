@@ -235,7 +235,7 @@
                 pFdata_bundle%nFdata_cell_3c = pFdata_bundle%nFdata_cell_3c + 1
               end do
 
- ! begin iammaster
+! begin iammaster
               if (my_proc .eq. 0) then
                 write (ilogfile,200) species(ispecies)%nZ,                   &
      &                               species(jspecies)%nZ, species(kspecies)%nZ
@@ -353,10 +353,6 @@
                 iounit = iounit + 1
                 close (unit = iounit)
               end do
-
-!         end if ! MPI which node end if
-!       end do ! end loop over isuperloop
-
               deallocate (qpl)
             end do  ! end loop over kspecies
           end do  ! end loop over jspecies

@@ -179,7 +179,7 @@ SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix.o
 endif
 ifneq (,$(findstring SCALAPACK, ${DIAGONALIZATION}))
 PARALLEL = M_mpi.o
-SOLVESH = M_diagonalization_Lowdin_gammad_mpi.o M_diagonalization_Lowdin_gammad_mpi_slave.o M_kspace_Lowdin_mpi.o M_density_matrix.o
+SOLVESH = 
 endif
 ifneq (,$(findstring KPOINTS, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_kpoints.o M_kspace_Lowdin.o M_density_matrix.o
@@ -199,14 +199,14 @@ ifneq (,$(findstring BLYP, ${XC}))
 XC_FUNCTIONALS = M_xc_option9_1c.o M_xc_option9_2c.o
 endif
 ifneq (,$(findstring PBE, ${XC}))
-XC_FUNCTIONALS = M_xc_option6_1c.o M_xc_option9_2c.o
+XC_FUNCTIONALS = M_xc_option6_1c.o M_xc_option6_2c.o
 endif
 
 OBJECTS_LOOPRC = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN_LOOPRC)
 OBJECTS_BEGIN = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN)
 OBJECTS_CREATE = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_CREATE) $(XC_FUNCTIONALS) $(CREATE)
 OBJECTS_LIGHTNING = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
-OBJECTS_FIREBALL = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(PARALLEL) $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(OUTPUT) $(SOCKETS) $(UTIL)
+OBJECTS_FIREBALL = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(OUTPUT) $(SOCKETS) $(UTIL)
 OBJECTS_MDET = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM)  $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(NAMD) $(OUTPUT)
 OBJECTS_LIGHTNING_GRID = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(GRID) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
 ##############################################################################
@@ -269,14 +269,13 @@ clean:
 	rm -f -r p.THEORY/*.o p.THEORY/*.mod p.THEORY/*.mod.*
 
 veryclean: clean
-	rm -f begin-looprc.x begin.x create.x create-MPI.x lightning.x lightning-grid.x \
+	rm -f begin-looprc.x begin.x create.x lightning.x lightning-grid.x \
 			fireball.x fireball-ase.x fireball-MDET.x 
 
 all:
 	make begin-looprc.x
 	make begin.x
 	make create.x
-	make create-MPI.x
 	make fireball.x
 	make fireball-ase.x
 	make fireball-MDET.x
@@ -431,14 +430,8 @@ M_kspace_grid.o : h.SOLVESH/M_kspace_grid.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_kspace_Lowdin.o : h.SOLVESH/M_kspace_Lowdin.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_kspace_Lowdin_mpi.o : h.SOLVESH/M_kspace_Lowdin_mpi.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_diagonalization_Lowdin_gamma.o : h.SOLVESH/M_diagonalization_Lowdin_gamma.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_diagonalization_Lowdin_gammad_mpi.o : h.SOLVESH/M_diagonalization_Lowdin_gammad_mpi.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(OMP) -c $^	
-M_diagonalization_Lowdin_gammad_mpi_slave.o : h.SOLVESH/M_diagonalization_Lowdin_gammad_mpi_slave.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(OMP) -c $^	
 M_diagonalization_Lowdin_gammad.o : h.SOLVESH/M_diagonalization_Lowdin_gammad.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(OMP) -c $^		
 M_diagonalization_Lowdin_kpoints.o : h.SOLVESH/M_diagonalization_Lowdin_kpoints.f90
@@ -679,8 +672,6 @@ create_Horsfield.o : x.DRIVERS/create_Horsfield.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^ 
 create_McWEDA.o : x.DRIVERS/create_McWEDA.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^ 
-create_McWEDA_MPI.o : x.DRIVERS/create_McWEDA_MPI.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^ 		
 fireball.o : x.DRIVERS/fireball.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 fireball-ase.o : x.DRIVERS/fireball-ase.f90

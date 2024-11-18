@@ -156,7 +156,6 @@
         subroutine vxc_DOGS
         implicit none
 
-
 ! Argument Declaration and Description
 ! ===========================================================================
 ! None
@@ -179,13 +178,13 @@
           write (ilogfile,*) '        C H A R G E D   I N T E R A C T I O N S          '
           write (ilogfile,*) ' ******************************************************* '
           write (ilogfile,*)
+
+          write (ilogfile,*) ' Calling one-center case. '
+          call nuxc_1c
+
+          write (ilogfile,*)
+          call exc_1c
         end if
-
-        if (my_proc .eq. 0) write (ilogfile,*) ' Calling one-center case. '
-        call nuxc_1c
-
-        if (my_proc .eq. 0) write (ilogfile,*)
-        call exc_1c
 
         if (my_proc .eq. 0) write (ilogfile,*)
         if (my_proc .eq. 0) write (ilogfile,*) ' Calling two-center dnuxc_ontopL case. '
@@ -1022,23 +1021,15 @@
               allocate (pFdata_cell%fofx(nME2c_max))
 
 ! begin iammaster
-              if (my_proc .eq. 0) then
-                write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
-              end if
+              if (my_proc .eq. 0)                                            &
+     &          write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
 
               ! Open ouput file for this species pair
               write (filename, '("/dnuxc_ontopL_", i2.2, ".", i2.2, ".",     &
      &                           i2.2, ".dat")')                             &
      &          isorp, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-! Skipping causes issues in parallel if resetting bundle size
               if (skip) cycle
-!             if (skip) then
-!               pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
-!               pFdata_bundle%nFdata_cell_2c =                                &
-!                 pFdata_bundle%nFdata_cell_2c + species(ispecies)%nssh
-!               cycle
-!             end if
               open (unit = 11, file = trim(Fdata_location)//trim(filename),  &
      &              status = 'unknown')
 
@@ -1325,24 +1316,15 @@
               nME2c_max = pFdata_cell%nME
               allocate (pFdata_cell%fofx(nME2c_max))
 
-! begin iammaster
-              if (my_proc .eq. 0) then
+              if (my_proc .eq. 0)                                            &
                 write (ilogfile,200) species(ispecies)%nZ, species(jspecies)%nZ, isorp
-              end if
 
               ! Open ouput file for this species pair
               write (filename, '("/dnuxc_ontopR_", i2.2, ".", i2.2, ".",     &
      &                           i2.2, ".dat")')                             &
      &          isorp, species(ispecies)%nZ, species(jspecies)%nZ
               inquire (file = trim(Fdata_location)//trim(filename), exist = skip)
-! Skipping causes issues in parallel if resetting bundle size
               if (skip) cycle
-!             if (skip) then
-!               pFdata_bundle%nFdata_cell_2c = pFdata_bundle%nFdata_cell_2c - 1
-!               pFdata_bundle%nFdata_cell_2c =                                &
-!                 pFdata_bundle%nFdata_cell_2c + species(jspecies)%nssh
-!               cycle
-!             end if
               open (unit = 11, file = trim(Fdata_location)//trim(filename),  &
      &              status = 'unknown')
 
