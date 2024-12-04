@@ -246,7 +246,6 @@
 !                      density located in wavefunctions.inc
 !            rhop:     derivative with respect to rho
 !            rhopp:    second derivative with respect to rho
-!            rhopap:   derivative of absolute value of rhop
 !
 ! ====================================================================
 ! Code written by:
@@ -261,7 +260,7 @@
 !
 ! Program Declaration
 ! ====================================================================
-        subroutine rho_1c (ispecies, r, dr, rho, rhop, rhopp, rhopap)
+        subroutine rho_1c (ispecies, r, dr, rho, rhop, rhopp)
         implicit none
 
 ! Argument Declaration and Description
@@ -274,7 +273,7 @@
 
 ! Output
         ! density value and derivatives
-        real, intent (out) :: rho, rhop, rhopp, rhopap
+        real, intent (out) :: rho, rhop, rhopp
 
 ! Parameters and Data Declaration
 ! ===========================================================================
@@ -320,7 +319,7 @@
 ! Only calculate the derivatives if doing GGA exchange-correlation.
         rhop = 0.0d0
         rhopp = 0.0d0
-        rhopap = 0.0d0
+!       rhopap = 0.0d0
         if (iexc .eq. 4 .or. iexc .eq. 5 .or. iexc .eq. 6 .or.               &
      &      iexc .eq. 9 .or. iexc .eq. 10) then
 
@@ -336,8 +335,8 @@
           if ((r - dr) .gt. 1.0d-5) then
             rhop = (density_pdr - density_mdr)/(2.0d0*dr)
             rhopp = (density_pdr - 2.0d0*density + density_mdr)/dr**2
-            rhopap = (abs(density_pdr - density)                             &
-     &                - abs(density - density_mdr))/dr**2
+!           rhopap = (abs(density_pdr - density)                             &
+!    &                - abs(density - density_mdr))/dr**2
           else
 
 ! At the endpoint do a forward difference. First, we need the point at r+2dr.
@@ -351,13 +350,13 @@
 
             rhop = (density_pdr - density)/dr
             rhopp = (density_p2dr - 2.0d0*density_pdr + density)/dr**2
-            rhopap = (abs(density - density_p2dr)                            &
-                      - abs(density_pdr - density_p2dr))/2.0*dr**2
+!           rhopap = (abs(density - density_p2dr)                            &
+!                     - abs(density_pdr - density_p2dr))/2.0*dr**2
           end if
         end if
         rhop = rhop/(4.0d0*4.0d0*atan(1.0d0))
         rhopp = rhopp/(4.0d0*4.0d0*atan(1.0d0))
-        rhopap = rhopap/(4.0d0*4.0d0*atan(1.0d0))
+!       rhopap = rhopap/(4.0d0*4.0d0*atan(1.0d0))
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -695,7 +694,7 @@
 ! Value of density and corresponding derivatives at the point r, z
         real density
         real density_p, density_pp
-        real density_pap
+!       real density_pap
 
 ! Output from calling get_potxc_1c
         real exc
@@ -715,17 +714,19 @@
 ! ***************************************************************************
 ! Evaluate the density for the one-center - in1
         call rho_1c (ispecies, r1, drho,                                     &
-     &               density, density_p, density_pp, density_pap)
+     &               density, density_p, density_pp)
+!    &               density, density_p, density_pp, density_pap)
 
         rin = r1/P_abohr
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
-        density_pap = density_pap*P_abohr**5
+!       density_pap = density_pap*P_abohr**5
 
         exc = 0.0d0
         call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,      &
-     &                     density_pp, density_pap,                         &
+     &                     density_pp,                                      &
+!    &                     density_pp, density_pap,                         &
      &                     exc, vxc, dnuxc, dnuxcs, dexc)
 
 ! Answers are in Hartrees convert to eV.
@@ -925,7 +926,7 @@
 ! Value of density and corresponding derivatives at the point r, z
         real density
         real density_p, density_pp
-        real density_pap
+!       real density_pap
 
         real exc
         real vxc
@@ -944,17 +945,19 @@
 ! ***************************************************************************
 ! Evaluate the density for the one-center - in1
         call rho_1c (ispecies, r1, drho,                                     &
-     &               density, density_p, density_pp, density_pap)
+     &               density, density_p, density_pp)
+!    &               density, density_p, density_pp, density_pap)
 
         rin = r1/P_abohr
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
-        density_pap = density_pap*P_abohr**5
+!       density_pap = density_pap*P_abohr**5
 
         vxc = 0.0d0
         call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,       &
-     &                     density_pp, density_pap,                          &
+     &                     density_pp,                                       &
+!    &                     density_pp, density_pap,                          &
      &                     exc, vxc, dnuxc, dnuxcs, dexc)
 
 ! Answers are in Hartrees convert to eV.

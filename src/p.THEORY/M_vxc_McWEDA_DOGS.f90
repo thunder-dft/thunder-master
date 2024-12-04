@@ -521,7 +521,6 @@
 ! Value of density and corresponding derivatives at the point r, z
         real density
         real density_p, density_pp
-        real density_pap
 
         real exc
         real vxc
@@ -539,19 +538,16 @@
 ! Compute the exchange correlation potential for the one-center case
 ! ***************************************************************************
 ! Evaluate the density for the one-center - in1
-        call rho_1c (ispecies, r1, drho,                                     &
-     &               density, density_p, density_pp, density_pap)
+        call rho_1c (ispecies, r1, drho, density, density_p, density_pp)
 
         rin = r1/P_abohr
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
-        density_pap = density_pap*P_abohr**5
 
         dnuxc = 0.0d0
         call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,       &
-     &                     density_pp, density_pap, exc, vxc, dnuxc, dnuxcs, &
-     &                     dexc)
+     &                     density_pp, exc, vxc, dnuxc, dnuxcs, dexc)
 
 ! Answers are in Hartrees convert to eV.
         dnuxc_1c = P_hartree*dnuxc*P_abohr**3
@@ -880,7 +876,6 @@
 ! Value of density and corresponding derivatives at the point r, z
         real density
         real density_p, density_pp
-        real density_pap
 
         real exc
         real vxc
@@ -898,19 +893,16 @@
 ! Compute the exchange correlation potential for the one-center case
 ! ***************************************************************************
 ! Evaluate the density for the one-center - in1
-        call rho_1c (ispecies, r1, drho,                                     &
-     &               density, density_p, density_pp, density_pap)
+        call rho_1c (ispecies, r1, drho, density, density_p, density_pp)
 
         rin = r1/P_abohr
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
-        density_pap = density_pap*P_abohr**5
 
         dexc = 0.0d0
         call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,       &
-     &                     density_pp, density_pap,                          &
-     &                     exc, vxc, dnuxc, dnuxcs, dexc)
+     &                     density_pp, exc, vxc, dnuxc, dnuxcs, dexc)
 
 ! Answers are in Hartrees convert to eV.
         ddexc_1c = P_hartree*dexc*P_abohr**3

@@ -210,6 +210,8 @@
 
 ! Read in which exchange-correlation approximation we are using.
           read (88,*) species_PP(ispecies)%iexc
+
+          ! for exact exchange then we read in fraction
           if (species_PP(ispecies)%iexc .eq. 12) then
             rewind (88)
             do iline = 1, 14
@@ -337,11 +339,12 @@
             rcutoff = (mesh-1)*species_PP(ispecies)%shell_PP(issh)%dr
           end do ! issh
 
-          if (iexc .eq. 4 .or. iexc .eq. 5 .or.                              &
-              iexc .eq. 6 .or. iexc .eq. 10) then
+          if (iexc .eq. 4 .or. iexc .eq. 5 .or. iexc .eq. 10) then
+            write (ilogfile,*)
             write (ilogfile,*) ' The exchange-correlation option that you chose '
             write (ilogfile,*) ' has not been implemented into CREATE yet. '
             write (ilogfile,*) ' Choose a different one, and restart. '
+            stop
           end if
 
 ! begin iammaster
