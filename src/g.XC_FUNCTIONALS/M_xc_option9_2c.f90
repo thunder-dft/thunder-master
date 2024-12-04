@@ -49,8 +49,12 @@
 ! Module Declaration
 ! ===========================================================================
         module M_xc_2c
-        use M_xc_1c
+
+! /GLOBAL
         use M_precision
+
+! /XC_FUNCTIONALS
+        use M_xc_1c
 
 ! Type Declaration
 ! ===========================================================================
@@ -219,14 +223,8 @@
 ! ===========================================================================
 ! Program Description
 ! ===========================================================================
-!      This routine calculates the exchange potential and energy density.
-! Spherical symmetry is used. LSDA - GGA
-!
-! input
-!    mode = 1    LSDA
-!    mode = 2    GGA-X Becke
-!    mode = 3    GGA-X Perdew
-!    mode = 5    GGA-X Burke-Perdew-Ernzerhof
+!      This routine calculates the Becke exchange potential and energy density.
+! Spherical symmetry is used.
 !
 ! convention
 !    yy(1) = spin up, yy(2) = spin down
@@ -325,8 +323,7 @@
      &             + density_z**2*density_zz)/(s*density**3*fermik**4)
               v = (density_pp + density_p/r + density_zz)/(density*fermik*fermik)
 
-
-                 call xbecke (density, s, u, v, ex, vx)
+               call xbecke (density, s, u, v, ex, vx)
             else
               stop 'ggaxrad_2c : mode improper'
             end if
@@ -355,15 +352,10 @@
 ! ===========================================================================
 ! Program Description
 ! ===========================================================================
-!      This routine calculates the correlation potential and energy density.
-! Spherical symmetry is used. LSDA - GGA, Hartree a.u.
+!      This routine calculates the Lee-Yang-Parr correlation potential and
+! energy density.  Spherical symmetry is used.
 !
 ! input
-!    mode = 1    LSDA
-!    mode = 2    GGA-C Perdew 91
-!    mode = 3    GGA-C Perdew 86
-!    mode = 4    GGA-C Lee-Yang-Parr 1988
-!    mode = 5    GGA-C Burke-Perdew-Ernzerhof
 !    r           radius
 !    rh()        spin up/down density
 !    rhp()       1st derivative of rh

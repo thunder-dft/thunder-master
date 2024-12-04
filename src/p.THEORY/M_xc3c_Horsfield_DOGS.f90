@@ -650,7 +650,6 @@
 ! ....for one center piece
         real density
         real density_p, density_pp
-        real density_pap
 
 ! Value of density and corresponding derivatives at the point r, z
 ! Exchange-correlation potential and energies for two-center density
@@ -702,8 +701,7 @@
 ! Compute the exchange correlation potential for the one-center case
 ! ***************************************************************************
 ! Evaluate the density for the one-center - in1
-        call rho_1c (ispecies, r1, drho,                                     &
-     &               density, density_p, density_pp, density_pap)
+        call rho_1c (ispecies, r1, drho, density, density_p, density_pp)
         density_2c = density
 !       density_2c_p = density_p
 !       density_2c_pp = density_pp
@@ -712,8 +710,7 @@
 ! Compute the exchange correlation potential for the one-center case
 ! ***************************************************************************
 ! Evaluate the density for the one-center - in1
-        call rho_1c (jspecies, r2, drho,                                     &
-     &               density, density_p, density_pp, density_pap)
+        call rho_1c (jspecies, r2, drho, density, density_p, density_pp)
         density_2c = density_2c + density
 !       density_2c_p = density_2c_p + density_p
 !       density_2c_pp = density_2c_pp + density_pp
@@ -722,8 +719,7 @@
 ! Compute the exchange correlation potential for the one-center case
 ! ***************************************************************************
 ! Evaluate the density for the one-center - in1
-        call rho_1c (kspecies, r3, drho,                                     &
-     &               density, density_p, density_pp, density_pap)
+        call rho_1c (kspecies, r3, drho, density, density_p, density_pp)
         density_3c = density_2c + density
 !       density_3c_p = density_2c_p + density_p
 !       density_3c_pp = density_2c_pp + density_pp

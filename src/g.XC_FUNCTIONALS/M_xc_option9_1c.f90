@@ -118,7 +118,7 @@
 ! Program Declaration
 ! ===========================================================================
         subroutine get_potxc_1c (iexc, xc_fraction, r, rho, rhop, rhopp,     &
-     &                           rhopap, newexc, vpxc, dnuxc, dnuxcs, dexc)
+     &                           newexc, vpxc, dnuxc, dnuxcs, dexc)
         implicit none
 
 ! Argument Declaration and Description
@@ -133,7 +133,6 @@
         real, intent (inout) :: rho      ! return zero value if rho is small
         real, intent (in) :: rhop
         real, intent (in) :: rhopp
-        real, intent (in) :: rhopap
 
 ! Output
         real, intent (out) :: newexc
@@ -180,11 +179,10 @@
         end if
 
 ! Determine exchange-correlation potentials
-
 ! C Lee-Yang-Parr
         if (iexc .eq. 9) then
 
-! X Becke gga by default
+! X Becke GGA by default
           ix = 2
 
 ! X Perdew-Wang gga
@@ -219,14 +217,11 @@
 ! ===========================================================================
 ! Program Description
 ! ===========================================================================
-!      This routine calculates the exchange potential and energy density.
+!      This routine calculates the Becke exchange potential and energy density.
 ! Spherical symmetry is used. LSDA - GGA
 !
 ! input
-!    mode = 1    LSDA
-!    mode = 2    GGA-X Becke
-!    mode = 3    GGA-X Perdew
-!    mode = 5    GGA-X Burke-Perdew-Ernzerhof
+!    mode = 4    GGA-X Becke
 !
 ! convention
 !    yy(1) = spin up, yy(2) = spin down
@@ -280,15 +275,11 @@
 ! ===========================================================================
         integer ispin
 
-        real density
-        real densityp
-        real densitypp
+        real density, densityp, densitypp
         real ex
         real fermik
         real r
-        real s
-        real u
-        real v
+        real s, u, v
         real vx
 
 ! Allocate Arrays
@@ -302,12 +293,12 @@
         if (rin .lt. 1.0d-4) r = 1.0d-4
 
 ! exchange GGA, loop for up & down spin
-          xen = 0.0d0
-          do ispin = 1, 2
-            if (rho(ispin) .le. epsilon) then
-              xpot(ispin) = 0.0d0
-            else
-              density = 2.0d0*rho(ispin)
+        xen = 0.0d0
+        do ispin = 1, 2
+          if (rho(ispin) .le. epsilon) then
+            xpot(ispin) = 0.0d0
+          else
+            density = 2.0d0*rho(ispin)
 		    if (mode .eq. 2) then
               densityp = 2.0d0*rhop(ispin)
               densitypp = 2.0d0*rhopp(ispin)
@@ -351,11 +342,6 @@
 !
 !  Gradient-corrected exchange energy based on
 !     [A.D. Becke, J.Chem.Phys.96, 2155, 1992].
-!  The LSDA energy functional, obtained as E{n+,n-}=(E{2n+}+E{2n-})/2,
-!     and the functional derivative formula are given by
-!     [J.P. Perdew , PRB 33, 8800, 1986].
-!     [J.P. Perdew , PRB 34, 7406, 1986].
-!  see also [G.Ortiz ...,PRB 43, 6376 (1991)] eq. (A2)
 !
 !  Hartree a.u.
 !
@@ -473,14 +459,11 @@
 ! ===========================================================================
 ! Program Description
 ! ===========================================================================
-!      This routine calculates the correlation potential and energy density.
-! Spherical symmetry is used. LSDA - GGA
+!      This routine calculates the Lee-Yang-Parr correlation potential and
+! energy density. Spherical symmetry is used.
 !
 ! input
-!    mode = 1    LSDA
-!    mode = 2    GGA-X Becke
-!    mode = 3    GGA-X Perdew
-!    mode = 5    GGA-X Burke-Perdew-Ernzerhof
+!    mode = 4    GGA-C Lee-Yang-Parr
 !
 ! convention
 !    yy(1) = spin up, yy(2) = spin down
@@ -529,8 +512,7 @@
 
 ! Local Parameters and Data Declaration
 ! ===========================================================================
-        real, parameter :: crs = 1.91915829267751281d0
-        real, parameter :: thrd = 0.333333333333333333d0
+! None
 
 ! Local Variable Declaration and Description
 ! ===========================================================================

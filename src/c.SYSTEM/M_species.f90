@@ -122,8 +122,8 @@
           integer norb_PP_max              ! maximum number of orbitals for PP
 
           ! for begin
-          integer ioptimize                ! ixc_option for this atom - check
-          integer ixc_option               ! ixc_option for this atom - check
+          integer ioptimize                ! optimized basis for this atom - check
+          integer iexc                     ! iexc option for this atom - check
           integer nexcite                  ! uses excited states; 1 = yes
 
           real atomicE                     ! atomic energy
@@ -162,11 +162,6 @@
         character (len=70) signature
 
         type(T_species), pointer :: species (:) ! species for this simulation
-
-! FIX ME - We will eliminate this ixc option - the options are resolved
-! through object oriented linking of functions and modules.
-! Read in the exchange-correlation (which is a number)
-        integer ixc_option
 ! ***************************************************************************
 
 ! module procedures
@@ -387,7 +382,7 @@
           species(ispecies)%PPfile_ion(12:14) = '.pp'
 
 ! Read in the exchange-correlation (which is a number)
-          read (12,*) species(ispecies)%ixc_option
+          read (12,*) species(ispecies)%iexc
 
 ! Now read stuff in related to the orbital information
           read (12,*) nssh

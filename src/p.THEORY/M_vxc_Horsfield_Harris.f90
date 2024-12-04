@@ -21,7 +21,6 @@
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -300,7 +299,7 @@
 !
 ! Program Declaration
 ! ====================================================================
-        subroutine rho_1c (ispecies, r, dr, rho, rhop, rhopp, rhopap)
+        subroutine rho_1c (ispecies, r, dr, rho, rhop, rhopp)
         implicit none
 
 ! Argument Declaration and Description
@@ -313,7 +312,7 @@
 
 ! Output
         ! density value and derivatives
-        real, intent (out) :: rho, rhop, rhopp, rhopap
+        real, intent (out) :: rho, rhop, rhopp
 
 ! Parameters and Data Declaration
 ! ===========================================================================
@@ -359,7 +358,7 @@
 ! Only calculate the derivatives if doing GGA exchange-correlation.
         rhop = 0.0d0
         rhopp = 0.0d0
-        rhopap = 0.0d0
+!       rhopap = 0.0d0
         if (iexc .eq. 4 .or. iexc .eq. 5 .or. iexc .eq. 6 .or.                &
      &      iexc .eq. 9 .or. iexc .eq. 10) then
 
@@ -376,8 +375,8 @@
           if ((r - dr) .gt. 1.0d-5) then
             rhop = (density_pdr - density_mdr)/(2.0d0*dr)
             rhopp = (density_pdr - 2.0d0*density + density_mdr)/dr**2
-            rhopap = (abs(density_pdr - density)                             &
-     &                - abs(density - density_mdr))/dr**2
+!           rhopap = (abs(density_pdr - density)                             &
+!    &                - abs(density - density_mdr))/dr**2
           else
 
 ! At the endpoint do a forward difference. First, we need the point at r+2dr.
@@ -393,13 +392,13 @@
             rhop = (density_pdr - density)/dr
             rhopp = (density_p2dr - 2.0d0*density_pdr                        &
      &                            + density)/dr**2
-            rhopap = (abs(density - density_p2dr)                            &
-                      - abs(density_pdr - density_p2dr))/2.0*dr**2
+!           rhopap = (abs(density - density_p2dr)                            &
+!                     - abs(density_pdr - density_p2dr))/2.0*dr**2
           end if
         end if
         rhop = rhop/(4.0d0*4.0d0*atan(1.0d0))
         rhopp = rhopp/(4.0d0*4.0d0*atan(1.0d0))
-        rhopap = rhopap/(4.0d0*4.0d0*atan(1.0d0))
+!       rhopap = rhopap/(4.0d0*4.0d0*atan(1.0d0))
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -652,7 +651,6 @@
 ! Value of density and corresponding derivatives at the point r, z
         real density
         real density_p, density_pp
-        real density_pap
 
 ! Output from calling get_potxc_1c
         real exc
@@ -670,20 +668,17 @@
 ! Compute the exchange correlation potential for the one-center case
 ! ***************************************************************************
 ! Evaluate the density for the one-center - in1
-        call rho_1c (ispecies, r, drho,                                      &
-     &               density, density_p, density_pp, density_pap)
+        call rho_1c (ispecies, r, drho, density, density_p, density_pp)
 
         rin = r/P_abohr
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
-        density_pap = density_pap*P_abohr**5
 
         exc = 0.0d0
         vxc = 0.0d0
         call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,        &
-     &                     density_pp, density_pap,                           &
-     &                     exc, vxc, dnuxc, dnuxcs, dexc)
+     &                     density_pp, exc, vxc, dnuxc, dnuxcs, dexc)
 
 ! Answers are in Hartrees convert to eV.
         dexc_1c = P_hartree*(density/P_abohr**3)*(exc - vxc)
@@ -862,7 +857,6 @@
 ! Exchange-correlation potential and energies for three-center density
         real density
         real density_p, density_pp
-        real density_pap
 
 ! Output from calling get_potxc_1c
         real dnuxc, dnuxcs
@@ -877,19 +871,16 @@
 ! Compute the exchange correlation potential for the one-center case
 ! ***************************************************************************
 ! Evaluate the density for the one-center - in1
-        call rho_1c (ispecies, r1, drho,                                     &
-     &               density, density_p, density_pp, density_pap)
+        call rho_1c (ispecies, r1, drho, density, density_p, density_pp)
 
         rin = r1/P_abohr
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
-        density_pap = density_pap*P_abohr**5
 
         vxc = 0.0d0
         call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,        &
-     &                     density_pp, density_pap,                           &
-     &                     exc, vxc, dnuxc, dnuxcs, dexc)
+     &                     density_pp, exc, vxc, dnuxc, dnuxcs, dexc)
 
 ! Answers are in Hartrees convert to eV.
         dvxc_1c = P_hartree*vxc
@@ -1493,7 +1484,6 @@
 ! Value of density and corresponding derivatives at the point r, z
         real density
         real density_p, density_pp
-        real density_pap
 
         real density_z, density_zz
         real density_pz
@@ -1548,7 +1538,6 @@
         else
           density_p = 0.0d0
           density_pp = 0.0d0
-          density_pap = 0.0d0
 
           density_z = 0.0d0
           density_zz = 0.0d0
@@ -1560,7 +1549,6 @@
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
-        density_pap = density_pap*P_abohr**5
 
         density_z = density_z*P_abohr**4
         density_zz = density_zz*P_abohr**5
@@ -1594,20 +1582,17 @@
         drho = species(ispecies)%rcutoffA_max/dfloat(nrho_rho_store)
 
 ! Evaluate the density for the one-center - in1
-        call rho_1c (ispecies, r1, drho,                                     &
-     &               density, density_p, density_pp, density_pap)
+        call rho_1c (ispecies, r1, drho, density, density_p, density_pp)
 
         rin = r1/P_abohr
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
-        density_pap = density_pap*P_abohr**5
 
         exc_1c = 0.0d0
         vxc_1c = 0.0d0
         call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,       &
-     &                     density_pp, density_pap,                          &
-     &                     exc_1c, vxc_1c, dnuxc_1c, dnuxcs_1c, dexc_1c)
+     &                     density_pp, exc_1c, vxc_1c, dnuxc_1c, dnuxcs_1c, dexc_1c)
 
 ! Answers are in Hartrees convert to eV.
         dexc_2c = dexc_2c - P_Hartree*(density/P_abohr**3)*(exc_1c - vxc_1c)
@@ -1619,20 +1604,17 @@
         drho = species(jspecies)%rcutoffA_max/dfloat(nrho_rho_store)
 
 ! Evaluate the density for the one-center - in1
-        call rho_1c (jspecies, r2, drho,                                    &
-     &               density, density_p, density_pp, density_pap)
+        call rho_1c (jspecies, r2, drho, density, density_p, density_pp)
 
         rin = r2/P_abohr
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
-        density_pap = density_pap*P_abohr**5
 
         exc_1c = 0.0d0
         vxc_1c = 0.0d0
         call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,       &
-     &                     density_pp, density_pap,                          &
-     &                     exc_1c, vxc_1c, dnuxc_1c, dnuxcs_1c, dexc_1c)
+     &                     density_pp, exc_1c, vxc_1c, dnuxc_1c, dnuxcs_1c, dexc_1c)
 
 ! Answers are in Hartrees convert to eV.
         dexc_2c = dexc_2c - P_Hartree*(density/P_abohr**3)*(exc_1c - vxc_1c)
@@ -1994,7 +1976,6 @@
 ! Value of density and corresponding derivatives at the point r, z
         real density
         real density_p, density_pp
-        real density_pap
 
         real density_z, density_zz
         real density_pz
@@ -2049,7 +2030,7 @@
         else
           density_p = 0.0d0
           density_pp = 0.0d0
-          density_pap = 0.0d0
+
           density_z = 0.0d0
           density_zz = 0.0d0
           density_pz = 0.0d0
@@ -2060,7 +2041,6 @@
         density = density*P_abohr**3
         density_p = density_p*P_abohr**4
         density_pp = density_pp*P_abohr**5
-        density_pap = density_pap*P_abohr**5
 
         density_z = density_z*P_abohr**4
         density_zz = density_zz*P_abohr**5
@@ -2441,7 +2421,6 @@
 ! Value of density and corresponding derivatives at the point r, z
         real density
         real density_p, density_pp
-        real density_pap
 
         real density_z, density_zz
         real density_pz

@@ -412,6 +412,8 @@ M_xc_option3_2c.o : g.XC_FUNCTIONALS/M_xc_option3_2c.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_xc_option6_1c.o : g.XC_FUNCTIONALS/M_xc_option6_1c.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^		
+M_xc_option6_2c.o : g.XC_FUNCTIONALS/M_xc_option6_2c.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^		
 M_xc_option9_1c.o : g.XC_FUNCTIONALS/M_xc_option9_1c.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_xc_option9_2c.o : g.XC_FUNCTIONALS/M_xc_option9_2c.f90
