@@ -198,7 +198,6 @@
 
           vpxc = xpot(1) + cpot(1)
 
-
 ! If the improper iexc option was entered then the program will stop.
         else
           write (*,*) ' In get_potxc_2c.f90 - '
@@ -217,6 +216,7 @@
 
         return
         end subroutine get_potxc_2c
+
 
 ! ===========================================================================
 ! ggaxrad_2c
@@ -408,11 +408,12 @@
 
 ! Local Parameters and Data Declaration
 ! ===========================================================================
-        real, parameter :: crs = 1.91915829267751281d0
+! None
 
 ! Local Variable Declaration and Description
 ! ===========================================================================
         real density
+        real r
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -420,6 +421,10 @@
 
 ! Procedure
 ! ===========================================================================
+! If r is really small, then set to manageably small number.
+        r = rin
+        if (rin .lt. 1.0d-4) r = 1.0d-4
+
 ! LSDA
         density = rho(1) + rho(2)
         cen = 0.0d0
@@ -430,9 +435,9 @@
           cpot(2) = 0.0d0
         else
           if (mode .eq. 4) then
-            call corlyp_2c (.true., rin, rho(1), rho(2), rhop(1), rhop(2),   &
-     &                     rhopp(1), rhopp(2), rhoz(1), rhoz(2), rhozz(1),   &
-                           rhozz(2), cen, cpot(1))
+            call corlyp_2c (.true., r, rho(1), rho(2), rhop(1), rhop(2),     &
+     &                      rhopp(1), rhopp(2), rhoz(1), rhoz(2), rhozz(1),  &
+                            rhozz(2), cen, cpot(1))
           else
             stop 'ggacrad : mode improper'
           end if
@@ -455,7 +460,6 @@
 ! ========================================================================
 ! Program Description
 ! ========================================================================
-!
 !  The subroutine corlyp calculates the correlation energy using
 !  the Lee, Yang and Parr generalized gradient approximation.
 !
@@ -464,7 +468,7 @@
 !
 ! tpot .... T  evaluate correlation energy and potential
 !           F  evaluate energy only (a posteriori scheme)
-! x ....... dummy
+! rin ....... position
 ! pa ...... spin up density
 ! pb ...... spin down density
 ! dpaofr .. 1st partial derivative of spin up with respect to r
@@ -510,19 +514,15 @@
 ! Argument Declaration and Description
 ! ===========================================================================
 ! Input
-        logical  tpot
+        logical, intent (in) :: tpot
 
-        real r
-        real pa
-        real pb
-        real dpaofr
-        real dpaofz
-        real dpbofr
-        real dpbofz
-        real d2paofr
-        real d2paofz
-        real d2pbofr
-        real d2pbofz
+        real, intent (in) :: r
+
+        real, intent (in) :: pa, pb
+        real, intent (in) :: dpaofr, dpbofr
+        real, intent (in) :: d2paofr, d2pbofr
+        real, intent (in) :: dpaofz, dpbofz
+        real, intent (in) :: d2paofz, d2pbofz
 
 ! Output
         real ec

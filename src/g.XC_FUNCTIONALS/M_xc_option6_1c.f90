@@ -535,8 +535,9 @@
           zetap = (rhop(1) - rhop(2) - zeta*densityp)/density
           fermik = (3.0d0*pi*pi*density)**t13
           rs = crs/fermik
-          sk = 2.0d0*dsqrt(fermik/pi)
+          sk = 2.0d0*sqrt(fermik/pi)
           g = ((1.0d0 + zeta)**t23 + (1.d0 - zeta)**t23)/2.0d0
+
           t = abs(densityp)/(density*(2.0d0*sk*g))
           uu = abs(densityp)*densitypp/(density*density*(2.0d0*sk*g)**3)
           vv = (densitypp + 2.0d0*densityp/r)/(density*(2.0d0*sk*g)**2)
@@ -547,6 +548,7 @@
           stop ' ggacrad_1c : mode improper'
         end if
 
+        ! results
         cen = ec + h
 
         cpot(1) = vcup + dvcup
@@ -578,8 +580,6 @@
 !      : vv = (LAPLACIAN rho)/(rho * (2*KS*G)**2)
 !      : ww = (GRAD rho)*(GRAD ZET)/(rho * (2*KS*G)**2
 !      : uu, vv, ww, only needed for PBE potential
-!      : lgga=flag to do gga (0=>LSD only)
-!      : lpot=flag to do potential (0=>energy only)
 !
 ! output: ec = lsd correlation energy from [a]
 !      : vcup = lsd up correlation potential
@@ -686,7 +686,7 @@
 ! Procedure
 ! ===========================================================================
 ! Initialize some parameters
-        g = 2.0d0**(4.0d0/3.0d0) - 2.0d0
+        g = 2.0d0**t43 - 2.0d0
         fzz = t89/g
         gam = (1.0d0 - log(2.0d0))/pi**2
         delta = beta/gam
@@ -731,7 +731,7 @@
 ! B = A of [a](8)
         g = ((1.0d0 + zeta)**t23 +( 1.0d0 - zeta)**t23)/2.d0
         pon = -ec/(g**3*gam)
-        b = delta/(EXP(pon) - 1.0d0)
+        b = delta/(exp(pon) - 1.0d0)
 
         q4 = 1.D0 + b*t**2
         q5 = 1.D0 + b*t**2 + b**2*t**4
@@ -778,7 +778,6 @@
 
         return
         end subroutine corpbe
-
 
 
 ! ===========================================================================
