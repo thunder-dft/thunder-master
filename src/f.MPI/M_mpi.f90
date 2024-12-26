@@ -152,6 +152,7 @@
 
 ! Local Parameters and Data Declaration
 ! ===========================================================================
+! None
 
 ! Local Variable Declaration and Description
 ! ===========================================================================
@@ -170,6 +171,56 @@
 ! ===========================================================================
         return
         end subroutine finalize_mpi
+
+
+! ===========================================================================
+! awake_slave
+! ===========================================================================
+! Subroutine Description
+! ===========================================================================
+!       This subroutine is used to wake up the slave processes and stop them.
+! ===========================================================================
+! Code written by:
+! Runfeng Jin
+!
+! jsfaraway@gmail.com 
+! ===========================================================================
+!
+! Program Declaration
+! ===========================================================================
+        subroutine awake_slave
+        implicit none
+
+! Argument Declaration and Description
+! ===========================================================================
+! None
+
+! Local Parameters and Data Declaration
+! ===========================================================================
+! None
+
+! Local Variable Declaration and Description
+! ===========================================================================
+        integer ierr_mpi
+
+! Procedure
+! ===========================================================================
+        if (nprocs .gt. 0) then
+            if(my_proc .gt. 0) then
+                stop "Slave process is not allowed to call this subroutine"
+            endif
+            call MPI_Bcast (-1, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr_mpi)
+        endif
+
+! Format Statements
+! ===========================================================================
+! None
+
+! End Function
+! ===========================================================================
+        return
+        end subroutine awake_slave
+        
 
 ! End the module
 ! ===========================================================================

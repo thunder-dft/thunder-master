@@ -173,13 +173,12 @@ endif
 # **************************** GAMMA - DEFAULT PACKAGES **********************
 SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix.o
 
+
+
+
 # ************************* GAMMA, KPOINTS, MDET, or KS **********************
 ifneq (,$(findstring GAMMAD, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix.o
-endif
-ifneq (,$(findstring SCALAPACK, ${DIAGONALIZATION}))
-PARALLEL = M_mpi.o
-SOLVESH = 
 endif
 ifneq (,$(findstring KPOINTS, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_kpoints.o M_kspace_Lowdin.o M_density_matrix.o
@@ -192,6 +191,20 @@ endif
 ifneq (,$(findstring KS, ${DIAGONALIZATION}))
 GRID = M_project_grid.o M_fft_grid.o writeout_xsf.o
 SOLVESH = M_diagonalization_kpoints.o M_kspace_grid.o M_density_matrix_grid.o M_project_grid.o M_fft_grid.o
+endif
+
+# ****************************** SCALAPACK *********************************** 
+ifneq (,$(findstring SCALAPACK, ${DIAGONALIZATION}))
+PARALLEL = M_mpi.o
+SOLVESH = M_diagonalization_Lowdin_scalapack_slave.o M_diagonalization_Lowdin_scalapack.o M_kspace_Lowdin_scalapack.o M_density_matrix.o
+endif
+
+# Pack blacsaba.o pclagetter.o pclaputter.o  to a library
+ifneq (,$(filter SCALAPACK, ${DIAGONALIZATION}))
+SOLVESH_LIB = blacsaba.o pclagetter.o pclaputter.o
+LIB_NAME_scalapack = scalapack_base
+LIB_scalapack = lib$(LIB_NAME_scalapack).a
+LFLAGS +=  -L./ -l$(LIB_NAME_scalapack)
 endif
 
 # ********************************** XC **************************************
@@ -237,9 +250,9 @@ lightning.x: $(OBJECTS_LIGHTNING) lightning.o
 lightning-grid.x: $(OBJECTS_LIGHTNING) lightning-grid.o
 	$(F90) -o lightning-grid.x $(FFLAGS) $(OMP) $(OBJECTS_LIGHTNING) lightning-grid.o $(LFLAGS) $(LFLAGS_FFT)
 	
-fireball.x: $(OBJECTS_FIREBALL) fireball.o
+fireball.x: $(OBJECTS_FIREBALL) $(LIB_scalapack) fireball.o
 	$(F90) -o fireball.x $(FFLAGS) $(OMP) $(OBJECTS_FIREBALL) fireball.o $(LFLAGS) 
-fireball-ase.x: $(OBJECTS_FIREBALL) fireball-ase.o
+fireball-ase.x: $(OBJECTS_FIREBALL) $(LIB_scalapack) fireball-ase.o
 	$(F90) -o fireball-ase.x $(FFLAGS) $(OMP) $(OBJECTS_FIREBALL) fireball-ase.o $(LFLAGS) 
 fireball-MDET.x: $(OBJECTS_MDET) fireball-MDET.o
 	$(F90) -o fireball-MDET.x $(FFLAGS) $(OBJECTS_MDET) fireball-MDET.o $(LFLAGS)
@@ -439,6 +452,25 @@ M_diagonalization_Lowdin_gammad.o : h.SOLVESH/M_diagonalization_Lowdin_gammad.f9
 M_diagonalization_Lowdin_kpoints.o : h.SOLVESH/M_diagonalization_Lowdin_kpoints.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_diagonalization_kpoints.o : h.SOLVESH/M_diagonalization_kpoints.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+		
+# SCALAPACK
+# This is for building the library libscalapack.a and libelpa.a
+$(LIB_scalapack): $(SOLVESH_LIB)
+		$(INTELROOT)/compiler/$(INTELVERSION)/bin/compiler/llvm-ar rc  $(LIB_scalapack)    $(SOLVESH_LIB)
+        # ranlib libscalapack_base.a
+blacsaba.o : h.SOLVESH/blacsaba.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^     
+pclagetter.o : h.SOLVESH/pclagetter.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^     
+pclaputter.o : h.SOLVESH/pclaputter.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^   
+
+M_diagonalization_Lowdin_scalapack.o : h.SOLVESH/M_diagonalization_Lowdin_scalapack.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^     
+M_diagonalization_Lowdin_scalapack_slave.o : h.SOLVESH/M_diagonalization_Lowdin_scalapack_slave.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^     
+M_kspace_Lowdin_scalapack.o : h.SOLVESH/M_kspace_Lowdin_scalapack.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 
 # *****************************************************************************
