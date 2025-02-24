@@ -19,10 +19,8 @@ The following optional software can support accelerating Ewald by GPU:
 
 **Software Requirements:**
 - Ensure that the complete CUDA toolkit is installed on your system. The CUDA toolkit installed via Python is incomplete and cannot be used to compile Kokkos.
-- To install the complete CUDA toolkit, use the following command:
-  ```shell
-  sudo apt install -y nvidia-cuda-toolkit
-  ```
+- It is recommended to download the CUDA toolkit runfile from the official NVIDIA website and install it manually.
+- Be aware that improper combinations of CUDA and g++ versions may lead to errors. We have successfully tested CUDA 12.8 with g++ 11.5.
 
 To install Kokkos, follow these steps:
 
@@ -38,11 +36,6 @@ To install Kokkos, follow these steps:
    cd build
    cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON
    make -j
-   ```
-
-3. **Install Kokkos**: Optionally, you can install Kokkos to a specific directory:
-   ```shell
-   make install DESTDIR=/your/installation/path
    ```
 
 Ensure that the `KOKKOS_PATH` in your machine file points to the correct installation path of Kokkos.
@@ -69,6 +62,29 @@ When compiling Kokkos, you need to specify the architecture of the GPU you are t
 Make sure to replace the architecture flag with the one that matches your GPU. This ensures that Kokkos is optimized for your specific hardware.
 
 **Reminder:** Ensure that the version of Kokkos you are installing supports your specific GPU architecture. Refer to the Kokkos documentation for compatibility details.
+
+## 1.2 Installing Fortran Language Compatibility Layer (FLCL)
+
+**Note:** Ensure that the Fortran compiler used for compiling FLCL is the same as the one used for compiling Fireball to maintain compatibility.
+
+To install FLCL, follow these steps:
+
+1. **Download FLCL**: Clone the FLCL repository from GitHub using the following command:
+   ```shell
+    git clone https://github.com/kokkos/kokkos-fortran-interop.git
+   ```
+
+2. **Build FLCL**: Navigate into the FLCL directory, create a build directory, and run CMake to configure the build. Then compile using make:
+   ```shell
+   cd flcl
+   mkdir build
+   cd build
+   cmake .. -DCMAKE_Fortran_COMPILER=ifx # Use the same Fortran compiler as used for compiling Fireball
+   -DKokkos_DIR=/Kokkos_ROOT/lib/cmake/Kokkos -DFLCL_BUILD_EXAMPLES=OFF
+   make -j
+   ```
+
+Ensure that the `FLCL_PATH` in your machine file points to the correct installation path of FLCL.
 
 ## 2. How to Compile
 
@@ -114,9 +130,6 @@ Edit the files in the `machine` folder to suit your current environment and your
 
 # For ScaLAPACK or LAPACK
  MKLROOT = /Your/path/mkl
-# For ELPA
- ELPA_PATH=/Your/path/ELPA
- elpaversion=elpa-2024.03.001
 # For Kokkos
  KOKKOS_DEVICES="HIP,OpenMP"
  KOKKOS_ARCH = "AMD_GFX906"
@@ -130,49 +143,4 @@ Edit the files in the `machine` folder to suit your current environment and your
 For compiling serial Fireball
 ```shell
 make fireball-ase.x
-```
-For compiling parallel Fireball(OpenMP/ELPA/ScaLAPACK/Kokkos)
-```shell
-make fireball-ase-elpa.x
-```
-
-## 3. How to Run the Code
-Write your structure to be calculated by following the example in the `fire-opt.py` Python file. Make sure to modify the MPI control parameters to manage the number of resources used. Below is an example:
-
-```python
-import os
-os.system('./clean.sh')
-from thunder_ase.fireball import Fireball
-import numpy as np
-import ase
-from ase import units
-from ase.md.nvtberendsen import NVTBerendsen
-from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
-from ase.optimize import FIRE
-
-max_step = 1
-cell_min = 4
-
-atoms = ase.io.read('Ga2O3_monoclinic.cif')
-super_matrix = np.eye(3) * [int(cell_min / i)+1 for i in atoms.cell.lengths()]
-atoms = ase.build.make_supercell(atoms, super_matrix)
-
-Fdata_path = '/mytest/Fdata-McWEDA-0.15-3SN.Os3.35p3.80-3SNP.Gas4.85p5.60d5.60.Ins5.45p6.20d6.20'
-kwargs = {
-    'ipi': 1,
-    }
-
-fireball = Fireball(command=' mpirun -np 4  /mytest/fireball-ase-elpa.x',
-    Fdata_path=Fdata_path,
-    **kwargs)
-atoms.calc = fireball
-
-dyn = FIRE(atoms, trajectory='opt.traj', logfile='opt.log')
-fireball.dynamics(dyn,fmax=0.2, steps=max_step)
-```
-
-Run the code using a command like:
-
-```shell
-python fire-opt.py
 ```
