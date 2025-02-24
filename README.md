@@ -34,8 +34,9 @@ To install Kokkos, follow these steps:
    cd kokkos
    mkdir build
    cd build
-   cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON
+   cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DCMAKE_INSTALL_PREFIX=/pure_kokkos_path
    make -j
+   make install
    ```
 
 Ensure that the `KOKKOS_PATH` in your machine file points to the correct installation path of Kokkos.
