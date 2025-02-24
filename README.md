@@ -14,6 +14,9 @@ The following optional software can support accelerating Ewald by GPU:
 - Kokkos (Version 4.0+)
 
 ## 1.1 Installing Kokkos
+
+**Note:** It is important to compile Kokkos for each specific GPU architecture you are using to avoid performance loss. 
+
 To install Kokkos, follow these steps:
 
 1. **Download Kokkos**: Clone the Kokkos repository from GitHub using the following command:
@@ -41,6 +44,29 @@ To install Kokkos, follow these steps:
    ```
 
 Ensure that the `KOKKOS_PATH` in your machine file points to the correct installation path of Kokkos.
+
+### Compiling Kokkos for Different GPU Architectures
+
+When compiling Kokkos, you need to specify the architecture of the GPU you are targeting. Here are some examples for different architectures:
+
+- **NVIDIA Volta (e.g., V100)**:
+  ```shell
+  cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DKokkos_ARCH_VOLTA70=ON
+  ```
+
+- **NVIDIA Ampere (e.g., A100)**:
+  ```shell
+  cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DKokkos_ARCH_AMPERE80=ON
+  ```
+
+- **AMD GFX906 (e.g., MI50)**:
+  ```shell
+  cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_HIP=ON -DKokkos_ARCH_AMD_GFX906=ON
+  ```
+
+Make sure to replace the architecture flag with the one that matches your GPU. This ensures that Kokkos is optimized for your specific hardware.
+
+**Reminder:** Ensure that the version of Kokkos you are installing supports your specific GPU architecture. Refer to the Kokkos documentation for compatibility details.
 
 ## 2. How to Compile
 
