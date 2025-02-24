@@ -17,6 +17,13 @@ The following optional software can support accelerating Ewald by GPU:
 
 **Note:** It is important to compile Kokkos for each specific GPU architecture you are using to avoid performance loss. 
 
+**Software Requirements:**
+- Ensure that the complete CUDA toolkit is installed on your system. The CUDA toolkit installed via Python is incomplete and cannot be used to compile Kokkos.
+- To install the complete CUDA toolkit, use the following command:
+  ```shell
+  sudo apt install -y nvidia-cuda-toolkit
+  ```
+
 To install Kokkos, follow these steps:
 
 1. **Download Kokkos**: Clone the Kokkos repository from GitHub using the following command:
@@ -24,21 +31,16 @@ To install Kokkos, follow these steps:
    git clone https://github.com/kokkos/kokkos.git
    ```
 
-2. **Checkout the desired version**: Navigate into the Kokkos directory and checkout the desired version (e.g., 4.0):
+2. **Build Kokkos**: Create a build directory and run CMake to configure the build. Then compile using make:
    ```shell
    cd kokkos
-   git checkout tags/4.0
-   ```
-
-3. **Build Kokkos**: Create a build directory and run CMake to configure the build. Then compile using make:
-   ```shell
    mkdir build
    cd build
    cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON
    make -j
    ```
 
-4. **Install Kokkos**: Optionally, you can install Kokkos to a specific directory:
+3. **Install Kokkos**: Optionally, you can install Kokkos to a specific directory:
    ```shell
    make install DESTDIR=/your/installation/path
    ```
