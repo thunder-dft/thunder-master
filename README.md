@@ -7,9 +7,6 @@ To use Fireball, you need to install the following software:
 - Intel Compiler  (Version 2021.3+)
 - Intel MKL (Version 2021.3+)
 
-The following optional software can greatly enhance Fireball in solving the eigenvalue problem:
-- ElPA (Version 2024.03.001+)
-
 The following optional software can support accelerating Ewald by GPU:
 - Kokkos (Version 4.0+)
 
@@ -34,12 +31,12 @@ To install Kokkos, follow these steps:
    cd kokkos
    mkdir build
    cd build
-   cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DCMAKE_INSTALL_PREFIX=/pure_kokkos_path
+   cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DCMAKE_INSTALL_PREFIX=/PURE/KOKKOS/PATH
    make -j
    make install
    ```
 
-Ensure that the `KOKKOS_PATH` in your machine file points to the correct installation path of Kokkos.
+Ensure that the `KOKKOS_PATH` in your machine file points to the `/PURE/KOKKOS/PATH`.
 
 ### Compiling Kokkos for Different GPU Architectures
 
@@ -55,10 +52,6 @@ When compiling Kokkos, you need to specify the architecture of the GPU you are t
   cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DKokkos_ARCH_AMPERE80=ON
   ```
 
-- **AMD GFX906 (e.g., MI50)**:
-  ```shell
-  cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_HIP=ON -DKokkos_ARCH_AMD_GFX906=ON
-  ```
 
 Make sure to replace the architecture flag with the one that matches your GPU. This ensures that Kokkos is optimized for your specific hardware.
 
@@ -77,15 +70,16 @@ To install FLCL, follow these steps:
 
 2. **Build FLCL**: Navigate into the FLCL directory, create a build directory, and run CMake to configure the build. Then compile using make:
    ```shell
-   cd flcl
+   cd kokkos-fortran-interop
    mkdir build
    cd build
-   cmake .. -DCMAKE_Fortran_COMPILER=ifx # Use the same Fortran compiler as used for compiling Fireball
-   -DKokkos_DIR=/Kokkos_ROOT/lib/cmake/Kokkos -DFLCL_BUILD_EXAMPLES=OFF
+   # Use the same Fortran compiler as used for compiling Fireball
+   cmake .. -DCMAKE_Fortran_COMPILER=ifx -DKokkos_DIR=/Kokkos_ROOT/lib/cmake/Kokkos -DFLCL_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=/PURE/FLCL/PATH/
    make -j
+   make install
    ```
 
-Ensure that the `FLCL_PATH` in your machine file points to the correct installation path of FLCL.
+Ensure that the `FLCL_PATH` in your machine file points to the `/PURE/FLCL/PATH`.
 
 ## 2. How to Compile
 
@@ -137,6 +131,7 @@ Edit the files in the `machine` folder to suit your current environment and your
  KOKKOS_PATH=/Your/path/kokkos
  FLCL_PATH=/Your/path/flcl
  LINKFLAGS_kokkos = /Your/path/libkokkoscontainers.a  /Your/path/lib64/libkokkoscore.a /Your/path/lib64/libkokkossimd.a  ${FLCL_PATH}/lib64/libflcl.a 
+```
 
 ```
 
