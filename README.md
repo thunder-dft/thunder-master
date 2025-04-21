@@ -31,12 +31,12 @@ To install Kokkos, follow these steps:
    cd kokkos
    mkdir build
    cd build
-   cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DCMAKE_INSTALL_PREFIX=/PURE/KOKKOS/PATH
+   cmake .. -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DCMAKE_INSTALL_PREFIX=$(PURE_KOKKOS_PATH)
    make -j
    make install
    ```
 
-Ensure that the `KOKKOS_PATH` in your machine file points to the `/PURE/KOKKOS/PATH`.
+Ensure that the `KOKKOS_PATH` in your machine file points to the `$(PURE_KOKKOS_PATH)`. The `$(PURE_KOKKOS_PATH)` is self-defined like in `/kokkos/pure_kokkos`.
 
 ### Compiling Kokkos for Different GPU Architectures
 
@@ -74,12 +74,12 @@ To install FLCL, follow these steps:
    mkdir build
    cd build
    # Use the same Fortran compiler as used for compiling Fireball
-   cmake .. -DCMAKE_Fortran_COMPILER=ifx -DKokkos_DIR=/Kokkos_ROOT/lib/cmake/Kokkos -DFLCL_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=/PURE/FLCL/PATH/
+   cmake .. -DCMAKE_Fortran_COMPILER=ifx -DKokkos_DIR=$(PURE_KOKKOS_PATH) -DFLCL_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=$(PURE_FLCL_PATH)
    make -j
    make install
    ```
 
-Ensure that the `FLCL_PATH` in your machine file points to the `/PURE/FLCL/PATH`.
+Ensure that the `FLCL_PATH` in your machine file points to the `$(PURE_FLCL_PATH)`.
 
 ## 2. How to Compile
 
@@ -128,9 +128,9 @@ Edit the files in the `machine` folder to suit your current environment and your
 # For Kokkos
  KOKKOS_DEVICES="HIP,OpenMP"
  KOKKOS_ARCH = "AMD_GFX906"
- KOKKOS_PATH=/Your/path/kokkos
- FLCL_PATH=/Your/path/flcl
- LINKFLAGS_kokkos = /Your/path/libkokkoscontainers.a  /Your/path/lib64/libkokkoscore.a /Your/path/lib64/libkokkossimd.a  ${FLCL_PATH}/lib64/libflcl.a 
+ KOKKOS_PATH=$(PURE_KOKKOS_PATH)
+ FLCL_PATH=$(PURE_FLCL_PATH)
+ LINKFLAGS_kokkos = $(KOKKOS_PATH)/lib64/libkokkoscontainers.a  $(KOKKOS_PATH)/lib64/libkokkoscore.a $(KOKKOS_PATH)/lib64/libkokkossimd.a  ${FLCL_PATH}/lib64/libflcl.a 
 ```
 
 ```
