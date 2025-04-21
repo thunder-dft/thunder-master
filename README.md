@@ -74,7 +74,7 @@ To install FLCL, follow these steps:
    mkdir build
    cd build
    # Use the same Fortran compiler as used for compiling Fireball
-   cmake .. -DCMAKE_Fortran_COMPILER=ifx -DKokkos_DIR=$(PURE_KOKKOS_PATH)/lib/cmake/Kokkos -DFLCL_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=$(PURE_FLCL_PATH)
+   cmake .. -DCMAKE_Fortran_COMPILER=ifx -DKokkos_DIR=$(PURE_KOKKOS_PATH)/lib/cmake/Kokkos -DFLCL_BUILD_EXAMPLES=OFF -DFLCL_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=$(PURE_FLCL_PATH)
    make -j
    make install
    ```
