@@ -359,6 +359,8 @@
         subroutine assemble_rho_3c(s)
         implicit none
 
+! use OMP libraries
+        use omp_lib
         include '../include/constants.h'
         include '../include/interactions_3c.h'
 
@@ -406,6 +408,10 @@
 
 ! Procedure
 ! ===========================================================================
+!$omp parallel do private (ialpha, in3, rna, ineigh, mneigh, iatom, ibeta,   &
+!$omp                      r1, in1, norb_mu, jatom, jbeta, r2, in2, norb_nu, &
+!$omp                      r21, z, sighat, rnabc, x, rhat, cost, eps,        &
+!$omp                      interaction, bcxcm, bcxcx, isorp, Qin)
 ! Loop over the atoms in the central cell.
         do ialpha = 1, s%natoms
           in3 = s%atom(ialpha)%imass
@@ -478,14 +484,17 @@
                 call rotate (in1, in2, eps, norb_mu, norb_nu, bcxcm, bcxcx)
 
                 ! Add this piece into the total
+                !$omp critical
                 s%rho_in(iatom)%neighbors(mneigh)%block =                    &
      &             s%rho_in(iatom)%neighbors(mneigh)%block + bcxcx*Qin
+                !$omp end critical
               end do
               deallocate (bcxcm)
               deallocate (bcxcx)
             end if
           end do ! end loop over neighbors
         end do ! end loop over atoms
+!$omp end parallel
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -773,6 +782,7 @@
         subroutine assemble_rho_weighted_3c(s)
         implicit none
 
+! use OMP libraries
         include '../include/constants.h'
         include '../include/interactions_3c.h'
 
@@ -817,6 +827,10 @@
 
 ! Procedure
 ! ===========================================================================
+!$omp parallel do private (ialpha, in3, rna, ineigh, mneigh, iatom, ibeta,   &
+!$omp                      r1, in1, nssh_i, jatom, jbeta, r2, in2, nssh_j,   &
+!$omp                      r21, z, sighat, rnabc, x, rhat, cost, eps,        &
+!$omp                      interaction, bcxcm, isorp, Qin)
 ! Loop over the atoms in the central cell.
         do ialpha = 1, s%natoms
           in3 = s%atom(ialpha)%imass
@@ -884,9 +898,11 @@
      &                                z, nssh_i, nssh_j, cost, bcxcm)
 
                 ! Add this piece into the total
+                !$omp critical
                 s%rho_in_weighted(iatom)%neighbors(mneigh)%block =           &
      &             s%rho_in_weighted(iatom)%neighbors(mneigh)%block          &
      &              + bcxcm*Qin
+                !$omp end critical
               end do
 
               deallocate (bcxcm)

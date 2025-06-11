@@ -2,11 +2,12 @@
 SHELL = /bin/bash
 
 # Choose the COMPILER
+# The Intel FORTRAN compiler is the default, but potentially
+# other compilers could be used
 COMPILER = ifort
 
-# Choose the Linear Algebra libraries
-#LINALG = LAPACK
-LINALG = MKL
+# Choose to turn on kokkos (parallel HPC framework)
+KOKKOS = TRUE
 
 # Do you use DEBUG or Optimization Mode? (DEBUG/OPT)
 MODE = OPT
@@ -36,13 +37,11 @@ DIAGONALIZATION = GAMMAD
 #DIAGONALIZATION = KPOINTS
 #DIAGONALIZATION = MDET
 #DIAGONALIZATION = KS
-
 #DIAGONALIZATION = SCALAPACK
 NEED_MPI := $(filter SCALAPACK ELPA, ${DIAGONALIZATION})
 ifneq ($(NEED_MPI),)
 	MPI = TRUE
 endif
-
 
 # Choose the XC functional
 #XC = LDA
