@@ -1,6 +1,6 @@
 ! copyright info:
 !
-!                             @Copyright 2022
+!                             @Copyright 2024
 !                           Fireball Committee
 ! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
 ! Universidad de Madrid - Jose Ortega
@@ -630,6 +630,9 @@
         subroutine assemble_ewald (s)
         implicit none
 
+! use OMP libraries
+        use omp_lib
+        n
         include '../include/constants.h'
         include '../include/interactions_2c.h'
 
@@ -795,6 +798,8 @@
           ig2mx = 0
           ig3mx = 0
         end if
+!$omp parallel do private(ig1, ig2, ig3, g, argument, stuff, iatom, jatom,   &
+!$omp                     factor, gdotb) shared(s) schedule(dynamic)
         do ig1 = -ig1mx, ig1mx
           do ig2 = -ig2mx, ig2mx
             do ig3 = -ig3mx, ig3mx
@@ -819,7 +824,9 @@
      &              + g(2)*(s%atom(iatom)%ratom(2) - s%atom(jatom)%ratom(2))  &
      &              + g(3)*(s%atom(iatom)%ratom(3) - s%atom(jatom)%ratom(3))
 
+                    !$omp atomic
                     s%ewald(iatom,jatom) = s%ewald(iatom,jatom) + factor*cos(gdotb)
+                    !$omp atomic
                     s%ewald(jatom,iatom) = s%ewald(jatom,iatom) + factor*cos(gdotb)
                   end do
                 end do
@@ -827,6 +834,7 @@
             end do
           end do
         end do
+!$omp end parallel
 
 ! ***********************************************************************
 ! Compute gamma2:
@@ -840,6 +848,8 @@
           kappa = 0.0d0
         end if
 
+!$omp parallel do private (il1, il2, il3, iatom, jatom, factor, cvec, z,     &
+!$omp                      argument) schedule(dynamic)
 ! Now carry out the sum over the cells.
         do il1 = -il1mx, il1mx
           do il2 = -il2mx, il2mx
@@ -860,8 +870,10 @@
                   if (z .gt. 0.0001d0) then
                     argument = kappa*z
 
+                    !$omp atomic
                     s%ewald(iatom,jatom) =                                   &
      &                s%ewald(iatom,jatom) + factor*erfc(argument)/z
+                    !$omp atomic
                     s%ewald(jatom,iatom) =                                   &
      &                s%ewald(jatom,iatom) + factor*erfc(argument)/z
                   end if
@@ -870,6 +882,7 @@
             end do
           end do
         end do
+!$omp end parallel
 
 ! ***********************************************************************
 ! Compute gamma3:

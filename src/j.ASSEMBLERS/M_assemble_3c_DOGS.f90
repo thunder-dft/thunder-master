@@ -1,6 +1,6 @@
 ! copyright info:
 !
-!                             @Copyright 2022
+!                             @Copyright 2024
 !                           Fireball Committee
 ! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
 ! Universidad de Madrid - Jose Ortega
@@ -82,6 +82,9 @@
         subroutine assemble_vna_3c (s)
         implicit none
 
+! use OMP libraries
+        use omp_lib
+
         include '../include/constants.h'
         include '../include/interactions_3c.h'
 
@@ -151,6 +154,14 @@
 
 ! Procedure
 ! ===========================================================================
+!$omp parallel do private(indna, rna, ineigh, mneigh, iatom, ibeta, r1, in1, &
+!$omp&                    norb_mu, jatom, jbeta, r2, in2, norb_nu, pvna,     &
+!$omp&                    pvna_neighbors, poverlap, pS_neighbors, pdipole_z, &
+!$omp&                    pdip_neighbors, r21, z, sighat, rnabc, x,          &
+!$omp&                    distance_13, distance_23, rhat, cost, eps, xsmooth,&
+!$omp&                    rcutoff1_min, issh, rcutoff2_min, rcutoff3_min,    &
+!$omp&                    rend, stinky, interaction, bcnam, bcnax, sterm,    &
+!$omp&                    dterm, emnpl, isorp, dQ)
 ! Loop over the atoms in the central cell.
         do ialpha = 1, s%natoms
           indna = s%atom(ialpha)%imass
@@ -284,8 +295,11 @@
               ! Rotate into crystal coordinates
               call rotate (in1, in2, eps, norb_mu, norb_nu, bcnam, bcnax)
 
+
               ! Add this piece into the total
+              !$omp critical
               pvna_neighbors%block  = pvna_neighbors%block + bcnax*P_eq2
+              !$omp end critical
 
 ! Charged atom cases
               do isorp = 1, species(indna)%nssh
@@ -297,8 +311,10 @@
 
                 ! Add this piece into the total
                 dQ = s%atom(ialpha)%shell(isorp)%dQ
+                !$omp critical
                 pvna_neighbors%block = pvna_neighbors%block                  &
      &            + dQ*(stinky*bcnax + (1.0d0 - stinky)*emnpl)*P_eq2
+                !$omp end critical
               end do
               deallocate (bcnam, bcnax)
               deallocate (sterm, dterm, emnpl)
@@ -308,6 +324,7 @@
             end if
           end do ! end loop over neighbors
         end do ! end loop over atoms
+!$omp end parallel
 
 ! Deallocate Arrays
 ! ===========================================================================

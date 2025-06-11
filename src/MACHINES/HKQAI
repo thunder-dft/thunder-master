@@ -31,4 +31,19 @@ ifneq (,$(findstring HKQAI,${MACHINE}))
 	endif
 #	LFLAGS_FFT = -I$(FFTPATH) -L$(MKLPATH) $(MKLPATH)/libfftw3xf_intel.a \
 #		$(MKLPATH)/libmkl_em64t.a -Bdynamic $(MKLPATH)/libguide.a
+
+ifneq (,$(findstring TRUE, ${KOKKOS}))
+	KOKKOS_DEVICES = "CUDA"
+	KOKKOS_PATH = /users/lewis/git/thunder2024/kokkos
+	FLCL_PATH = /users/lewis/git/thunder2024/kokkos-fortran-interop
+	
+	CXX = ${KOKKOS_PATH}/bin/nvcc_wrapper
+	CC = ${KOKKOS_PATH}/bin/nvcc_wrapper
+	include $(KOKKOS_PATH)/Makefile.kokkos
+	CXXFLAGS += -DKOKKOS_ARCH_ADA89  -DKOKKOS_ENABLE_CUDA
+	LFLAGS += $(KOKKOS_LIBS) ${FLCL_PATH}/build/src/libflcl.a  -lstdc++
+	FFLAGS += $(KOKKOS_LDFLAGS) -I${FLCL_PATH}/build/src/mod
+	CXXFLAGS += $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -I${FLCL_PATH}/src
+endif
+
 endif
