@@ -64,8 +64,8 @@
 #include "flcl-cxx.hpp"
 #include <chrono>
 
-#include "KOKKOS_gamma.hpp"
-#include "KOKKOS_gamma_s.hpp"
+#include "Kokkos_gamma.hpp"
+#include "Kokkos_gamma_s.hpp"
 
 // using gamma_view2d = flcl::gamma_view2d;
 

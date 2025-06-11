@@ -57,7 +57,7 @@
 //          gamma_res: Print out the key result of Ewald.
 //
 // ===========================================================================
-#include "KOKKOS_gamma.hpp"
+#include "Kokkos_gamma.hpp"
 
 namespace kokkos_gamma
 {
