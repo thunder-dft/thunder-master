@@ -60,7 +60,8 @@
 #include "Kokkos_Core.hpp"
 #include "flcl-cxx.hpp"
 #include <cmath>
-#include "KOKKOS_gamma_data.hpp"
+
+#include "Kokkos_gamma_data.hpp"
 
 namespace kokkos_gamma
 {
