@@ -43,6 +43,9 @@
 ! ===========================================================================
         module M_assemble_3c
 
+! OMP libraries
+        use omp_lib
+        
 ! /GLOBAL
         use M_assemble_blocks
 
@@ -81,9 +84,6 @@
 ! ===========================================================================
         subroutine assemble_vna_3c (s)
         implicit none
-
-! use OMP libraries
-        use omp_lib
 
         include '../include/constants.h'
         include '../include/interactions_3c.h'
