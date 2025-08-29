@@ -725,9 +725,11 @@
 
         exc = 0.0d0
         call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,      &
-     &                     density_pp,                                      &
+     &                     density_pp, exc, vxc, dnuxc, dnuxcs, dexc)
+!       call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,      &
+!    &                     density_pp,                                      &
 !    &                     density_pp, density_pap,                         &
-     &                     exc, vxc, dnuxc, dnuxcs, dexc)
+!    &                     exc, vxc, dnuxc, dnuxcs, dexc)
 
 ! Answers are in Hartrees convert to eV.
         dexc_1c = P_hartree*exc
@@ -955,10 +957,13 @@
 !       density_pap = density_pap*P_abohr**5
 
         vxc = 0.0d0
-        call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,       &
-     &                     density_pp,                                       &
-!    &                     density_pp, density_pap,                          &
-     &                     exc, vxc, dnuxc, dnuxcs, dexc)
+        call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,      &
+     &                     density_pp, exc, vxc, dnuxc, dnuxcs, dexc)
+!       call get_potxc_1c (iexc, xc_fraction, rin, density, density_p,      &
+!    &                     density_pp,                                      &
+!    &                     density_pp, density_pap,                         &
+!    &                     exc, vxc, dnuxc, dnuxcs, dexc)
+
 
 ! Answers are in Hartrees convert to eV.
         dvxc_1c = P_hartree*vxc
