@@ -50,6 +50,9 @@
 ! ===========================================================================
         module M_assemble_ewald
 
+! OMP libraries
+        use omp_lib
+        
 ! /GLOBAL
         use M_precision
         use M_assemble_blocks
@@ -630,9 +633,6 @@
         subroutine assemble_ewald (s)
         implicit none
 
-! use OMP libraries
-        use omp_lib
-        n
         include '../include/constants.h'
         include '../include/interactions_2c.h'
 

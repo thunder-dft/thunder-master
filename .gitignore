@@ -43,3 +43,4 @@ Makefile
 src/include/.OPTIONS.swp
 *.swo
 *.swp
+*.prj

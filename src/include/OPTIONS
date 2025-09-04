@@ -22,8 +22,8 @@ MPI = TRUE
 MACHINE = HKQAI
 
 # Choose HORSFIELD or McWEDA
-THEORY = HORSFIELD
-#THEORY = McWEDA
+#THEORY = HORSFIELD
+THEORY = McWEDA
 
 # Choose HARRIS, DOGS, or KS (Kohn-Sham)
 # Note that the KS code only does LDA for now as it uses McWEDA routines. 
@@ -44,6 +44,6 @@ ifneq ($(NEED_MPI),)
 endif
 
 # Choose the XC functional
-#XC = LDA
-XC = PBE
+XC = LDA
+#XC = PBE
 #XC = BLYP
