@@ -51,6 +51,7 @@
 
 ! /SYSTEM
         use M_configuraciones
+        use M_neighbors
         use M_rotations
 
 ! /FDATA
@@ -294,7 +295,6 @@
 
               ! Rotate into crystal coordinates
               call rotate (in1, in2, eps, norb_mu, norb_nu, bcnam, bcnax)
-
 
               ! Add this piece into the total
               !$omp critical

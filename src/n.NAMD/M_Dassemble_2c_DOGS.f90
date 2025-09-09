@@ -766,6 +766,10 @@
 
         type(T_forces), pointer :: pfi
 
+        ! gradient of Hatree product matrix stuff
+        type(T_assemble_block), pointer :: pvna_neighbors
+        type(T_assemble_neighbors), pointer :: pgvna
+
 ! Allocate Arrays
 ! ===========================================================================
 ! We build the vna_ontop forces here, so we allocate and initialize
@@ -776,6 +780,8 @@
           num_neigh = s%neighbors(iatom)%neighn
           allocate (s%forces(iatom)%vna_atom (3, num_neigh)); pfi%vna_atom = 0.0d0
           allocate (s%forces(iatom)%vna_ontop (3, num_neigh)); pfi%vna_ontop = 0.0d0
+
+          allocate (s%gvna(s%natoms))
         end do
 
 ! Procedure
@@ -794,18 +800,31 @@
           pdenmat=>s%denmat(iatom)
           pfi=>s%forces(iatom)
 
+          nullify (gvna)
+          pgvna=>s%gvna(iatom)
+
 ! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
+          allocate (s%gvna(iatom)%neighbors(num_neigh))
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
-            norb_nu = species(in2)%norb_max
 
             ! cut some more lengthy notation
             nullify (pRho_neighbors)
             pRho_neighbors=>pdenmat%neighbors(ineigh)
+
+            nullify (pvna_neighbors)
+            pvna_neighbors=>pgvna%neighbors(ineigh)
+
+! Allocate block size for Hamiltonian gradient
+            norb_nu = species(in2)%norb_max
+            allocate (s%gvna(iatom)%neighbors(ineigh)%Dblock(3, norb_mu, norb_nu))
+            allocate (s%gvna(iatom)%neighbors(ineigh)%Dblocko(3, norb_mu, norb_nu))
+            pvna_neighbors%Dblock = 0.0d0
+            pvna_neighbors%Dblocko = 0.0d0
 
 ! SET-UP STUFF
 ! ****************************************************************************
@@ -885,6 +904,10 @@
                 do imu = 1, norb_mu
                   pfi%vna_ontop(:,ineigh) = pfi%vna_ontop(:,ineigh)          &
       &             - pRho_neighbors%block(imu,inu)*vdbcnax(:,imu,inu)*P_eq2
+
+                  ! Hamiltonian gradient
+                  pvna_neighbors%Dblocko(:,imu,inu) =                        &
+      &             pvna_neighbors%Dblocko(:,imu,inu) - vdbcnax(:,imu,inu)*P_eq2
                 end do
               end do
 
@@ -917,6 +940,10 @@
                   do imu = 1, norb_mu
                     pfi%vna_ontop(:,ineigh) = pfi%vna_ontop(:,ineigh)        &
      &               - pRho_neighbors%block(imu,inu)*dQ*vdbcnax(:,imu,inu)*P_eq2
+
+                    ! Hamiltonian gradient
+                    pvna_neighbors%Dblocko(:,imu,inu) =                      &
+      &               pvna_neighbors%Dblocko(:,imu,inu) - dQ*vdbcnax(:,imu,inu)*P_eq2
                   end do
                 end do
               end do ! end loop over isorp
@@ -959,6 +986,10 @@
                 do imu = 1, norb_mu
                   pfi%vna_ontop(:,ineigh) = pfi%vna_ontop(:,ineigh)          &
      &             - pRho_neighbors%block(imu,inu)*vdbcnax(:,imu,inu)*P_eq2
+
+                  ! Hamiltonian gradient
+                  pvna_neighbors%Dblocko(:,imu,inu) =                        &
+      &             pvna_neighbors%Dblocko(:,imu,inu) - vdbcnax(:,imu,inu)*P_eq2
                 end do
               end do
 
@@ -992,6 +1023,10 @@
                   do imu = 1, norb_mu
                     pfi%vna_ontop(:,ineigh) = pfi%vna_ontop(:,ineigh)        &
      &               - pRho_neighbors%block(imu,inu)*dQ*vdbcnax(:,imu,inu)*P_eq2
+
+                    ! Hamiltonian gradient
+                    pvna_neighbors%Dblocko(:,imu,inu) =                      &
+      &               pvna_neighbors%Dblocko(:,imu,inu) - dQ*vdbcnax(:,imu,inu)*P_eq2
                   end do
                 end do
               end do ! end loop over isorp
@@ -1019,6 +1054,9 @@
           poverlap=>s%overlap(iatom); pS_neighbors=>poverlap%neighbors(matom)
           pdenmat=>s%denmat(iatom); pRho_neighbors_matom=>pdenmat%neighbors(matom)
           pfi=>s%forces(iatom)
+
+          nullify (pvna, pvna_neighbors)
+          pvna=>s%vna(iatom); pvna_neighbors=>pvna%neighbors(matom)
 
 ! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
@@ -1128,9 +1166,12 @@
 ! Notice the explicit negative sign, this makes it force like.
             do inu = 1, norb_mu
               do imu = 1, norb_mu
-                pfi%vna_atom(:,ineigh) = pfi%vna_atom(:,ineigh)              &
+                pfi%vna_atom(:,ineigh) = pfi%vna_atom(:,ineigh)            &
       &           - pRho_neighbors_matom%block(imu,inu)*vdbcnax(:,imu,inu)*P_eq2
-               end do
+
+                pvna_neighbors%Dblock(:,imu,inu) =                         &
+      &           pvna_neighbors%Dblock(:,imu,inu) + vdbcnax(:,imu,inu)*P_eq2
+              end do
             end do
 
 ! Charged atom case
@@ -1177,6 +1218,13 @@
       &                + (1.0d0 - smooth)*vdemnpl(:,imu,inu)                   &
       &                + eta(:)*Dsmooth*emnpl(imu,inu))
                        ! This last term is really (- eta) and (-Dsmooth)
+
+                  pvna_neighbors%Dblock(:,imu,inu) =                           &
+      &             pvna_neighbors%Dblock(:,imu,inu)                           &
+      &               - P_eq2*dQ*(smooth*vdbcnax(:,imu,inu)                    &
+      &                           - eta(:)*Dsmooth*bcnax(imu,inu)              &
+      &                           + (1.0d0 - smooth)*vdemnpl(:,imu,inu)        &
+      &                           + eta(:)*Dsmooth*emnpl(imu,inu))
                 end do
               end do
               deallocate (emnpl, vdemnpl)
