@@ -37,7 +37,7 @@
 ! ===========================================================================
 ! Code written by:
 ! James P. Lewis
-! Unit 909 of Buidling 17W
+! Unit 909 of Building 17W
 ! 17 Science Park West Avenue
 ! Pak Shek Kok, New Territories 999077
 ! Hong Kong
@@ -810,36 +810,6 @@
 ! ===========================================================================
         return
         end subroutine fermie
-
-
-! ===========================================================================
-! initialize_mdet.f90
-! ===========================================================================
-! Subroutine Description
-! ===========================================================================
-!       Dummy routine - need to have dummy initialize_mdet
-!
-! ===========================================================================
-! Program Declaration
-! ===========================================================================
-        subroutine initialize_mdet (s, icurrent_state)
-        implicit none
-
-        include '../include/constants.h'
-
-! Argument Declaration and Description
-! ===========================================================================
-! Input
-        type(T_structure), target :: s           !< the structure to be used.
-! Output
-        integer, intent (out) :: icurrent_state
-
-        icurrent_state=0
-
-! End Subroutine
-! ===========================================================================
-        return
-        end subroutine initialize_mdet
 
 
 ! ===========================================================================
