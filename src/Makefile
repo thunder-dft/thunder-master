@@ -256,8 +256,8 @@ fireball.x: $(OBJECTS_FIREBALL) $(LIB_scalapack) fireball.o
 	$(F90) -o fireball.x $(FFLAGS) $(OMP) $(OBJECTS_FIREBALL) fireball.o $(LFLAGS) 
 fireball-ase.x: $(OBJECTS_FIREBALL) $(LIB_scalapack) fireball-ase.o
 	$(F90) -o fireball-ase.x $(FFLAGS) $(OMP) $(OBJECTS_FIREBALL) fireball-ase.o $(LFLAGS) 
-fireball-MDET.x: $(OBJECTS_MDET) fireball-MDET.o
-	$(F90) -o fireball-MDET.x $(FFLAGS) $(OBJECTS_MDET) fireball-MDET.o $(LFLAGS)
+fireball-mdet.x: $(OBJECTS_FIREBALL) fireball-mdet.o
+	$(F90) -o fireball-mdet.x $(FFLAGS) $(OBJECTS_FIREBALL) fireball-mdet.o $(LFLAGS)
 
 .PHONY: clean veryclean
 
