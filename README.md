@@ -1,7 +1,7 @@
 # FIREBALL  - Set Up Guide
 
 ## 1. Required Environment 
-To use Fireball, you need to install the following software:
+To use FIREBALL, you need to install the following software:
 
 - Intel MPI (Version 2021.3+)
 - Intel Compiler  (Version 2021.3+)
