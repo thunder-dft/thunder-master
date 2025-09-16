@@ -152,15 +152,18 @@ endif
 ifneq (,$(findstring DOGS, ${SCF}))
 ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_ewald_DOGS.o M_assemble_usr_Horsfield_DOGS.o M_assemble_vxc_Horsfield_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o
 DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_ewald_DOGS.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o 
+ifneq (,$(findstring TRUE, ${NAMD}))
+DASSEMBLERS = M_Dassemble_2c_DOGS_mdet.o M_Dassemble_3c_DOGS_mdet.o M_Dassemble_ewald_DOGS_mdet.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS_mdet.o M_Dassemble_PP_2c_mdet.o M_Dassemble_PP_3c_mdet.o 
+endif
 FDATA = M_Fdata_1c_Horsfield_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
 SCF = M_charges_Lowdin.o Qmixer_Anderson_DOGS.o
 endif
 
 # ************************************ KS ************************************
 ifneq (,$(findstring KS, ${SCF}))
-#ASSEMBLERS = M_assemble_2c_grid.o M_assemble_3c_Harris.o M_assemble_ewald_DOGS.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_grid.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_usr_grid.o
-#FDATA = M_Fdata_1c_McWEDA_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
-#SCF = M_charges_Mulliken.o Qmixer_Anderson_grid.o
+ASSEMBLERS = M_assemble_2c_grid.o M_assemble_3c_Harris.o M_assemble_ewald_DOGS.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_grid.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_usr_grid.o
+FDATA = M_Fdata_1c_McWEDA_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
+SCF = M_charges_Mulliken.o Qmixer_Anderson_grid.o
 endif
 # ****************************************************************************
 # END                         HORSFIELD COMPILED ROUTINES
@@ -172,18 +175,20 @@ endif
 # ****************************************************************************
 # **************************** GAMMA - DEFAULT PACKAGES **********************
 SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix.o
+ifneq (,$(findstring TRUE, ${NAMD}))
+SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix_mdet.o
+endif
 
 # ************************* GAMMA, KPOINTS, MDET, or KS **********************
 ifneq (,$(findstring GAMMAD, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix.o
+ifneq (,$(findstring TRUE, ${NAMD}))
+SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix_mdet.o
+endif
 endif
 ifneq (,$(findstring KPOINTS, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_kpoints.o M_kspace_Lowdin.o M_density_matrix.o
 UTIL = absorption_gamma.o dos_kpoints.o
-endif
-ifneq (,$(findstring MDET, ${DIAGONALIZATION}))
-SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix_MDET.o
-SYSTEM = M_species.o M_kpoints_MDET.o M_configuraciones.o M_neighbors.o M_neighbors_PP.o M_atom_functions.o
 endif
 ifneq (,$(findstring KS, ${DIAGONALIZATION}))
 GRID = M_project_grid.o M_fft_grid.o writeout_xsf.o
@@ -288,7 +293,7 @@ all:
 	make create.x
 	make fireball.x
 	make fireball-ase.x
-	make fireball-MDET.x
+	make fireball-mdet.x
 	make lightning.x
 	make lightning-grid.x
 	
@@ -595,11 +600,23 @@ M_gear_quench.o : m.MD/M_gear_quench.f90
 # *****************************************************************************
 # n.NAMD
 # *****************************************************************************
+M_Dassemble_2c_DOGS_mdet.o : n.NAMD/M_Dassemble_2c_DOGS_mdet.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_Dassemble_PP_2c_mdet.o : n.NAMD/M_Dassemble_PP_2c_mdet.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_Dassemble_PP_3c_mdet.o : n.NAMD/M_Dassemble_PP_3c_mdet.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_Dassemble_3c_DOGS_mdet.o : n.NAMD/M_Dassemble_3c_DOGS_mdet.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_Dassemble_vxc_Horsfield_DOGS_mdet.o : n.NAMD/M_Dassemble_vxc_Horsfield_DOGS_mdet.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_Dassemble_ewald_DOGS_mdet.o : n.NAMD/M_Dassemble_ewald_DOGS_mdet.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_density_matrix_mdet.o : n.NAMD/M_density_matrix_mdet.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_non_adiabatic_gamma.o : n.NAMD/M_non_adiabatic_gamma.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_non_adiabatic_coupling.o : n.NAMD/M_non_adiabatic_coupling.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_density_MDET.o : n.NAMD/M_density_MDET.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 
 # *****************************************************************************

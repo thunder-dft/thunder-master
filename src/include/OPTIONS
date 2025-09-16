@@ -7,7 +7,7 @@ SHELL = /bin/bash
 COMPILER = ifort
 
 # Choose to turn on kokkos (parallel HPC framework)
-KOKKOS = TRUE
+KOKKOS = FALSE
 
 # Do you use DEBUG or Optimization Mode? (DEBUG/OPT)
 MODE = OPT
@@ -22,8 +22,8 @@ MPI = TRUE
 MACHINE = HKQAI
 
 # Choose HORSFIELD or McWEDA
-#THEORY = HORSFIELD
-THEORY = McWEDA
+THEORY = HORSFIELD
+#THEORY = McWEDA
 
 # Choose HARRIS, DOGS, or KS (Kohn-Sham)
 # Note that the KS code only does LDA for now as it uses McWEDA routines. 
@@ -31,11 +31,13 @@ THEORY = McWEDA
 SCF = DOGS
 #SCF = KS
 
+# Choose NAMD as TRUE or FALSE
+NAMD = TRUE
+
 # Choose the DIAGONALIZATION Method - GAMMAD (divide and conquer), 
-# KPOINTS, or MDET (also GAMMA) - Default is GAMMA
+# KPOINTS, KS, or SCALAPACK - Default is GAMMA
 DIAGONALIZATION = GAMMAD
 #DIAGONALIZATION = KPOINTS
-#DIAGONALIZATION = MDET
 #DIAGONALIZATION = KS
 #DIAGONALIZATION = SCALAPACK
 NEED_MPI := $(filter SCALAPACK ELPA, ${DIAGONALIZATION})
@@ -44,6 +46,6 @@ ifneq ($(NEED_MPI),)
 endif
 
 # Choose the XC functional
-XC = LDA
-#XC = PBE
+#XC = LDA
+XC = PBE
 #XC = BLYP
