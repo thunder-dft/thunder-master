@@ -167,7 +167,7 @@
         do ikpoint = 1, s%nkpoints
 
 ! Allocate transition type and initialize imap
-          allocate (s%kpoints(ikpoint)%transition (ntransitions))
+          allocate (s%kpoints(ikpoint)%transition(ntransitions))
 
           do itransition = 1, ntransitions
             read (inpfile,*) iband, foccupy, ipop

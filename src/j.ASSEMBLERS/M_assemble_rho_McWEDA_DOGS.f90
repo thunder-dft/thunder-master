@@ -48,6 +48,9 @@
 ! ===========================================================================
          module M_assemble_rho_McWEDA
 
+! OMP libraries
+         use omp_lib
+        
 ! /GLOBAL
          use M_assemble_blocks
 
@@ -359,8 +362,6 @@
         subroutine assemble_rho_3c(s)
         implicit none
 
-! use OMP libraries
-        use omp_lib
         include '../include/constants.h'
         include '../include/interactions_3c.h'
 
@@ -782,7 +783,6 @@
         subroutine assemble_rho_weighted_3c(s)
         implicit none
 
-! use OMP libraries
         include '../include/constants.h'
         include '../include/interactions_3c.h'
 

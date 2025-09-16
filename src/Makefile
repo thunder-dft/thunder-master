@@ -173,9 +173,6 @@ endif
 # **************************** GAMMA - DEFAULT PACKAGES **********************
 SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix.o
 
-
-
-
 # ************************* GAMMA, KPOINTS, MDET, or KS **********************
 ifneq (,$(findstring GAMMAD, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix.o
