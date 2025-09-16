@@ -1,4 +1,4 @@
-# Fireball  - Set Up Guide
+# FIREBALL  - Set Up Guide
 
 ## 1. Required Environment 
 To use Fireball, you need to install the following software:
