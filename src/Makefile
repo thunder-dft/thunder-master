@@ -64,7 +64,6 @@ BEGIN_LOOPRC = M_psi.o M_rcatms_Coulomb.o M_rcatms.o M_looprc.o
 FUNCTIONS_LIGHTNING = make_cells.o cl.o epsilon.o
 
 MD = M_gear_quench.o
-NAMD = M_non_adiabatic_gamma.o M_non_adiabatic_coupling.o M_density_MDET.o
 OUTPUT = writeout_energies.o writeout_xyz.o writeout_xsf.o
 UTIL = absorption_gamma.o dos_gamma.o
 SOLVESH = M_diagonalization_Lowdin.o M_kspace_Lowdin.o M_density_matrix.o
@@ -154,6 +153,7 @@ ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_ewald_DOGS.o M
 DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_ewald_DOGS.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o 
 ifneq (,$(findstring TRUE, ${NAMD}))
 DASSEMBLERS = M_Dassemble_2c_DOGS_mdet.o M_Dassemble_3c_DOGS_mdet.o M_Dassemble_ewald_DOGS_mdet.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS_mdet.o M_Dassemble_PP_2c_mdet.o M_Dassemble_PP_3c_mdet.o 
+MDET = 
 endif
 FDATA = M_Fdata_1c_Horsfield_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
 SCF = M_charges_Lowdin.o Qmixer_Anderson_DOGS.o
@@ -724,7 +724,7 @@ fireball.o : x.DRIVERS/fireball.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 fireball-ase.o : x.DRIVERS/fireball-ase.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-fireball-MDET.o : x.DRIVERS/fireball-MDET.f90
+fireball-mdet.o : x.DRIVERS/fireball-mdet.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 lightning.o : x.DRIVERS/lightning.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
