@@ -102,7 +102,8 @@
 ! coefficients in order to calculate non-adiabatic couplings or for calculating
 ! absorption. We consider only a range of states near the valence and conduction
 ! band edges. The number of states that we consider is defined by ntransitions.
-          type (T_transition), pointer :: transition (:, :)
+          type (T_transition), pointer :: transition (:)
+          type (T_transition), pointer :: atransition (:, :)
         end type
 
 ! End Module
