@@ -57,7 +57,6 @@
 ! coefficients in order to calculate non-adiabatic couplings or for calculating
 ! absorption. We consider only a range of states near the valence and conduction
 ! band edges. The number of states that we consider is defined by ntransitions.
-        integer ntransitions           ! number of transitions
         type T_transition
           integer imap                 ! to which band does this transition map
 
@@ -80,14 +79,14 @@
         type T_kpoint
           real weight                          ! weight of kpoint
 
-          integer, pointer :: ioccupy (:)    ! integer occupation number
+          integer, pointer :: ioccupy (:)     ! integer occupation number
 
           real, pointer :: eigen (:)          ! eigenvalues for k
           real, pointer :: eigen_old (:)      ! previous eigenvlues for k
           real, pointer :: deigen (:)         ! interpolted eigen values
           real, pointer :: foccupy (:)        ! occupation real value for k
 
-          real, dimension (3) :: k           ! kpoint vector
+          real, dimension (3) :: k            ! kpoint vector
 
           ! k-dependent S12 matrix
           complex, pointer :: S12matrix (:, :)
@@ -102,6 +101,8 @@
 ! coefficients in order to calculate non-adiabatic couplings or for calculating
 ! absorption. We consider only a range of states near the valence and conduction
 ! band edges. The number of states that we consider is defined by ntransitions.
+          integer ntransitions                ! number of transitions
+
           type (T_transition), pointer :: transition (:)
           type (T_transition), pointer :: atransition (:, :)
         end type
