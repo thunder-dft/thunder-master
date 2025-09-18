@@ -285,7 +285,7 @@ clean:
 
 veryclean: clean
 	rm -f begin-looprc.x begin.x create.x lightning.x lightning-grid.x \
-			fireball.x fireball-ase.x fireball-MDET.x 
+			fireball.x fireball-ase.x fireball-mdet.x 
 
 all:
 	make begin-looprc.x
