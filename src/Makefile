@@ -183,7 +183,7 @@ endif
 ifneq (,$(findstring GAMMAD, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix.o
 ifneq (,$(findstring TRUE, ${NAMD}))
-SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix_mdet.o
+SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix.o M_density_matrix_mdet.o
 endif
 endif
 ifneq (,$(findstring KPOINTS, ${DIAGONALIZATION}))
