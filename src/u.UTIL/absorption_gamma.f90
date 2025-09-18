@@ -26,7 +26,6 @@
 ! { (b) (3) (ii) } of the Rights in Technical Data and Computer Software
 ! clause at 52.227-7013.
 
-
 ! ===========================================================================
 ! absorption.f90
 ! ===========================================================================
@@ -191,18 +190,19 @@
           if (t%kpoints(1)%eigen(iband) .gt. energy_min) nhomo = nhomo + 1
         end do
 
-        ntransitions = 0
+        t%kpoints(1)%ntransitions = 0
         do iband = ihomo - nhomo + 1, t%norbitals_new
-          if (t%kpoints(1)%eigen(iband) .lt. energy_min + energy_max) ntransitions = ntransitions + 1
+          if (t%kpoints(1)%eigen(iband) .lt. energy_min + energy_max)        &
+     &      t%kpoints(1)%ntransitions = t%kpoints(1)%ntransitions + 1
         end do
-        allocate (answer (-nhomo:0, ntransitions)); answer = 0.0d0
+        allocate (answer (-nhomo:0, t%kpoints(1)%ntransitions)); answer = 0.0d0
 
         ! Allocate transition type and initialize imap
         write (logfile,*) ' The number of transitions included in the '
-        write (logfile,*) ' absorption integration is ntransitions = ', ntransitions
+        write (logfile,*) ' absorption integration is ntransitions = ', t%kpoints(1)%ntransitions
         write (logfile,*)
-        allocate (t%kpoints(1)%atransition(-nhomo:0, ntransitions))
-        t%kpoints(1)%atransition(-nhomo:0, 1:ntransitions)%imap = 0
+        allocate (t%kpoints(1)%atransition(-nhomo:0, t%kpoints(1)%ntransitions))
+        t%kpoints(1)%atransition(-nhomo:0, 1:t%kpoints(1)%ntransitions)%imap = 0
         do ilevel = -nhomo, 0
           itransition = 1
           write (logfile,*) ' We will calculate dipole transitions between the two states: '
@@ -242,7 +242,7 @@
                   read (inpfile, *, end = 10) t%kpoints(1)%eigen(iband), answer(ilevel, itransition_begin)
                   write (logfile,*) t%kpoints(1)%eigen(iband), answer(ilevel, itransition_begin)
                   itransition_begin = itransition_begin + 1
-                  if (itransition_begin .gt. ntransitions) exit
+                  if (itransition_begin .gt. t%kpoints(1)%ntransitions) exit
                 end if
               end do
             else
@@ -351,7 +351,7 @@
           write (logfile, *)
           write (logfile,*) ' Starting from energy state = ', ihomo + ilevel,&
      &                      ' energy = ', t%kpoints(1)%eigen(ihomo + ilevel)
-          do itransition = 1, ntransitions
+          do itransition = 1, t%kpoints(1)%ntransitions
             write (logfile, *) ' Working on itransition = ', itransition
             iband = t%kpoints(1)%atransition(ilevel, itransition)%imap
             if (iband .eq. 0) then
@@ -484,7 +484,7 @@
           energy = energy_step*float(igrid - 1)
           xntensity = 0.0d0
           do ilevel = -nhomo, 0
-            do itransition = 1, ntransitions
+            do itransition = 1, t%kpoints(1)%ntransitions
               iband = t%kpoints(1)%atransition(ilevel, itransition)%imap
               energy_min = t%kpoints(1)%eigen(ihomo + ilevel)
               if (iband .gt. ihomo) then
