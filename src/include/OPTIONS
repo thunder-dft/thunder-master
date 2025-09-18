@@ -15,7 +15,7 @@ MODE = OPT
 
 # Turn on omp or mpi (enter TRUE .or. FALSE)?
 OPENMP = FALSE
-MPI = TRUE
+MPI = FALSE
 
 # Choose the MACHINE file
 #MACHINE = GENERIC

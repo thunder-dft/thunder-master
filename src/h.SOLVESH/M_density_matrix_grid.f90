@@ -286,14 +286,15 @@
           end do
         end do
 
+! Modify the total charge by the charge state
+        s%ztot = s%ztot + qstate
+
         write (logfile,*)
         write (logfile,*) ' Calculating density matrix elements here. '
+        write (logfile,*) ' The current charge state is, qstate = ', qstate
         write (logfile,*) ' Total number of electrons in the system is, ztot = ', s%ztot
 
 ! Calculate the Fermi energy.
-! FIX ME! For now we set qstate = 0.0d0
-        qstate = 0.0d0
-
 ! Inquire here regarding the occupations file
         slogfile = s%basisfile(:len(trim(s%basisfile))-4)
         slogfile = trim(slogfile)//'.OCCUPATION'
