@@ -31,12 +31,13 @@
 ! M_density_matrix_mdet.f90
 ! Program Description
 ! ===========================================================================
-!>       This routine calculates the density matrices and the band-structure
-!! energy, as well as similar density matrices.
+!>       This routine calculates the density matrices pieces that are related
+!> building the nonadiabatic coupling vectors for caclulating the pieces of
+!> the time dependent Schrodinger equation for nonadiabatic molecular dynamics.
 !
 ! ===========================================================================
 ! Code written by:
-! James P. Lewis
+! James P. Lewis (with Zhaofa Li at Synfuels China Technology)
 ! Unit 909 of Building 17W
 ! 17 Science Park West Avenue
 ! Pak Shek Kok, New Territories 999077
@@ -68,10 +69,10 @@
 ! Subroutine Description
 ! ===========================================================================
 !       This routine gives the initial state for molecular dynamics with
-!       electronic transitions (MDET) (nonadiabatic calculation)
+! electronic transitions (MDET) (nonadiabatic calculation)
 ! ===========================================================================
 ! Code written by:
-!> @author James P. Lewis
+!> @author James P. Lewis (with Zhaofa Li at Synfuels China Technology)
 ! Box 6315, 209 Hodges Hall
 ! Department of Physics
 ! West Virginia University
@@ -83,7 +84,7 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine initialize_mdet (s, icurrent_state)
+        subroutine initialize_mdet (s)
         implicit none
 
         include '../include/constants.h'
@@ -92,9 +93,6 @@
 ! ===========================================================================
 ! Input
         type(T_structure), target :: s           !< the structure to be used.
-
-! Output
-        integer, intent (out) :: icurrent_state
 
 ! Local Parameters
 ! ===========================================================================
@@ -106,15 +104,15 @@
         integer iband, ikpoint             !< counter of band and kpoint
         integer itransition                !< counter over transitions
         integer ioccupy                    !< input occupation number
-        integer in1                        !< species number
+!       integer in1                        !< species number
         integer inpfile                    !< reading from which unit
         integer issh
         integer logfile                    !< writing to which unit
-        integer nfermi                     !< Fermi level state
-        integer ntransitions               !< number of transition
+!       integer nfermi                     !< Fermi level state
+        integer ntransitions               !< number of transitions
         integer ipop
 
-        real qztot                          !< total number of electrons
+!       real qztot                         !< total number of electrons
         real foccupy
 
         character (len = 25) :: slogfile
@@ -135,16 +133,16 @@
 
 ! Loop over the atoms.
 ! Total charge - ztot
-        s%ztot = 0.0d0
-        do iatom = 1, s%natoms
-          in1 = s%atom(iatom)%imass
-          do issh = 1, species(in1)%nssh
-            s%ztot = s%ztot + species(in1)%shell(issh)%Qneutral
-          end do
-        end do
+!       s%ztot = 0.0d0
+!       do iatom = 1, s%natoms
+!         in1 = s%atom(iatom)%imass
+!         do issh = 1, species(in1)%nssh
+!           s%ztot = s%ztot + species(in1)%shell(issh)%Qneutral
+!         end do
+!       end do
 
-        qztot = s%ztot
-        nfermi = int(qztot)/2
+!       qztot = s%ztot
+!       nfermi = int(qztot)/2
 
         do ikpoint = 1, s%nkpoints
           do iband = 1, nfermi
@@ -159,13 +157,12 @@
         open (unit = inpfile, file = slogfile, status = 'old')
         write (logfile,*)
         write (logfile,*) ' Reading from mdet.input file! '
-        read (inpfile,*) ntransitions
-        do ikpoint = 1, s%nkpoints
-
+        do ikpoint = 1, s%nkpoints       
+        
 ! Allocate transition type and initialize imap
-          allocate (s%kpoints(ikpoint)%transition(ntransitions))
+          read (inpfile,*) ntransitions
           s%kpoints(ikpoint)%ntransitions = ntransitions
-
+          allocate (s%kpoints(ikpoint)%transition(ntransitions))
 
           do itransition = 1, ntransitions
             read (inpfile,*) iband, foccupy, ipop
@@ -181,9 +178,7 @@
             s%kpoints(ikpoint)%transition(itransition)%cna = ipop
             ! (Note: might be errors with type diff. between ipop and cna)
 
-            if (foccupy .ge. 0.5) then
-			   s%kpoints(ikpoint)%ioccupy(iband) = 1
-            end if
+            if (foccupy .ge. 0.5) s%kpoints(ikpoint)%ioccupy(iband) = 1
           end do   ! end loop over transitons
           write (logfile,*) ' testing imaps reach '
           write (logfile,*) s%kpoints(ikpoint)%transition(1)%imap
@@ -214,7 +209,7 @@
 ! transition (MDET)
 !
 ! ===========================================================================
-        subroutine density_matrix_mdet (s, efermi)
+        subroutine density_matrix_mdet (s)
         implicit none
 
         include '../include/constants.h'
@@ -247,7 +242,6 @@
         integer ntransitions             !< number of transitions
 
         real dot                         !< dot product between K and r
-        real efermi
         real gutr                        !< real part of density matrix
 
         real, dimension (3) :: r1, r2    !< positions of iatom and jatom
@@ -275,99 +269,25 @@
 
 ! Loop over the atoms.
 ! Total charge - ztot
-        s%ztot = 0.0d0
-        do iatom = 1, s%natoms
-          in1 = s%atom(iatom)%imass
-          do issh = 1, species(in1)%nssh
-            s%ztot = s%ztot + species(in1)%shell(issh)%Qneutral
-          end do
-        end do
+!       s%ztot = 0.0d0
+!       do iatom = 1, s%natoms
+!         in1 = s%atom(iatom)%imass
+!         do issh = 1, species(in1)%nssh
+!           s%ztot = s%ztot + species(in1)%shell(issh)%Qneutral
+!         end do
+!       end do
 
 ! Modify the total charge by the charge state
-        s%ztot = s%ztot + qstate
-
-        write (logfile,*)
-        write (logfile,*) ' Calculating density matrix elements for MDET here. '
-        write (logfile,*) ' The current charge state is, qstate = ', qstate
-        write (logfile,*) ' Total number of electrons in the system is, ztot = ', s%ztot
-
-! Calculate the Fermi energy.
-! Inquire here regarding the occupations file
-        slogfile = s%basisfile(:len(trim(s%basisfile))-4)
-        slogfile = trim(slogfile)//'.OCCUPATION'
-        inquire (file = slogfile, exist = read_occupy)
-        if (read_occupy) then
-          call read_fermie (s)
-        else
-          call fermie (s, qstate, efermi)
-        end if
-        write (logfile,*) ' Fermi Level = ', efermi
-
-! write out eigenvalues to eigen.dat
-        if (modulo(int(s%ztot), 2) .eq. 0) then
-          ihomo = int(s%ztot)/2
-        else
-          ihomo = int(s%ztot)/2 + 1
-        end if
-        slogfile = s%basisfile(:len(trim(s%basisfile)) - 4)
-        slogfile = trim(slogfile)//'.mdet.eigen'
-        open (unit = 22, file = slogfile, status = 'replace')
-        do ikpoint = 1, s%nkpoints
-          write (22,100) ikpoint, efermi,                                    &
-     &      s%kpoints(ikpoint)%eigen(ihomo+1) - s%kpoints(ikpoint)%eigen(ihomo)
-
-! write out the eigenvalues
-          write (22,200) (s%kpoints(ikpoint)%eigen(imu), imu = 1, s%norbitals)
-        end do
-        close (unit = 22)
+!       s%ztot = s%ztot + qstate
 
 ! ****************************************************************************
 !
 !                      C O M P U T E    D E N S I T I E S
 ! ****************************************************************************
-! Write out the coefficients to a file - *.cdcoeffs
-        if (iwriteout_cdcoeffs .eq. 1) then
-
-! Unformatted file
-          slogfile = s%basisfile(:len(trim(s%basisfile)) - 4)
-          slogfile = trim(slogfile)//'.mdet.cdcoeffs'
-          open (unit = 22, file = slogfile, status = 'replace', form = 'unformatted')
-
-          do ikpoint = 1, s%nkpoints
-            do itransition = 1, s%kpoints(ikpoint)%ntransitions
-              iband = s%kpoints(ikpoint)%transition(itransition)%imap
-              write (22) iband
-
-! write out the coefficient
-              write (22) (s%kpoints(ikpoint)%c(inu,iband), inu = 1, s%norbitals_new)
-            end do
-          end do
-          close (unit = 22)
-
-! Formatted file needed for Multimwfn
-! Only for gamma
-          slogfile = s%basisfile(:len(trim(s%basisfile)) - 4)
-          slogfile = trim(slogfile)//'.mdet.cdcoeffs-mwfn'
-          open (unit = 22, file = slogfile, status = 'replace')
-
-          do ikpoint = 1, s%nkpoints
-            write (22,"('Kpoint=',i10)") ikpoint
-            do itransition = 1, s%kpoints(ikpoint)%ntransitions
-              iband = s%kpoints(ikpoint)%transition(itransition)%imap
-              write (22,*)
-              write (22,"('Index=',i10)") iband
-              write (22,"('Type=',i2)") 0
-              write (22,"('Energy=',1PE16.8)") s%kpoints(1)%eigen(iband)/P_Hartree
-              write (22,"('Occ=',f12.8)") s%kpoints(1)%foccupy(iband)
-              write (22,"('Sym= ?')")
-              write (22,"('$Coeff')")
-! write out the coefficient
-              write (22,"(5(1PE16.8))") (real(s%kpoints(ikpoint)%c(inu,iband)), inu = 1, s%norbitals_new)
-            end do
-            write (22,*)
-          end do
-         close (unit = 22)
-        end if
+        write (logfile,*)
+        write (logfile,*) ' Calculating density matrix elements for '
+        write (logfile,*) ' nonadiabatic coupling vectors based on transitions '
+        write (logfile,*) ' from iband to jband. '
 
 ! Loop over all atoms iatom in the unit cell, and then over all its neighbors.
 ! Loop over the atoms in the central cell.
@@ -383,6 +303,7 @@
 
 ! Allocate arrays
           allocate (s%denmat_mdet(iatom)%neighbors(num_neigh))
+
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
@@ -398,6 +319,7 @@
             norb_nu = species(in2)%norb_max
             allocate (s%denmat_mdet(iatom)%neighbors(ineigh)%block(norb_mu, norb_nu))
             pRho_neighbors%block = 0.0d0
+
 ! Loop over the special k points.
             do ikpoint = 1, s%nkpoints
 
@@ -407,6 +329,7 @@
               dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
               phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
               ntransitions = s%kpoints(ikpoint)%ntransitions
+
 ! Loop over all bands
               do itransition = 1, ntransitions
                 iband = s%kpoints(ikpoint)%transition(itransition)%imap
@@ -429,7 +352,6 @@
                 end do
 ! Finish loop over bands.
               end do
-
 ! Finish loop over k-points.
             end do
 
@@ -623,30 +545,14 @@
 
 ! Procedure
 ! ===========================================================================
-        ! destroy the coefficients now at the end of their use
-        do ikpoint = 1, s%nkpoints
-          deallocate (s%kpoints(ikpoint)%eigen)
-          deallocate (s%kpoints(ikpoint)%c)
-          deallocate (s%kpoints(ikpoint)%c_Lowdin)
-        end do
-
-        ! destory the Hamiltonian - we rebuild it
-        do iatom = 1, s%natoms
-          do ineigh = 1, s%neighbors(iatom)%neighn
-            deallocate (s%Hamiltonian(iatom)%neighbors(ineigh)%block)
-          end do
-          deallocate (s%Hamiltonian(iatom)%neighbors)
-        end do
-        deallocate (s%Hamiltonian)
-
         ! destroy the density matrix pieces - forces are already evaluated
         do iatom = 1, s%natoms
           do ineigh = 1, s%neighbors(iatom)%neighn
-            deallocate (s%denmat(iatom)%neighbors(ineigh)%block)
+            deallocate (s%denmat_mdet(iatom)%neighbors(ineigh)%block)
           end do
-          deallocate (s%denmat(iatom)%neighbors)
+          deallocate (s%denmat_mdet(iatom)%neighbors)
         end do
-        deallocate (s%denmat)
+        deallocate (s%denmat_mdet)
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -663,4 +569,4 @@
 
 ! End Module
 ! ===========================================================================
-        end module M_density_matrix
+        end module M_density_matrix_mdet
