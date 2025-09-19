@@ -104,15 +104,15 @@
         integer iband, ikpoint             !< counter of band and kpoint
         integer itransition                !< counter over transitions
         integer ioccupy                    !< input occupation number
-!       integer in1                        !< species number
+        integer in1                        !< species number
         integer inpfile                    !< reading from which unit
         integer issh
         integer logfile                    !< writing to which unit
-!       integer nfermi                     !< Fermi level state
+        integer nfermi                     !< Fermi level state
         integer ntransitions               !< number of transitions
         integer ipop
 
-!       real qztot                         !< total number of electrons
+        real qztot                         !< total number of electrons
         real foccupy
 
         character (len = 25) :: slogfile
@@ -124,26 +124,25 @@
         inpfile = s%inpfile
 
 ! Initialize occupations
-        do ikpoint = 1, s%nkpoints
-          do ioccupy = 1, s%norbitals
-            s%kpoints(ikpoint)%ioccupy(ioccupy) = 0
-            s%kpoints(ikpoint)%foccupy(ioccupy) = 0.0d0
-          end do
-        end do
-
-! Loop over the atoms.
-! Total charge - ztot
-!       s%ztot = 0.0d0
-!       do iatom = 1, s%natoms
-!         in1 = s%atom(iatom)%imass
-!         do issh = 1, species(in1)%nssh
-!           s%ztot = s%ztot + species(in1)%shell(issh)%Qneutral
+!       do ikpoint = 1, s%nkpoints
+!         do ioccupy = 1, s%norbitals
+!           s%kpoints(ikpoint)%ioccupy(ioccupy) = 0
+!           s%kpoints(ikpoint)%foccupy(ioccupy) = 0.0d0
 !         end do
 !       end do
 
-!       qztot = s%ztot
-!       nfermi = int(qztot)/2
+! Loop over the atoms.
+! Total charge - ztot
+        s%ztot = 0.0d0
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          do issh = 1, species(in1)%nssh
+            s%ztot = s%ztot + species(in1)%shell(issh)%Qneutral
+          end do
+        end do
 
+        qztot = s%ztot
+        nfermi = int(qztot)/2
         do ikpoint = 1, s%nkpoints
           do iband = 1, nfermi
             s%kpoints(ikpoint)%foccupy(iband) = 1.0d0
@@ -178,7 +177,7 @@
             s%kpoints(ikpoint)%transition(itransition)%cna = ipop
             ! (Note: might be errors with type diff. between ipop and cna)
 
-            if (foccupy .ge. 0.5) s%kpoints(ikpoint)%ioccupy(iband) = 1
+            if (foccupy .ge. 0.5d0) s%kpoints(ikpoint)%ioccupy(iband) = 1
           end do   ! end loop over transitons
           write (logfile,*) ' testing imaps reach '
           write (logfile,*) s%kpoints(ikpoint)%transition(1)%imap
