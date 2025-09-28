@@ -102,14 +102,13 @@
 ! ===========================================================================
         integer iatom                      !< counter over atoms
         integer iband, ikpoint             !< counter of band and kpoint
-        integer itransition                !< counter over transitions
+        integer iband_in                   !< counter over transitions
         integer ioccupy                    !< input occupation number
         integer in1                        !< species number
         integer inpfile                    !< reading from which unit
         integer issh
         integer logfile                    !< writing to which unit
         integer nfermi                     !< Fermi level state
-        integer ntransitions               !< number of transitions
         integer ipop
 
         real qztot                         !< total number of electrons
@@ -117,19 +116,14 @@
 
         character (len = 25) :: slogfile
 
+        type(T_transition), pointer :: ptransition
+        type(T_kpoint), pointer :: pkpoint
+
 ! Procedure
 ! ===========================================================================
 ! Initialize logfile
         logfile = s%logfile
         inpfile = s%inpfile
-
-! Initialize occupations
-!       do ikpoint = 1, s%nkpoints
-!         do ioccupy = 1, s%norbitals
-!           s%kpoints(ikpoint)%ioccupy(ioccupy) = 0
-!           s%kpoints(ikpoint)%foccupy(ioccupy) = 0.0d0
-!         end do
-!       end do
 
 ! Loop over the atoms.
 ! Total charge - ztot
@@ -141,6 +135,7 @@
           end do
         end do
 
+! Initialize the fermi occupations
         qztot = s%ztot
         nfermi = int(qztot)/2
         do ikpoint = 1, s%nkpoints
@@ -157,30 +152,43 @@
         write (logfile,*)
         write (logfile,*) ' Reading from mdet.input file! '
         do ikpoint = 1, s%nkpoints       
+
+          ! cut some lengthy notation
+          nullify (pkpoint)
+          pkpoint => s%kpoints(ikpoint)
         
 ! Allocate transition type and initialize imap
-          read (inpfile,*) ntransitions
-          s%kpoints(ikpoint)%ntransitions = ntransitions
-          allocate (s%kpoints(ikpoint)%transition(ntransitions))
+          read (inpfile,*) pkpoint%nbands
+          allocate (pkpoint%transition(pkpoint%nbands))
+          do iband = 1, pkpoint%nbands
 
-          do itransition = 1, ntransitions
-            read (inpfile,*) iband, foccupy, ipop
+            ! cut some more lengthy notation
+            nullify (ptransition)
+            ptransition => pkpoint%transition(iband)
+
+            read (inpfile,*) iband_in, foccupy, ipop
 ! FIXME! We might need to read in foccupy and set ioccupy to 1 when foccupy
 ! is not 0 (since including all states no fixed relationship between ioccupy
 ! and foccupy)
 
             ! initialize imap
-            s%kpoints(ikpoint)%transition(itransition)%imap = iband
-            s%kpoints(ikpoint)%foccupy(iband) = foccupy
+            ptransition%imap = iband_in
+            pkpoint%foccupy(iband) = foccupy
 
             ! initialize population
-            s%kpoints(ikpoint)%transition(itransition)%cna = ipop
+!           ptransition%cna = ipop
             ! (Note: might be errors with type diff. between ipop and cna)
 
-            if (foccupy .ge. 0.5d0) s%kpoints(ikpoint)%ioccupy(iband) = 1
-          end do   ! end loop over transitons
-          write (logfile,*) ' testing imaps reach '
-          write (logfile,*) s%kpoints(ikpoint)%transition(1)%imap
+            ! NAC Zhaofa Li initialize the dij
+            allocate (ptransition%dij(3, pkpoint%nbands))
+            ptransition%dij = 0.0d0
+  
+            if (foccupy .ge. 0.5d0) pkpoint%ioccupy(iband) = 1
+            write (logfile,*) ' testing imaps reach '
+            write (logfile,*) ptransition%imap
+            nullify (ptransition)
+          end do   ! end loop over bands
+          nullify (pkpoint)
         end do   ! end loop over kpoints
         close (unit = inpfile)
 
@@ -226,7 +234,6 @@
 ! ===========================================================================
         integer iatom, ineigh              !< counter over atoms and neighbors
         integer iband, jband, ikpoint      !< counter of band and kpoint
-        integer itransition, jtransition   !< counter of transitions
         integer ihomo                      !< highest occupied level
         integer imu, inu, jnu
         integer in1, in2                   !< species numbers
@@ -238,7 +245,7 @@
         integer num_neigh                !< number of neighbors
         integer mbeta                    !< the cell containing iatom's neighbor
         integer norb_mu, norb_nu         !< size of the block for the pair
-        integer ntransitions             !< number of transitions
+        integer nbands             !< number of bands
 
         real dot                         !< dot product between K and r
         real gutr                        !< real part of density matrix
@@ -254,8 +261,8 @@
 
         character (len = 25) :: slogfile
 
-        type(T_assemble_block), pointer :: pRho_neighbors
-        type(T_assemble_neighbors), pointer :: pdenmat_mdet
+        type(T_kpoint), pointer :: pkpoint
+        type(T_transition), pointer :: ptransition
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -266,98 +273,35 @@
 ! Initialize logfile
         logfile = s%logfile
 
-! Loop over the atoms.
-! Total charge - ztot
-!       s%ztot = 0.0d0
-!       do iatom = 1, s%natoms
-!         in1 = s%atom(iatom)%imass
-!         do issh = 1, species(in1)%nssh
-!           s%ztot = s%ztot + species(in1)%shell(issh)%Qneutral
-!         end do
-!       end do
-
-! Modify the total charge by the charge state
-!       s%ztot = s%ztot + qstate
-
 ! ****************************************************************************
 !
-!                      C O M P U T E    D E N S I T I E S
+!       C O M P U T E    N O N A D I A B A T I C   C O E F F I C I E N T S
 ! ****************************************************************************
         write (logfile,*)
         write (logfile,*) ' Calculating density matrix elements for '
         write (logfile,*) ' nonadiabatic coupling vectors based on transitions '
         write (logfile,*) ' from iband to jband. '
 
-! Loop over all atoms iatom in the unit cell, and then over all its neighbors.
-! Loop over the atoms in the central cell.
-        do iatom = 1, s%natoms
-          r1 = s%atom(iatom)%ratom
-          in1 = s%atom(iatom)%imass
-          norb_mu = species(in1)%norb_max
-          num_neigh = s%neighbors(iatom)%neighn
+! Loop over the special k points.
+        do ikpoint = 1, s%nkpoints
 
           ! cut some lengthy notation
-          nullify (pdenmat_mdet)
-          pdenmat_mdet=>s%denmat_mdet(iatom)
-
-! Allocate arrays
-          allocate (s%denmat_mdet(iatom)%neighbors(num_neigh))
-
-! Loop over the neighbors of each iatom.
-          do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
-            mbeta = s%neighbors(iatom)%neigh_b(ineigh)
-            jatom = s%neighbors(iatom)%neigh_j(ineigh)
-            r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
-            in2 = s%atom(jatom)%imass
-
-            ! cut some more lengthy notation
-            nullify (pRho_neighbors)
-            pRho_neighbors=>pdenmat_mdet%neighbors(ineigh)
-
-! Allocate the block size
-            norb_nu = species(in2)%norb_max
-            allocate (s%denmat_mdet(iatom)%neighbors(ineigh)%block(norb_mu, norb_nu))
-            pRho_neighbors%block = 0.0d0
-
-! Loop over the special k points.
-            do ikpoint = 1, s%nkpoints
-
-              ! Find the phase which is based on k*r
-              vec = r2 - r1
-              sks = s%kpoints(ikpoint)%k
-              dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
-              phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
-              ntransitions = s%kpoints(ikpoint)%ntransitions
+          nullify (pkpoint)
+          pkpoint => s%kpoints(ikpoint)
 
 ! Loop over all bands
-              do itransition = 1, ntransitions
-                iband = s%kpoints(ikpoint)%transition(itransition)%imap
-                do jtransition = itransition + 1, ntransitions
-                  jband = s%kpoints(ikpoint)%transition(jtransition)%imap
-                  phase = phasex
-                  do imu = 1, norb_mu
-                    mmu = imu + s%iblock_slot(iatom)
-                    step1 = phase*conjg(s%kpoints(ikpoint)%c(mmu,iband))
-                    do jnu = 1, norb_nu
-                      nnu = jnu + s%iblock_slot(jatom)
-                      step2 = step1*s%kpoints(ikpoint)%c(nnu,jband)
-                      gutr = real(step2)
+          nbands = pkpoint%nbands
+          do iband = 1, nbands
+            nullify (ptransition)
+            ptransition => pkpoint%transition(iband)
 
-! Finally the density matrix:
-                      pRho_neighbors%block(imu,jnu) =                        &
-     &                   pRho_neighbors%block(imu,jnu) + gutr
-                    end do
-                  end do
-                end do
+            allocate (ptransition%c_mdet(s%norbitals))
+            ptransition%c_mdet = pkpoint%c(:, ptransition%imap)
+            nullify (ptransition)
 ! Finish loop over bands.
-              end do
-! Finish loop over k-points.
-            end do
-
-! Finish loop over atoms and neighbors.
-            nullify (pRho_neighbors)
           end do
-          nullify (pdenmat_mdet)
+          nullify (pkpoint)
+! Finish loop over k-points.
         end do
         
 ! Deallocate Arrays
@@ -398,6 +342,8 @@
         subroutine writeout_density_mdet (s)
         implicit none
 
+        include '../include/constants.h'
+
 ! Argument Declaration and Description
 ! ===========================================================================
         type(T_structure), target :: s           !< the structure to be used.
@@ -408,6 +354,8 @@
 
 ! Local Variable Declaration and Description
 ! ===========================================================================
+        integer ikpoint                !< counter of band and kpoint
+        integer iband                  !< counter of band
         integer iatom, ineigh          !< counters for atom, neighbor loops
         integer in1, in2               !< species numbers
         integer imu, inu               !< counters for mu, nu
@@ -431,8 +379,8 @@
           end function distance
         end interface
 
-        type(T_assemble_block), pointer :: pRho_neighbors
-        type(T_assemble_neighbors), pointer :: pdenmat_mdet
+        type(T_kpoint), pointer :: pkpoint
+        type(T_transition), pointer :: ptransition
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -440,51 +388,38 @@
 
 ! Procedure
 ! ===========================================================================
-! Initialize logfile
-        logfile = s%logfile
 
-        write (logfile,*) ' '
-        write (logfile,*) ' In writeout_density_mdet.f90 '
-        write (logfile,*) ' Writing out pieces of the density matrix. '
-
-! Open the file and write information.
+! Formatted file needed for Multimwfn
+! Only for gamma
         slogfile = s%basisfile(:len(trim(s%basisfile)) - 4)
-        slogfile = trim(slogfile)//'.denmat_mdet'
-        open (unit = 22, file = slogfile, status = 'unknown')
-        do iatom = 1, s%natoms
-          in1 = s%atom(iatom)%imass
-          r1 = s%atom(iatom)%ratom
-          write (22,*)
-          write (22,101)
-          num_neigh = s%neighbors(iatom)%neighn
-          write (22,*) ' There are ', num_neigh, ' neighbors to atom ', iatom
-          write (22,101)
+        slogfile = trim(slogfile)//'.cdcoeffs-mwfn_mdet'
+        open (unit = 22, file = slogfile, status = 'replace')
+        do ikpoint = 1, s%nkpoints
+          write (22,"('Kpoint=',i10)") ikpoint
 
-          ! cut some lengthy notation
-          pdenmat_mdet=>s%denmat_mdet(iatom)
-          do ineigh = 1, num_neigh
-            jatom = s%neighbors(iatom)%neigh_j(ineigh)
-            mbeta = s%neighbors(iatom)%neigh_b(ineigh)
-            in2 = s%atom(jatom)%imass
-            r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
+          nullify (pkpoint)
+          pkpoint => s%kpoints(ikpoint)
 
-            sigma = r2 - r1
-            z = distance (r1, r2)
-            write (22,*) '  '
-            write (22,102) ineigh, jatom, mbeta, z
+          do iiband = 1, pkpoint%nbands
 
-! Density matrix elements
-            ! cut some more lengthy notation
-            pRho_neighbors=>pdenmat_mdet%neighbors(ineigh)
-            write (22,103)
-            norb_mu = species(in1)%norb_max
-            norb_nu = species(in2)%norb_max
-            do imu = 1, norb_mu
-              write (22,104) (pRho_neighbors%block(imu,inu), inu = 1, norb_nu)
-            end do
+            nullify (ptransition)
+            ptransition => pkpoint%transition(iiband)
+
+            write (22,*)
+            write (22,"('Index=',i10)") iiband
+            write (22,"('Type=',i2)") 0
+            write (22,"('Energy=',1PE16.8)") 0
+            write (22,"('Occ=',f12.8)") 0
+            write (22,"('Sym= ?')")
+            write (22,"('$Coeff')")
+! write out the coefficient
+            write (22,"(5(1PE16.8))") (real(ptransition%c_mdet(inu)), inu = 1, s%norbitals)
+            nullify (ptransition)
           end do
+          write (22,*)
+          nullify (pkpoint)
         end do
-        write (22,101)
+        close (unit = 22)
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -541,17 +476,22 @@
 ! ===========================================================================
         integer iatom, ineigh              !< counter over atoms and neighbors
         integer ikpoint                    !< counter of band and kpoint
+        integer iiband                !< counter of transitions
+        integer nbands               !< number of transitions
+
+        type(T_kpoint), pointer :: pkpoint
+        type(T_transition), pointer :: ptransition
 
 ! Procedure
 ! ===========================================================================
         ! destroy the density matrix pieces - forces are already evaluated
-        do iatom = 1, s%natoms
-          do ineigh = 1, s%neighbors(iatom)%neighn
-            deallocate (s%denmat_mdet(iatom)%neighbors(ineigh)%block)
+        do ikpoint = 1, s%nkpoints
+          do iiband = 1, s%kpoints(ikpoint)%nbands
+            deallocate (s%kpoints(ikpoint)%transition(iiband)%c_mdet)
+            deallocate (s%kpoints(ikpoint)%transition(iiband)%dij)
           end do
-          deallocate (s%denmat_mdet(iatom)%neighbors)
+          deallocate (s%kpoints(ikpoint)%transition)
         end do
-        deallocate (s%denmat_mdet)
 
 ! Deallocate Arrays
 ! ===========================================================================
