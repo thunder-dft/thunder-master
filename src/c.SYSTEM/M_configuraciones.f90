@@ -275,41 +275,10 @@
 
           ! Density matrix
           type(T_assemble_neighbors), pointer :: denmat (:)
-          type(T_assemble_neighbors), pointer :: denmat_mdet (:)
           type(T_assemble_neighbors), pointer :: denmat_old (:)
+
           type(T_assemble_neighbors), pointer :: capemat (:)
           type(T_assemble_neighbors), pointer :: denmat_PP (:)
-          ! ********************************************************
-
-          ! ********************************************************
-          ! gMatrix Elements
-          ! ********************************************************
-          ! Put all the neighbor group belonging to the atom
-          ! so in the end we have something like ME(mu, nu, ineigh, iatom)
-!         type (T_assemble_neighbors), pointer :: goverlap (:)
-!         type (T_assemble_neighbors), pointer :: gkinetic (:)
-
-          ! Hartree interactions
-          type (T_assemble_neighbors), pointer :: gvna (:)
-
-          ! dipole interactions for smoothing
-!         type (T_assemble_neighbors), pointer :: gdipole_z (:)
-
-          ! ewald interactions
-!         real, pointer :: ewald (:, :)
-!         real, pointer :: dewald (:, :, :)
-!         type (T_assemble_neighbors), pointer :: gewaldsr (:)
-!         type (T_assemble_neighbors), pointer :: gewaldlr (:)
-
-          ! exchange-correlation
-!         type (T_assemble_neighbors), pointer :: gvxc (:)
-
-          ! piece due to pseudopotential
-!         type (T_assemble_neighbors), pointer :: svnl (:)
-!         type (T_assemble_neighbors), pointer :: vnl (:)
-
-          ! Total Hamiltonian
-          type (T_assemble_neighbors), pointer :: gHamiltonian (:)
           ! ********************************************************
 
           ! forces
