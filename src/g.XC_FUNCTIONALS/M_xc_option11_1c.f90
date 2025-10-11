@@ -49,7 +49,7 @@
 ! Module Declaration
 ! ===========================================================================
         module M_xc_1c
-          use M_precision
+        use M_precision
 
 ! Type Declaration
 ! ===========================================================================
@@ -109,8 +109,8 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine get_potxc_1c (iexc, xc_fraction, r, rho, rhop, rhopp,   &
-     &                              newexc, vpxc, dnuxc, dnuxcs, dexc)
+        subroutine get_potxc_1c (iexc, xc_fraction, r, rho, rhop, rhopp,     &
+     &                           rhopap, newexc, vpxc, dnuxc, dnuxcs, dexc)
         implicit none
 
 !! Argument Declaration and Description
@@ -125,6 +125,7 @@
         real, intent (inout) :: rho      ! return zero value if rho is small
         real, intent (in) :: rhop
         real, intent (in) :: rhopp
+        real, intent (in) :: rhopap
 
 ! Output
         real, intent (out) :: newexc
