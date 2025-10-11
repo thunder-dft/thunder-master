@@ -275,8 +275,8 @@
 
           ! Density matrix
           type(T_assemble_neighbors), pointer :: denmat (:)
-          type(T_assemble_neighbors), pointer :: denmat_mdet (:)
           type(T_assemble_neighbors), pointer :: denmat_old (:)
+
           type(T_assemble_neighbors), pointer :: capemat (:)
           type(T_assemble_neighbors), pointer :: denmat_PP (:)
           ! ********************************************************

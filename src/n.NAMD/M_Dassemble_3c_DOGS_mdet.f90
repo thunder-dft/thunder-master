@@ -227,14 +227,18 @@
         type(T_assemble_block), pointer :: pdip_neighbors
         type(T_assemble_neighbors), pointer :: pdipole_z
 
+        ! density matrix stuff
+        type(T_assemble_neighbors), pointer :: pdenmat
+        type(T_assemble_block), pointer :: pRho_neighbors
+
         ! forces
         type(T_forces), pointer :: pfalpha
         type(T_forces), pointer :: pfi
         type(T_forces), pointer :: pfj
 
-        ! density matrix stuff
-        type(T_assemble_neighbors), pointer :: pdenmat
-        type(T_assemble_block), pointer :: pRho_neighbors
+        ! gradient of Hatree product matrix stuff
+        type(T_assemble_block), pointer :: pvna_neighbors
+        type(T_assemble_neighbors), pointer :: pgvna
 
         interface
           function distance (a, b)
@@ -300,13 +304,17 @@
               in2 = s%atom(jatom)%imass
               norb_nu = species(in2)%norb_max
 
+              ! density matrix
+              nullify (pdenmat, pRho_neighbors)
+              pdenmat=>s%denmat(iatom); pRho_neighbors=>pdenmat%neighbors(mneigh)
+
               ! cut lengthy notation
               nullify (pfi, pfj)
               pfi=>s%forces(iatom); pfj=>s%forces(jatom)
 
-              ! density matrix
-              nullify (pdenmat, pRho_neighbors)
-              pdenmat=>s%denmat(iatom); pRho_neighbors=>pdenmat%neighbors(mneigh)
+              ! cut some lengthy notation
+              nullify (pvna, pvna_neighbors)
+              pvna=>s%vna(iatom); pvna_neighbors=>pvna%neighbors(mneigh)
 
 ! SET-UP STUFF
 ! ****************************************************************************
