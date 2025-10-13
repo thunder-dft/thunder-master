@@ -48,9 +48,9 @@
 ! Module declaration
 ! ============================================================================
         module M_density_matrix_mdet
-        use M_assemble_blocks
+
+! /SYSTEM
         use M_configuraciones
-        use M_kspace
 
 ! Type Declaration
 ! ===========================================================================
@@ -103,7 +103,6 @@
         integer iatom                      !< counter over atoms
         integer iband, ikpoint             !< counter of band and kpoint
         integer iband_in                   !< counter over transitions
-        integer ioccupy                    !< input occupation number
         integer in1                        !< species number
         integer inpfile                    !< reading from which unit
         integer issh
@@ -116,7 +115,7 @@
 
         character (len = 25) :: slogfile
 
-        type(T_transition), pointer :: ptransition
+        type(T_transition), pointer :: piband
         type(T_kpoint), pointer :: pkpoint
 
 ! Procedure
@@ -163,8 +162,8 @@
           do iband = 1, pkpoint%nbands
 
             ! cut some more lengthy notation
-            nullify (ptransition)
-            ptransition => pkpoint%transition(iband)
+            nullify (piband)
+            piband => pkpoint%transition(iband)
 
             read (inpfile,*) iband_in, foccupy, ipop
 ! FIXME! We might need to read in foccupy and set ioccupy to 1 when foccupy
@@ -172,21 +171,19 @@
 ! and foccupy)
 
             ! initialize imap
-            ptransition%imap = iband_in
+            piband%imap = iband_in
             pkpoint%foccupy(iband) = foccupy
 
-            ! initialize population
-!           ptransition%cna = ipop
-            ! (Note: might be errors with type diff. between ipop and cna)
-
-            ! NAC Zhaofa Li initialize the dij
-            allocate (ptransition%dij(3, pkpoint%nbands))
-            ptransition%dij = 0.0d0
+            ! NAC Zhaofa Li initialize the dij and c_mdet
+            allocate (piband%c_mdet(s%norbitals))
+            piband%c_mdet = 0.0d0
+            allocate (piband%dij(3, pkpoint%nbands))
+            piband%dij = 0.0d0
   
             if (foccupy .ge. 0.5d0) pkpoint%ioccupy(iband) = 1
             write (logfile,*) ' testing imaps reach '
-            write (logfile,*) ptransition%imap
-            nullify (ptransition)
+            write (logfile,*) piband%imap
+            nullify (piband)
           end do   ! end loop over bands
           nullify (pkpoint)
         end do   ! end loop over kpoints
@@ -232,41 +229,17 @@
 
 ! Local Variable Declaration and Description
 ! ===========================================================================
-        integer iatom, ineigh              !< counter over atoms and neighbors
-        integer iband, jband, ikpoint      !< counter of band and kpoint
-        integer ihomo                      !< highest occupied level
-        integer imu, inu, jnu
-        integer in1, in2                   !< species numbers
-        integer issh
-        integer jatom                      !< neighbor of iatom
-        integer logfile                    !< writing to which unit
-        integer mmu, nnu
-
-        integer num_neigh                !< number of neighbors
-        integer mbeta                    !< the cell containing iatom's neighbor
-        integer norb_mu, norb_nu         !< size of the block for the pair
-        integer nbands             !< number of bands
-
-        real dot                         !< dot product between K and r
-        real gutr                        !< real part of density matrix
-
-        real, dimension (3) :: r1, r2    !< positions of iatom and jatom
-        real, dimension (3) :: sks       !< k point value
-        real, dimension (3) :: vec
-
-        complex phase, phasex            !< phase between K and r
-        complex step1, step2
-
-        logical read_occupy
+        integer iband, ikpoint           !< counter of band and kpoint
+        integer logfile                  !< writing to which unit
 
         character (len = 25) :: slogfile
 
         type(T_kpoint), pointer :: pkpoint
-        type(T_transition), pointer :: ptransition
+        type(T_transition), pointer :: piband
 
 ! Allocate Arrays
 ! ===========================================================================
-        allocate (s%denmat_mdet (s%natoms))
+! None
 
 ! Procedure
 ! ===========================================================================
@@ -290,14 +263,13 @@
           pkpoint => s%kpoints(ikpoint)
 
 ! Loop over all bands
-          nbands = pkpoint%nbands
-          do iband = 1, nbands
-            nullify (ptransition)
-            ptransition => pkpoint%transition(iband)
+          do iband = 1, pkpoint%nbands
+            nullify (piband)
+            piband => pkpoint%transition(iband)
 
-            allocate (ptransition%c_mdet(s%norbitals))
-            ptransition%c_mdet = pkpoint%c(:, ptransition%imap)
-            nullify (ptransition)
+            allocate (piband%c_mdet(s%norbitals))
+            piband%c_mdet = pkpoint%c(:, piband%imap)
+            nullify (piband)
 ! Finish loop over bands.
           end do
           nullify (pkpoint)
@@ -356,31 +328,12 @@
 ! ===========================================================================
         integer ikpoint                !< counter of band and kpoint
         integer iband                  !< counter of band
-        integer iatom, ineigh          !< counters for atom, neighbor loops
-        integer in1, in2               !< species numbers
-        integer imu, inu               !< counters for mu, nu
-        integer jatom                  !<
-        integer logfile                !< writing to which unit
-        integer mbeta                  !< the cell containing neighbor of iatom
-        integer num_neigh              !< number of neighbors
-        integer norb_mu, norb_nu       !< block size for the H and S block
-
-        real z                         !< distance between two atoms
-
-        real, dimension (3) :: r1, r2  !< positions for iatom, jatom
-        real, dimension (3) :: sigma   !< direction along sigma bond
+        integer inu                    !< counters for mu, nu
 
         character (len = 25) :: slogfile
 
-        interface
-          function distance (a, b)
-            real distance
-            real, intent(in), dimension (3) :: a, b
-          end function distance
-        end interface
-
         type(T_kpoint), pointer :: pkpoint
-        type(T_transition), pointer :: ptransition
+        type(T_transition), pointer :: piband
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -402,8 +355,8 @@
 
           do iiband = 1, pkpoint%nbands
 
-            nullify (ptransition)
-            ptransition => pkpoint%transition(iiband)
+            nullify (piband)
+            piband => pkpoint%transition(iiband)
 
             write (22,*)
             write (22,"('Index=',i10)") iiband
@@ -413,8 +366,8 @@
             write (22,"('Sym= ?')")
             write (22,"('$Coeff')")
 ! write out the coefficient
-            write (22,"(5(1PE16.8))") (real(ptransition%c_mdet(inu)), inu = 1, s%norbitals)
-            nullify (ptransition)
+            write (22,"(5(1PE16.8))") (real(piband%c_mdet(inu)), inu = 1, s%norbitals)
+            nullify (piband)
           end do
           write (22,*)
           nullify (pkpoint)
@@ -476,11 +429,11 @@
 ! ===========================================================================
         integer iatom, ineigh              !< counter over atoms and neighbors
         integer ikpoint                    !< counter of band and kpoint
-        integer iiband                !< counter of transitions
-        integer nbands               !< number of transitions
+        integer iiband                     !< counter of transitions
+        integer nbands                     !< number of transitions
 
         type(T_kpoint), pointer :: pkpoint
-        type(T_transition), pointer :: ptransition
+        type(T_transition), pointer :: piband
 
 ! Procedure
 ! ===========================================================================
