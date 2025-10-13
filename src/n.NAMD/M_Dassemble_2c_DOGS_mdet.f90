@@ -1,6 +1,6 @@
 ! copyright info:
 !
-!                             @Copyright 2022
+!                             @Copyright 2025
 !                           Fireball Committee
 ! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
 ! Universidad de Madrid - Jose Ortega
@@ -29,6 +29,16 @@
 ! clause at 52.227-7013.
 
 ! M_Dassemble_2c
+! ============================================================================
+! Code written by:
+! James P. Lewis (with Zhaofa Li at Synfuels China Technology)
+! Unit 909 of Building 17W
+! 17 Science Park West Avenue
+! Pak Shek Kok, New Territories 999077
+! Hong Kong
+!
+! Phone: +852 6612 9539 (mobile)
+! ============================================================================
 ! Module Description
 ! ===========================================================================
 !>       This is a module containing all of the assembler programs required
@@ -67,7 +77,7 @@
 ! Type Declaration
 ! ===========================================================================
 ! two-center interactions arrays
-       type(T_assemble_neighbors), pointer :: dipole_z (:)
+        type(T_assemble_neighbors), pointer :: dipole_z (:)
 
 ! module procedures
         contains
@@ -306,21 +316,33 @@
 ! ===========================================================================
         integer iatom, ineigh            !< counter over atoms and neighbors
         integer in1, in2, in3            !< species numbers
-        integer imu, inu				  !< counter over orbitals
+        integer imu, inu				         !< counter over orbitals
         integer jatom                    !< neighbor of iatom
         integer interaction, isorp       !< which interaction and subtype
         integer num_neigh                !< number of neighbors
         integer mbeta                    !< the cell containing iatom's neighbor
+        integer ikpoint                  !< counter of kpoints
+        integer nbands                   !< number of bands
+        integer iband, jband             !< counter over bands
+        integer nnu                      !< counter over coefficients of wavefunctions
 
-        integer norb_mu, norb_nu         !< size of the block for the pair
+        integer norb_mu, norb_nu, norb_cy     !< size of the block for the pair
 
         real z                           !< distance between r1 and r2
+        real dot 
+        real gutr, cmunu 
 
         real, dimension (3) :: eta        !< vector part of epsilon eps(:,3)
         real, dimension (3, 3) :: eps     !< the epsilon matrix
         real, dimension (3, 3, 3) :: deps !< derivative of epsilon matrix
         real, dimension (3) :: r1, r2     !< positions of iatom and jatom
         real, dimension (3) :: sighat     !< unit vector along r2 - r1
+
+        real, dimension (3) :: sks        !< k point value
+        real, dimension (3) :: vec
+
+        complex phasex, phase
+        complex step1, step2
 
 ! tm = kinetic matrix in molecular coordinates
 ! tx = kinetic matrix in crystal coordinates
@@ -341,7 +363,12 @@
         end interface
 
         type(T_assemble_block), pointer :: pK_neighbors
-        type(T_assemble_neighbors), pointer :: pkinetic
+        type(T_assemble_neighbors), pointer :: pkinetic\
+
+! NAC Zhaofa Li        
+        type(T_kpoint), pointer :: pkpoint
+        type(T_transition), pointer :: piband
+        type(T_transition), pointer :: pjband
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -442,7 +469,7 @@
  			call Drotate (in1, in2, eps, deps, norb_mu, norb_nu, tm, vdtm, vdtx)
 
 ! Store the derivitive, rotate vector matrix.
-			pK_neighbors%Dblock = vdtx
+            pK_neighbors%Dblock = vdtx
             deallocate (tm, tx, dtm, vdtm, vdtx)
             nullify (pK_neighbors)
           end do ! end loop over neighbors
@@ -694,8 +721,11 @@
 ! ===========================================================================
         integer iatom, ineigh           !< counter over atoms and neighbors
         integer in1, in2, in3           !< species numbers
-        integer imu, inu				!< counter over orbitals
+        integer imu, inu, jnu				    !< counter over orbitals
+        integer mmu, nnu                !< counter over coefficients of wavefunctions
         integer jatom                   !< neighbor of iatom
+        integer iband, jband            !< counter over transitions
+        integer ikpoint                 !< counter over kpoints
         integer interaction, isorp      !< which interaction and subtype
         integer num_neigh               !< number of neighbors
         integer matom                   !< matom is the self-interaction atom
@@ -703,6 +733,7 @@
         integer issh                    !< counter over shells
 
         integer norb_mu, norb_nu        !< size of the block for the pair
+        integer nbands                  !< number of bands
 
         real dQ                         !< net charge on atom
         real rcutoff1_min, rcutoff2_min, rend  !< for smoothing
@@ -710,12 +741,20 @@
         real Dsmooth                    !< derivative smoothing value
         real xsmooth                    !< for smoothing function
         real z                          !< distance between r1 and r2
+        real dot                        !< dot product between K and r
+        real gutr, cmunu                !< density matrix elements for mdet
 
         real, dimension (3) :: eta        !< vector part of epsilon eps(:,3)
         real, dimension (3, 3) :: eps     !< the epsilon matrix
         real, dimension (3, 3, 3) :: deps !< derivative of epsilon matrix
         real, dimension (3) :: r1, r2   !< positions of iatom and jatom
         real, dimension (3) :: sighat   !< unit vector along r2 - r1
+
+        real, dimension (3) :: sks       !< k point value
+        real, dimension (3) :: vec
+
+        complex phase, phasex            !< phase between K and r
+        complex step1, step2
 
 ! bcnam = Hartree matrix in molecular coordinates
 ! bcnax = Hartree matrix in crystal coordinates
@@ -764,11 +803,12 @@
         type(T_assemble_block), pointer :: pRho_neighbors
         type(T_assemble_block), pointer :: pRho_neighbors_matom
 
-        type(T_forces), pointer :: pfi
+        ! NAC Stuff
+        type(T_kpoint), pointer :: pkpoint
+        type(T_transition), pointer :: piband
+        type(T_transition), pointer :: pjband
 
-        ! gradient of Hatree product matrix stuff
-        type(T_assemble_block), pointer :: pvna_neighbors
-        type(T_assemble_neighbors), pointer :: pgvna
+        type(T_forces), pointer :: pfi
 
 ! Allocate Arrays
 ! ===========================================================================
@@ -780,8 +820,6 @@
           num_neigh = s%neighbors(iatom)%neighn
           allocate (s%forces(iatom)%vna_atom (3, num_neigh)); pfi%vna_atom = 0.0d0
           allocate (s%forces(iatom)%vna_ontop (3, num_neigh)); pfi%vna_ontop = 0.0d0
-
-          allocate (s%gvna(s%natoms))
         end do
 
 ! Procedure
@@ -790,6 +828,7 @@
 ! This is so that we can get the correct allocation size for the different
 ! blocks.  We calculate the atom cases in a separate loop.
 ! Loop over the atoms in the central cell.
+
         do iatom = 1, s%natoms
           r1 = s%atom(iatom)%ratom
           in1 = s%atom(iatom)%imass
@@ -800,31 +839,18 @@
           pdenmat=>s%denmat(iatom)
           pfi=>s%forces(iatom)
 
-          nullify (gvna)
-          pgvna=>s%gvna(iatom)
-
 ! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
-          allocate (s%gvna(iatom)%neighbors(num_neigh))
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
             mbeta = s%neighbors(iatom)%neigh_b(ineigh)
             jatom = s%neighbors(iatom)%neigh_j(ineigh)
             r2 = s%atom(jatom)%ratom + s%xl(mbeta)%a
             in2 = s%atom(jatom)%imass
+            norb_nu = species(in2)%norb_max
 
             ! cut some more lengthy notation
             nullify (pRho_neighbors)
             pRho_neighbors=>pdenmat%neighbors(ineigh)
-
-            nullify (pvna_neighbors)
-            pvna_neighbors=>pgvna%neighbors(ineigh)
-
-! Allocate block size for Hamiltonian gradient
-            norb_nu = species(in2)%norb_max
-            allocate (s%gvna(iatom)%neighbors(ineigh)%Dblock(3, norb_mu, norb_nu))
-            allocate (s%gvna(iatom)%neighbors(ineigh)%Dblocko(3, norb_mu, norb_nu))
-            pvna_neighbors%Dblock = 0.0d0
-            pvna_neighbors%Dblocko = 0.0d0
 
 ! SET-UP STUFF
 ! ****************************************************************************
@@ -904,12 +930,58 @@
                 do imu = 1, norb_mu
                   pfi%vna_ontop(:,ineigh) = pfi%vna_ontop(:,ineigh)          &
       &             - pRho_neighbors%block(imu,inu)*vdbcnax(:,imu,inu)*P_eq2
-
-                  ! Hamiltonian gradient
-                  pvna_neighbors%Dblocko(:,imu,inu) =                        &
-      &             pvna_neighbors%Dblocko(:,imu,inu) - vdbcnax(:,imu,inu)*P_eq2
                 end do
               end do
+
+! ===========================================================================
+! NAC derivative of Hartree potential - ontop case
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+              do ikpoint = 1, s%nkpoints
+
+                ! Cut some lengthy notation
+                nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+                ! phase for non-gamma kpoints
+                vec = r2 - r1
+                sks = s%kpoints(ikpoint)%k
+                dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+                phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
+
+                do iband = 1, pkpoint%nbands
+
+                  ! Cut some lengthy notation
+                  nullify (piband); piband=>pkpoint%transition(iband)
+
+                  do jband = iband + 1, pkpoint%nbands
+
+                    ! Cut some lengthy notation
+                    nullify (pjband); pjband=>pkpoint%transition(jband)
+
+                    do jnu = 1, norb_nu
+                      phase = phasex
+                      nnu = jnu + s%iblock_slot(jatom)
+                      step1 = phase*pjband%c_mdet(nnu)
+                      do imu = 1, norb_mu
+                        mmu = imu + s%iblock_slot(iatom)
+                        step2 = step1*conjg(piband%c_mdet(mmu))
+                        gutr = real(step2)
+                        cmunu = gutr
+                        piband%dij(:,jband) =                                &
+      &                   piband%dij(:,jband) - cmunu*vdbcnax(:,imu,jnu)*P_eq2
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+
+                    ! NAC force anti-symmetry for NAC
+                    pjband%dij(:,iband) = -piband%dij(:,jband)
+
+                    nullify (pjband)
+                  end do ! end loop over jband
+                  nullify (piband)
+                end do ! end loop over iband
+                nullify (pkpoint)
+              end do ! end loop over kpoints
+! ===========================================================================
 
 ! Charged atom case
               do isorp = 1, species(in1)%nssh
@@ -940,13 +1012,51 @@
                   do imu = 1, norb_mu
                     pfi%vna_ontop(:,ineigh) = pfi%vna_ontop(:,ineigh)        &
      &               - pRho_neighbors%block(imu,inu)*dQ*vdbcnax(:,imu,inu)*P_eq2
-
-                    ! Hamiltonian gradient
-                    pvna_neighbors%Dblocko(:,imu,inu) =                      &
-      &               pvna_neighbors%Dblocko(:,imu,inu) - dQ*vdbcnax(:,imu,inu)*P_eq2
                   end do
                 end do
-              end do ! end loop over isorp
+
+! ===========================================================================
+! NAC derivative of Hartree potential
+                do ikpoint = 1, s%nkpoints
+                  ! Cut off lenthy notation                
+                  nullify (pkpoint)
+                  pkpoint=>s%kpoints(ikpoint)
+  
+                  vec = r2 - r1
+                  sks = pkpoint%k
+                  dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+                  phasex = cmplx(cos(dot),sin(dot))*pkpoint%weight
+                  nbands = pkpoint%nbands    
+                  do iband = 1, nbands
+                    ! Cut off lengthy notation
+                    nullify (piband)
+                    piband=>pkpoint%transition(iband)
+                    do jband = iband + 1, nbands
+                      ! Cut off lengthy notation
+                      nullify (pjband)
+                      pjband=>pkpoint%transition(jband)
+                      do jnu = 1, norb_nu
+                        phase = phasex
+                        nnu = jnu + s%iblock_slot(jatom)
+                        step1 = phase*pjband%c_mdet(nnu)
+                        do imu = 1, norb_mu
+                          mmu = imu + s%iblock_slot(iatom)
+                          step2 = step1*conjg(piband%c_mdet(mmu))
+                          gutr = real(step2)
+                          cmunu = gutr
+                           piband%dij(:,jband) = piband%dij(:,jband)           &
+      &                     - gutr*dQ*vdbcnax(:,imu,jnu)*P_eq2
+                         end do
+                      end do
+                      pjband%dij(:,iband) = -piband%dij(:,jband)
+                      nullify (pjband)
+                    end do
+                    nullify (piband)
+                  end do 
+                  nullify (pkpoint)
+                end do  ! end loop over kpoints
+               end do ! end loop over isorp
+! ===========================================================================
 
 ! FORCES - ONTOP RIGHT CASE
 ! ****************************************************************************
@@ -986,12 +1096,48 @@
                 do imu = 1, norb_mu
                   pfi%vna_ontop(:,ineigh) = pfi%vna_ontop(:,ineigh)          &
      &             - pRho_neighbors%block(imu,inu)*vdbcnax(:,imu,inu)*P_eq2
-
-                  ! Hamiltonian gradient
-                  pvna_neighbors%Dblocko(:,imu,inu) =                        &
-      &             pvna_neighbors%Dblocko(:,imu,inu) - vdbcnax(:,imu,inu)*P_eq2
                 end do
               end do
+
+! NAC derivative of Hartree potential
+              do ikpoint = 1, s%nkpoints
+                ! Cut off lenthy notation                                   
+                nullify (pkpoint)
+                pkpoint=>s%kpoints(ikpoint)
+
+                vec = r2 - r1
+                sks = pkpoint%k
+                dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+                phasex = cmplx(cos(dot),sin(dot))*pkpoint%weight
+                nbands = pkpoint%nbands    
+                do iband = 1, nbands
+                  ! Cut off lengthy notation
+                  nullify (piband)
+                  piband=>pkpoint%transition(iband)
+                  do jband = iband + 1, nbands
+                    ! Cut off lengthy notation
+                    nullify (pjband)
+                    pjband=>pkpoint%transition(jband)
+                    do jnu = 1, norb_nu
+                      phase = phasex
+                      nnu = jnu + s%iblock_slot(jatom)
+                      step1 = phase*pjband%c_mdet(nnu)
+                      do imu = 1, norb_mu
+                        mmu = imu + s%iblock_slot(iatom)
+                        step2 = step1*conjg(piband%c_mdet(mmu))
+                        gutr = real(step2)
+                        cmunu = gutr
+                       piband%dij(:,jband) = piband%dij(:,jband)        &
+      &                - cmunu*vdbcnax(:,imu,jnu)*P_eq2
+                       end do
+                    end do
+                    pjband%dij(:,iband) = -piband%dij(:,jband)
+                    nullify (pjband)
+                  end do
+                  nullify (piband)
+                end do 
+                nullify (pkpoint)
+              end do  ! end loop over kpoints
 
 ! Charged atom case
               do isorp = 1, species(in2)%nssh
@@ -1023,12 +1169,49 @@
                   do imu = 1, norb_mu
                     pfi%vna_ontop(:,ineigh) = pfi%vna_ontop(:,ineigh)        &
      &               - pRho_neighbors%block(imu,inu)*dQ*vdbcnax(:,imu,inu)*P_eq2
-
-                    ! Hamiltonian gradient
-                    pvna_neighbors%Dblocko(:,imu,inu) =                      &
-      &               pvna_neighbors%Dblocko(:,imu,inu) - dQ*vdbcnax(:,imu,inu)*P_eq2
                   end do
                 end do
+
+! NAC derivative of Hartree potential
+                do ikpoint = 1, s%nkpoints
+                  ! Cut off lenthy notation                                                  
+                  nullify (pkpoint)
+                  pkpoint=>s%kpoints(ikpoint)
+  
+                  vec = r2 - r1
+                  sks = pkpoint%k
+                  dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+                  phasex = cmplx(cos(dot),sin(dot))*pkpoint%weight
+                  nbands = pkpoint%nbands    
+                  do iband = 1, nbands
+                    ! Cut off lengthy notation                 
+                    nullify (piband)
+                    piband=>pkpoint%transition(iband)
+                    do jband = iband + 1, nbands
+                      ! Cut off lengthy notation
+                      nullify (pjband)
+                      pjband=>pkpoint%transition(jband)
+                      do jnu = 1, norb_nu
+                        phase = phasex
+                        nnu = jnu + s%iblock_slot(jatom)
+                        step1 = phase*pjband%c_mdet(nnu)
+                        do imu = 1, norb_mu
+                          mmu = imu + s%iblock_slot(iatom)
+                          step2 = step1*conjg(piband%c_mdet(mmu))
+                          gutr = real(step2)
+                          cmunu = gutr
+                          piband%dij(:,jband) = piband%dij(:,jband)           &
+      &                     - cmunu*dQ*vdbcnax(:,imu,jnu)*P_eq2
+                         end do
+                      end do
+                      pjband%dij(:,iband) = -piband%dij(:,jband)
+                      nullify (pjband)
+                    end do
+                    nullify (piband)
+                  end do 
+                  nullify (pkpoint)
+                end do  ! end loop over kpoints
+
               end do ! end loop over isorp
               deallocate (bcnam, dbcnam, vdbcnam, vdbcnax)
             end if ! end if for r1 .eq. r2 case
@@ -1054,9 +1237,6 @@
           poverlap=>s%overlap(iatom); pS_neighbors=>poverlap%neighbors(matom)
           pdenmat=>s%denmat(iatom); pRho_neighbors_matom=>pdenmat%neighbors(matom)
           pfi=>s%forces(iatom)
-
-          nullify (pvna, pvna_neighbors)
-          pvna=>s%vna(iatom); pvna_neighbors=>pvna%neighbors(matom)
 
 ! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
@@ -1166,13 +1346,51 @@
 ! Notice the explicit negative sign, this makes it force like.
             do inu = 1, norb_mu
               do imu = 1, norb_mu
-                pfi%vna_atom(:,ineigh) = pfi%vna_atom(:,ineigh)            &
+                pfi%vna_atom(:,ineigh) = pfi%vna_atom(:,ineigh)              &
       &           - pRho_neighbors_matom%block(imu,inu)*vdbcnax(:,imu,inu)*P_eq2
-
-                pvna_neighbors%Dblock(:,imu,inu) =                         &
-      &           pvna_neighbors%Dblock(:,imu,inu) + vdbcnax(:,imu,inu)*P_eq2
-              end do
+               end do
             end do
+
+! NAC derivative of Hartree potential
+            if (iatom .eq. jatom .and. mbeta .eq. 0) then
+
+! Do nothing here - special case. Interaction already calculated in atm case.
+
+            else
+
+              do ikpoint = 1, s%nkpoints
+                ! Cut off lenthy notation                                                                    
+                nullify (pkpoint)
+                pkpoint=>s%kpoints(ikpoint)
+                nbands = pkpoint%nbands    
+                do iband = 1, nbands
+                  ! Cut off lengthy notation                
+                  nullify (piband)
+                  piband=>pkpoint%transition(iband)
+                  do jband = iband + 1, nbands
+                    ! Cut off lengthy notation
+                    nullify (pjband)
+                    pjband=>pkpoint%transition(jband)
+                    do jnu = 1, norb_nu
+                      nnu = jnu + s%iblock_slot(jatom)
+                      step1 = pjband%c_mdet(nnu)
+                      do imu = 1, norb_mu
+                        mmu = imu + s%iblock_slot(iatom)
+                        step2 = step1*conjg(piband%c_mdet(mmu))
+                        gutr = real(step2)
+                        cmunu = gutr
+                       piband%dij(:,jband) = piband%dij(:,jband)           &
+      &                     - cmunu*vdbcnax(:,imu,jnu)*P_eq2
+                      end do
+                    end do
+                    pjband%dij(:,iband) = -piband%dij(:,jband)
+                    nullify (pjband)
+                  end do
+                  nullify (piband)
+                end do 
+                nullify (pkpoint)
+              end do  ! end loop over kpoints
+            end if ! end if for iatom .eq. jatom case
 
 ! Charged atom case
             do isorp = 1, species(in2)%nssh
@@ -1218,15 +1436,53 @@
       &                + (1.0d0 - smooth)*vdemnpl(:,imu,inu)                   &
       &                + eta(:)*Dsmooth*emnpl(imu,inu))
                        ! This last term is really (- eta) and (-Dsmooth)
-
-                  pvna_neighbors%Dblock(:,imu,inu) =                           &
-      &             pvna_neighbors%Dblock(:,imu,inu)                           &
-      &               - P_eq2*dQ*(smooth*vdbcnax(:,imu,inu)                    &
-      &                           - eta(:)*Dsmooth*bcnax(imu,inu)              &
-      &                           + (1.0d0 - smooth)*vdemnpl(:,imu,inu)        &
-      &                           + eta(:)*Dsmooth*emnpl(imu,inu))
                 end do
               end do
+
+! NAC derivative of Hartree potential
+              if (iatom .eq. jatom .and. mbeta .eq. 0) then
+  
+! Do nothing   here - special case. Interaction already calculated in atm case.
+  
+              else
+                do ikpoint = 1, s%nkpoints
+                  ! Cut off lenthy notation                                                                    
+                  nullify (pkpoint)
+                  pkpoint=>s%kpoints(ikpoint)
+                  nbands = pkpoint%nbands    
+                  do iband = 1, nbands
+                    ! Cut off lengthy notation                
+                    nullify (piband)
+                    piband=>pkpoint%transition(iband)
+                    do jband = iband + 1, nbands
+                      ! Cut off lengthy notation
+                      nullify (pjband)
+                      pjband=>pkpoint%transition(jband)
+                      do jnu = 1, norb_nu
+                        nnu = jnu + s%iblock_slot(jatom)
+                        step1 = pjband%c_mdet(nnu)
+                        do imu = 1, norb_mu
+                          mmu = imu + s%iblock_slot(iatom)
+                          step2 = step1*conjg(piband%c_mdet(mmu))
+                          gutr = real(step2)
+                          cmunu = gutr
+                          piband%dij(:,jband) = piband%dij(:,jband)           &
+      &                        - cmunu*vdbcnax(:,imu,jnu)*P_eq2*dQ             &
+      &                         *(smooth*vdbcnax(:,imu,jnu)                               &
+      &                           - eta(:)*Dsmooth*bcnax(imu,jnu)                         &
+      &                           + (1.0d0 - smooth)*vdemnpl(:,imu,jnu)                   &
+      &                           + eta(:)*Dsmooth*emnpl(imu,jnu))
+                        end do
+                      end do
+                      pjband%dij(:,iband) = -piband%dij(:,jband)
+                      nullify (pjband)
+                    end do
+                    nullify (piband)
+                  end do 
+                  nullify (pkpoint)
+                end do  ! end loop over kpoints
+              end if ! end if for iatom .eq. jatom case
+
               deallocate (emnpl, vdemnpl)
             end do ! end loop over isporp
             deallocate (bcnam, bcnax, dbcnam, vdbcnam, vdbcnax)
