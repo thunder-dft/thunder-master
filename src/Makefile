@@ -34,6 +34,7 @@ include include/OPTIONS
 include MACHINES/GENERIC
 include MACHINES/HKQAI
 include MACHINES/ICC
+include MACHINES/WINDOWS
 
 ##############################################################################
 ###
