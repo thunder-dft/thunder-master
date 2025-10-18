@@ -1,0 +1,35 @@
+#WINDOWS WINDOWS WINDOWS WINDOWS WINDOWS WINDOWS WINDOWS WINDOWS WINDOWS 
+ifneq (,$(findstring WINDOWS,${MACHINE}))
+	ifneq (,$(findstring ifort,${COMPILER}))
+		F90 = ifx
+		FFLAGS = -O3 -r8 -fpp -ipo -fpe0 -ftz -align 
+		ifneq (,$(findstring DEBUG,${MODE}))
+			FFLAGS = -g -traceback -C -check arg_temp_created -r8 \
+				-debug all -check all -warn all,noexternal -fpe0
+		endif
+		ifneq (,$(findstring TRUE,${OPENMP}))
+			OMP = -qopenmp -fpp -auto
+		endif
+		ifneq (,$(findstring TRUE,${MPI}))
+			F90 = mpiifx
+		endif
+        CC = icx
+        CFLAGS = -ipo
+	endif
+
+	MKLROOT = "C:\Program Files (x86)\Intel\oneAPI\mkl\latest"
+	MKLPATH = "C:\Program Files (x86)\Intel\oneAPI\mkl\latest\lib\intel64"
+	FFTPATH = "C:\Program Files (x86)\Intel\oneAPI\mkl\latest"\include\fftw"
+	# GAF: Using the proper static link sequence
+	LFLAGS = -Wl,--start-group $(MKLPATH)\libmkl_intel_lp64.a \
+		$(MKLPATH)/libmkl_core.a $(MKLPATH)\libmkl_sequential.a \
+		-Wl,--end-group -lpthread -lm
+	ifneq (,$(findstring SCALAPACK, ${DIAGONALIZATION}))
+		LFLAGS = -Wl,--start-group $(MKLPATH)\libmkl_intel_lp64.a \
+			$(MKLPATH)\libmkl_core.a $(MKLPATH)\libmkl_sequential.a \
+			-lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64 -Wl,--end-group -lpthread -lm
+	endif
+#	LFLAGS_FFT = -I$(FFTPATH) -L$(MKLPATH) $(MKLPATH)\libfftw3xf_intel.a \
+#		$(MKLPATH)\libmkl_em64t.a -Bdynamic $(MKLPATH)\libguide.a
+
+endif
