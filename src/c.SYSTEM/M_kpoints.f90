@@ -57,37 +57,39 @@
 ! coefficients in order to calculate non-adiabatic couplings or for calculating
 ! absorption. We consider only a range of states near the valence and conduction
 ! band edges. The number of states that we consider is defined by ntransitions.
-        integer ntransitions           ! number of transitions
         type T_transition
           integer imap                 ! to which band does this transition map
 
           ! these are the time-dependent Schrodinger coefficients - these will
           ! be evolved in time according to Verlet or Runge-Kutta as desired
           ! these correspond to the non-adiabatic coupled states
-          complex cna_old
-          complex cna
+!         complex cna_old
+!         complex cna
 
           ! these are the coefficients of the adiabatic eigenstates - these will
           ! be evolved in time similarly to cna and cna_old
-          complex, allocatable :: c_wf (:)
+!         complex, allocatable :: c_wf (:)
+
+          ! NAC Coeffiecients used in nonadiabatic couplings
+          complex, allocatable :: c_mdet (:)
 
           ! this is the non-adiabatic coupling belonging to the transition state
-          complex, allocatable :: djk (:)
-          complex, allocatable :: djk_old (:)
-          complex, allocatable :: ddjk (:)
+          complex, allocatable :: dij (:, :)
+!         complex, allocatable :: dij_old (:, :)
+!         complex, allocatable :: ddij (:, :)
         end type
 
         type T_kpoint
           real weight                          ! weight of kpoint
 
-          integer, pointer :: ioccupy (:)    ! integer occupation number
+          integer, pointer :: ioccupy (:)     ! integer occupation number
 
           real, pointer :: eigen (:)          ! eigenvalues for k
           real, pointer :: eigen_old (:)      ! previous eigenvlues for k
           real, pointer :: deigen (:)         ! interpolted eigen values
           real, pointer :: foccupy (:)        ! occupation real value for k
 
-          real, dimension (3) :: k           ! kpoint vector
+          real, dimension (3) :: k            ! kpoint vector
 
           ! k-dependent S12 matrix
           complex, pointer :: S12matrix (:, :)
@@ -102,7 +104,11 @@
 ! coefficients in order to calculate non-adiabatic couplings or for calculating
 ! absorption. We consider only a range of states near the valence and conduction
 ! band edges. The number of states that we consider is defined by ntransitions.
-          type (T_transition), pointer :: transition (:, :)
+          integer nbands                ! number of bands
+          integer ntransitions                ! number of transitions
+
+          type (T_transition), pointer :: transition (:)
+          type (T_transition), pointer :: atransition (:, :)
         end type
 
 ! End Module

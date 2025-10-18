@@ -37,7 +37,7 @@
 ! ===========================================================================
 ! Code written by:
 ! James P. Lewis
-! Unit 909 of Buidling 17W
+! Unit 909 of Building 17W
 ! 17 Science Park West Avenue
 ! Pak Shek Kok, New Territories 999077
 ! Hong Kong
@@ -280,7 +280,7 @@
                     step1 = phase*conjg(s%kpoints(ikpoint)%c(mmu,iband))
                     do inu = 1, norb_nu
                       nnu = inu + s%iblock_slot(jatom)
-                      step2 = step1*s%kpoints(ikpoint)%c(nnu,iband)
+                      step2 = step1*s%kpoints(ikpoint)%c(nnu,jband)
                       gutr = real(step2)
 
 ! Finally the density matrix:
@@ -654,7 +654,7 @@
 ! Input
         type(T_structure), target :: s           !< the structure to be used.
 
-        real, intent (in) :: qstate      !< FIXME
+        real, intent (in) :: qstate
 
 ! Output
         real, intent (out) :: efermi
@@ -691,8 +691,7 @@
 ! Procedure
 ! ===========================================================================
 ! Add in the qstate to the total charge
-!       qztot = s%ztot + qstate
-        qztot = s%ztot
+        qztot = s%ztot + qstate
 
 ! The subroutine fermie needs a temperature to calculate the occupations of
 ! the states so set temperature to some low value (1 eV = 11604 K).
@@ -810,36 +809,6 @@
 ! ===========================================================================
         return
         end subroutine fermie
-
-
-! ===========================================================================
-! initialize_mdet.f90
-! ===========================================================================
-! Subroutine Description
-! ===========================================================================
-!       Dummy routine - need to have dummy initialize_mdet
-!
-! ===========================================================================
-! Program Declaration
-! ===========================================================================
-        subroutine initialize_mdet (s, icurrent_state)
-        implicit none
-
-        include '../include/constants.h'
-
-! Argument Declaration and Description
-! ===========================================================================
-! Input
-        type(T_structure), target :: s           !< the structure to be used.
-! Output
-        integer, intent (out) :: icurrent_state
-
-        icurrent_state=0
-
-! End Subroutine
-! ===========================================================================
-        return
-        end subroutine initialize_mdet
 
 
 ! ===========================================================================

@@ -231,7 +231,7 @@
 ! ===========================================================================
 ! Loop over atoms in central cell
         do itransition = 1, ntransitions
-        do jtransition = 1, ntransitions
+        do jtransition = itransition, ntransitions
            iband = s%kpoints(1)%transition(itransition,1)%imap
            jband = s%kpoints(1)%transition(jtransition,1)%imap
            eigeni = s%kpoints(1)%eigen(iband)
