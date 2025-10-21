@@ -280,7 +280,7 @@
                     step1 = phase*conjg(s%kpoints(ikpoint)%c(mmu,iband))
                     do inu = 1, norb_nu
                       nnu = inu + s%iblock_slot(jatom)
-                      step2 = step1*s%kpoints(ikpoint)%c(nnu,jband)
+                      step2 = step1*s%kpoints(ikpoint)%c(nnu,iband)
                       gutr = real(step2)
 
 ! Finally the density matrix:

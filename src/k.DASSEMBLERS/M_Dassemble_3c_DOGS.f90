@@ -760,7 +760,7 @@
       &                  - dstnB(:)*emnpl(imu,inu) + (1.0d0 - stinky)*demnplB(:,imu,inu))
                     pfj%f3nac = pfj%f3nac                                     &
       &               - P_eq2*dQ*pRho_neighbors%block(imu,inu)                &
-      &                *(stinky*f3naXc(:,imu,inu) + dstnB(:)*bcnax(imu,inu)   &
+      &                *(stinky*f3naXc(:,imu,inu) + dstnC(:)*bcnax(imu,inu)   &
       &                  - dstnC(:)*emnpl(imu,inu) + (1.0d0 - stinky)*demnplC(:,imu,inu))
                   end do
                 end do

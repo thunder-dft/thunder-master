@@ -1,6 +1,6 @@
-! copyright info:
+!! copyright info:
 !
-!                             @Copyright 2022
+!                             @Copyright 2025
 !                           Fireball Committee
 ! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
 ! Universidad de Madrid - Jose Ortega
@@ -16,12 +16,11 @@
 ! Pacific Northwest National Laboratory - Kurt Glaesemann
 ! University of Texas at Austin - Alex Demkov
 ! Ohio University - Dave Drabold
-! Synfuels China Technology Co., Ltd. - Pengju Ren
+! Synfuels China Technology Co., Ltd. - Pengju Ren and Zhaofa Li
 ! Washington University - Pete Fedders
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -74,7 +73,7 @@
           complex, allocatable :: c_mdet (:)
 
           ! this is the non-adiabatic coupling belonging to the transition state
-          complex, allocatable :: dij (:, :)
+          complex, allocatable :: dij (:, :, :)
 !         complex, allocatable :: dij_old (:, :)
 !         complex, allocatable :: ddij (:, :)
         end type

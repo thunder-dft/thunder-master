@@ -153,17 +153,14 @@
         do ikpoint = 1, s%nkpoints       
 
           ! cut some lengthy notation
-          nullify (pkpoint)
-          pkpoint => s%kpoints(ikpoint)
+          nullify (pkpoint); pkpoint => s%kpoints(ikpoint)
         
 ! Allocate transition type and initialize imap
           read (inpfile,*) pkpoint%nbands
           allocate (pkpoint%transition(pkpoint%nbands))
           do iband = 1, pkpoint%nbands
-
             ! cut some more lengthy notation
-            nullify (piband)
-            piband => pkpoint%transition(iband)
+            nullify (piband); piband => pkpoint%transition(iband)
 
             read (inpfile,*) iband_in, foccupy, ipop
 ! FIXME! We might need to read in foccupy and set ioccupy to 1 when foccupy
@@ -175,17 +172,14 @@
             pkpoint%foccupy(iband) = foccupy
 
             ! NAC Zhaofa Li initialize the dij and c_mdet
-            allocate (piband%c_mdet(s%norbitals))
-            piband%c_mdet = 0.0d0
-            allocate (piband%dij(3, pkpoint%nbands))
+            allocate (piband%c_mdet(s%norbitals)); piband%c_mdet = 0.0d0
+            allocate (piband%dij(3, s%natoms, pkpoint%nbands))
             piband%dij = 0.0d0
   
             if (foccupy .ge. 0.5d0) pkpoint%ioccupy(iband) = 1
             write (logfile,*) ' testing imaps reach '
             write (logfile,*) piband%imap
-            nullify (piband)
           end do   ! end loop over bands
-          nullify (pkpoint)
         end do   ! end loop over kpoints
         close (unit = inpfile)
 
@@ -257,24 +251,19 @@
 
 ! Loop over the special k points.
         do ikpoint = 1, s%nkpoints
-
           ! cut some lengthy notation
-          nullify (pkpoint)
-          pkpoint => s%kpoints(ikpoint)
+          nullify (pkpoint); pkpoint => s%kpoints(ikpoint)
 
 ! Loop over all bands
           do iband = 1, pkpoint%nbands
-            nullify (piband)
-            piband => pkpoint%transition(iband)
+            ! cut some lengthy notation
+            nullify (piband); piband => pkpoint%transition(iband)
 
-            allocate (piband%c_mdet(s%norbitals))
+            ! set the coefficient for the iband transition
             piband%c_mdet = pkpoint%c(:, piband%imap)
-            nullify (piband)
-! Finish loop over bands.
-          end do
-          nullify (pkpoint)
-! Finish loop over k-points.
-        end do
+
+          end do   ! end loop over bands
+        end do   ! end loop over kpoints
         
 ! Deallocate Arrays
 ! ===========================================================================
@@ -341,37 +330,35 @@
 
 ! Procedure
 ! ===========================================================================
-
 ! Formatted file needed for Multimwfn
 ! Only for gamma
         slogfile = s%basisfile(:len(trim(s%basisfile)) - 4)
-        slogfile = trim(slogfile)//'.cdcoeffs-mwfn_mdet'
+        slogfile = trim(slogfile)//'.cdcoeffs-mdet-mwfn'
         open (unit = 22, file = slogfile, status = 'replace')
         do ikpoint = 1, s%nkpoints
           write (22,"('Kpoint=',i10)") ikpoint
 
+          ! cut some lengthy notation
           nullify (pkpoint)
           pkpoint => s%kpoints(ikpoint)
 
-          do iiband = 1, pkpoint%nbands
-
-            nullify (piband)
-            piband => pkpoint%transition(iiband)
+          do iband = 1, pkpoint%nbands
+            ! cut some lengthy notation
+            nullify (piband); piband => pkpoint%transition(iband)
 
             write (22,*)
-            write (22,"('Index=',i10)") iiband
+            write (22,"('Index=',i10)") piband%imap
             write (22,"('Type=',i2)") 0
             write (22,"('Energy=',1PE16.8)") 0
             write (22,"('Occ=',f12.8)") 0
             write (22,"('Sym= ?')")
             write (22,"('$Coeff')")
+
 ! write out the coefficient
             write (22,"(5(1PE16.8))") (real(piband%c_mdet(inu)), inu = 1, s%norbitals)
-            nullify (piband)
-          end do
+          end do   ! end loop over bands
           write (22,*)
-          nullify (pkpoint)
-        end do
+        end do   ! end loop over kpoints
         close (unit = 22)
 
 ! Deallocate Arrays
@@ -391,6 +378,224 @@
         return
         end subroutine writeout_density_mdet
 
+! ===========================================================================
+! build_dij_mdet
+! ===========================================================================
+! Subroutine Description
+! ===========================================================================
+!>       This routine build nonadiabatic coupliongs dij.
+!
+! ===========================================================================
+! Code written by:
+!> @author James P. Lewis
+! Box 6315, 209 Hodges Hall
+! Department of Physics
+! West Virginia University
+! Morgantown, WV 26506-6315
+!
+! (304) 293-3422 x1409 (office)
+! (304) 293-5732 (FAX)
+! ===========================================================================
+!
+! Subroutine Declaration
+! ===========================================================================
+        subroutine build_dij_mdet (s)
+        implicit none
+
+! Argument Declaration and Description
+! ===========================================================================
+        type(T_structure), target :: s           !< the structure to be used.
+
+! Parameters and Data Declaration
+! ===========================================================================
+! None
+
+! Variable Declaration and Description
+! ===========================================================================
+        integer iatom              !< counter over atoms and neighbors
+        integer ikpoint                    !< counter of band and kpoint
+        integer iband, jband                     !< counter of transitions
+
+        real eigen_i, eigen_j             !< eigen values in band i and j
+        real diff, tolnac
+
+        type(T_kpoint), pointer :: pkpoint
+        type(T_transition), pointer :: piband
+        type(T_transition), pointer :: pjband
+
+! Procedure
+! ===========================================================================
+        tolnac = 0.0001d0
+        do ikpoint = 1, s%nkpoints
+
+          ! Cut some lengthy notation
+          nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+          do iband = 1, pkpoint%nbands
+
+            ! Cut some lengthy notation
+            nullify (piband); piband=>pkpoint%transition(iband)
+
+            ! set the iband eigenvalue
+            eigen_i = pkpoint%eigen(piband%imap)
+
+            do jband = iband + 1, pkpoint%nbands
+
+              ! Cut some lengthy notation
+              nullify (pjband); pjband=>pkpoint%transition(jband)
+
+              ! set the jband eigenvalue
+              eigen_j = pkpoint%eigen(pjband%imap)
+
+              diff = abs(eigen_i - eigen_j )
+              if (diff .lt. tolnac) then
+                write (s%logfile,*) ' TWO EIGENVALUES VERY CLOSE'
+                write (s%logfile,*) ' iband', piband%imap, eigen_i
+                write (s%logfile,*) ' jband', pjband%imap, eigen_j
+                write (s%logfile,*) ' The nonadiabatic coupling is'
+                write (s%logfile,*) ' NOT CALCULATED '
+              else 
+                piband%dij(:,:,jband) = piband%dij(:,:,jband)/(eigen_i - eigen_j)
+
+                ! TESTING
+                ! do iatom = 1, s%natoms
+                !   write(s%logfile,'(5(A,I6))') "ikpoint=", ikpoint, ", iband=", iband, ", jband=", jband, ", iatom=", iatom
+                !   write(s%logfile,*) piband%dij(:, iatom, jband)
+                ! end do
+
+                pjband%dij(:,:,iband) = pjband%dij(:,:,iband)/(eigen_i - eigen_j)
+
+                ! TESTING
+                ! do iatom = 1, s%natoms
+                !   write(s%logfile,'(5(A,I6))') "ikpoint=", ikpoint, ", jband=", jband, ", iband=", iband, ", iatom=", iatom
+                !   write(s%logfile,*) pjband%dij(:, iatom, iband)  
+                ! end do 
+
+              end if ! end if check for degeneracy
+            end do ! end loop over jband
+          end do ! end loop over iband
+        end do  ! end loop over kpoints
+
+! Deallocate Arrays
+! ===========================================================================
+! None
+
+! Format Statements
+! ===========================================================================
+! None
+
+! End Subroutine
+! ===========================================================================
+        return
+        end subroutine build_dij_mdet
+
+! ===========================================================================
+! writeout_dij_mdet
+! ===========================================================================
+! Subroutine Description
+! ===========================================================================
+!>       This routine writes out nonadiabatic coupliongs dij.
+!
+! ===========================================================================
+! Code written by:
+!> @author James P. Lewis
+! Box 6315, 209 Hodges Hall
+! Department of Physics
+! West Virginia University
+! Morgantown, WV 26506-6315
+!
+! (304) 293-3422 x1409 (office)
+! (304) 293-5732 (FAX)
+! ===========================================================================
+!
+! Subroutine Declaration
+! ===========================================================================
+        subroutine writeout_dij_mdet (s)
+        implicit none
+
+! Argument Declaration and Description
+! ===========================================================================
+        type(T_structure), target :: s           !< the structure to be used.
+
+! Parameters and Data Declaration
+! ===========================================================================
+! None
+
+! Variable Declaration and Description
+! ===========================================================================
+        integer iatom              !< counter over atoms and neighbors
+        integer ikpoint                    !< counter of band and kpoint
+        integer iband, jband                     !< counter of transitions
+        integer logfile                     !< writing to which unit
+
+        type(T_kpoint), pointer :: pkpoint
+        type(T_transition), pointer :: piband
+        type(T_transition), pointer :: pjband
+
+! Procedure
+! ===========================================================================
+        logfile = s%logfile
+        do ikpoint = 1, s%nkpoints
+
+          ! Cut some lengthy notation
+          nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+          do iband = 1, pkpoint%nbands
+
+            ! Cut some lengthy notation
+            nullify (piband); piband=>pkpoint%transition(iband)
+
+            do jband = iband + 1, pkpoint%nbands
+
+              ! Cut some lengthy notation
+              nullify (pjband); pjband=>pkpoint%transition(jband)
+
+              write (logfile,*)
+              write (logfile,103) ' The nonadibaitc couplings: '
+              write (logfile,*) piband%imap, pjband%imap
+              write (logfile,100)
+              write (logfile,101)
+              write (logfile,100)
+              do iatom = 1, s%natoms
+                write (logfile,102) 'dij', iatom,                            &
+     &                                     s%atom(iatom)%species%symbol,     &
+        &                                  piband%dij(:, iatom, jband)
+              end do 
+              write (logfile,100)
+              write (logfile,*)
+              write (logfile,*)
+              write (logfile,103) ' The nonadiabatic couplings: '
+              write (logfile,*) pjband%imap, piband%imap
+              write (logfile,100)
+              write (logfile,101)
+              write (logfile,100)
+              do iatom = 1, s%natoms
+                write (logfile,102) 'dij', iatom,                            &
+        &                                  s%atom(iatom)%species%symbol,     &
+        &                                  pjband%dij(:, iatom, iband)
+              end do 
+              write (logfile,100)
+              write (logfile,*)
+            end do ! end loop over jband
+          end do ! end loop over iband
+        end do  ! end loop over kpoints
+
+! Deallocate Arrays
+! ===========================================================================
+! None
+
+! Format Statements
+! ===========================================================================
+100     format (4x, 70('='))
+101     format (4x, 'dij ', 'Atom # ', 2x, ' Type ', 5x,   &
+     &              ' x ', 9x, ' y ', 9x, ' z ')
+102     format (4x, A,  i5, 7x, a2, 3(2x,ES10.3))
+103     format (4x, A)
+
+! End Subroutine
+! ===========================================================================
+        return
+        end subroutine writeout_dij_mdet
 
 ! ===========================================================================
 ! destroy_denmat_mdet
@@ -429,8 +634,7 @@
 ! ===========================================================================
         integer iatom, ineigh              !< counter over atoms and neighbors
         integer ikpoint                    !< counter of band and kpoint
-        integer iiband                     !< counter of transitions
-        integer nbands                     !< number of transitions
+        integer iband                     !< counter of transitions
 
         type(T_kpoint), pointer :: pkpoint
         type(T_transition), pointer :: piband
@@ -439,9 +643,9 @@
 ! ===========================================================================
         ! destroy the density matrix pieces - forces are already evaluated
         do ikpoint = 1, s%nkpoints
-          do iiband = 1, s%kpoints(ikpoint)%nbands
-            deallocate (s%kpoints(ikpoint)%transition(iiband)%c_mdet)
-            deallocate (s%kpoints(ikpoint)%transition(iiband)%dij)
+          do iband = 1, s%kpoints(ikpoint)%nbands
+            deallocate (s%kpoints(ikpoint)%transition(iband)%c_mdet)
+            deallocate (s%kpoints(ikpoint)%transition(iband)%dij)
           end do
           deallocate (s%kpoints(ikpoint)%transition)
         end do
