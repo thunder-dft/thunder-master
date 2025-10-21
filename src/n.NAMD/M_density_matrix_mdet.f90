@@ -159,14 +159,8 @@
           read (inpfile,*) pkpoint%nbands
           allocate (pkpoint%transition(pkpoint%nbands))
           do iband = 1, pkpoint%nbands
-
             ! cut some more lengthy notation
-<<<<<<< HEAD
             nullify (piband); piband => pkpoint%transition(iband)
-=======
-            nullify (piband)
-            piband => pkpoint%transition(iband)
->>>>>>> e6480782416e4cda261d48e447c394509396c483
 
             read (inpfile,*) iband_in, foccupy, ipop
 ! FIXME! We might need to read in foccupy and set ioccupy to 1 when foccupy
@@ -178,23 +172,13 @@
             pkpoint%foccupy(iband) = foccupy
 
             ! NAC Zhaofa Li initialize the dij and c_mdet
-<<<<<<< HEAD
             allocate (piband%c_mdet(s%norbitals)); piband%c_mdet = 0.0d0
             allocate (piband%dij(3, s%natoms, pkpoint%nbands))
-=======
-            allocate (piband%c_mdet(s%norbitals))
-            piband%c_mdet = 0.0d0
-            allocate (piband%dij(3, pkpoint%nbands))
->>>>>>> e6480782416e4cda261d48e447c394509396c483
             piband%dij = 0.0d0
   
             if (foccupy .ge. 0.5d0) pkpoint%ioccupy(iband) = 1
             write (logfile,*) ' testing imaps reach '
             write (logfile,*) piband%imap
-<<<<<<< HEAD
-=======
-            nullify (piband)
->>>>>>> e6480782416e4cda261d48e447c394509396c483
           end do   ! end loop over bands
         end do   ! end loop over kpoints
         close (unit = inpfile)
@@ -267,14 +251,11 @@
 
 ! Loop over the special k points.
         do ikpoint = 1, s%nkpoints
-
           ! cut some lengthy notation
           nullify (pkpoint); pkpoint => s%kpoints(ikpoint)
 
 ! Loop over all bands
           do iband = 1, pkpoint%nbands
-<<<<<<< HEAD
-
             ! cut some lengthy notation
             nullify (piband); piband => pkpoint%transition(iband)
 
@@ -283,19 +264,6 @@
 
           end do   ! end loop over bands
         end do   ! end loop over kpoints
-=======
-            nullify (piband)
-            piband => pkpoint%transition(iband)
-
-            allocate (piband%c_mdet(s%norbitals))
-            piband%c_mdet = pkpoint%c(:, piband%imap)
-            nullify (piband)
-! Finish loop over bands.
-          end do
-          nullify (pkpoint)
-! Finish loop over k-points.
-        end do
->>>>>>> e6480782416e4cda261d48e447c394509396c483
         
 ! Deallocate Arrays
 ! ===========================================================================
@@ -375,15 +343,8 @@
           pkpoint => s%kpoints(ikpoint)
 
           do iband = 1, pkpoint%nbands
-
-<<<<<<< HEAD
             ! cut some lengthy notation
-            nullify (piband)
-            piband => pkpoint%transition(iband)
-=======
-            nullify (piband)
-            piband => pkpoint%transition(iiband)
->>>>>>> e6480782416e4cda261d48e447c394509396c483
+            nullify (piband); piband => pkpoint%transition(iband)
 
             write (22,*)
             write (22,"('Index=',i10)") piband%imap
@@ -395,12 +356,7 @@
 
 ! write out the coefficient
             write (22,"(5(1PE16.8))") (real(piband%c_mdet(inu)), inu = 1, s%norbitals)
-<<<<<<< HEAD
           end do   ! end loop over bands
-=======
-            nullify (piband)
-          end do
->>>>>>> e6480782416e4cda261d48e447c394509396c483
           write (22,*)
         end do   ! end loop over kpoints
         close (unit = 22)
@@ -678,12 +634,7 @@
 ! ===========================================================================
         integer iatom, ineigh              !< counter over atoms and neighbors
         integer ikpoint                    !< counter of band and kpoint
-<<<<<<< HEAD
         integer iband                     !< counter of transitions
-=======
-        integer iiband                     !< counter of transitions
-        integer nbands                     !< number of transitions
->>>>>>> e6480782416e4cda261d48e447c394509396c483
 
         type(T_kpoint), pointer :: pkpoint
         type(T_transition), pointer :: piband
