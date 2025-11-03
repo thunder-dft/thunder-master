@@ -130,10 +130,10 @@
         integer iband, jband              !< counter over transitions
         integer ikpoint                   !< counter over kpoints
 
-        real cmunu                        !< density matrix elements for mdet
-        real eigen_i, eigen_j             !< eigen values in band i and j
-        real dot                          !< dot product between k and r
         real z                            !< distance between r1 and r2
+        real dot                          !< dot product between K and r
+        real cmunu                  !< density matrix elements for mdet
+        real eigen_i, eigen_j             !< eigen values in band i and j
 
         real, dimension (3) :: eta        !< vector part of epsilon eps(:,3)
         real, dimension (3, 3) :: eps     !< the epsilon matrix
@@ -273,71 +273,68 @@
 
 ! Store the derivitive, rotate vector matrix.
             pS_neighbors%Dblock = vdsx
-
-! ===========================================================================
-! NAC derivative of vna - ontop case
+            
+!============================================================================
+! NAC derivative of overlap consists of 1c part and 2c part
+! which follows the ontop case
 ! NAC Zhaofa Li have changed inu to jnu to match the formula in
 ! J. Chem. Phys. 138, 154106 (2013)
 ! ===========================================================================
-            if (iatom .eq. jatom .and. mbeta .eq. 0) then
+            do ikpoint = 1, s%nkpoints
 
-! Do nothing  here - special case. Interaction already calculated in atm case.
+              ! Cut some lengthy notation
+              nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
 
-            else
-              do ikpoint = 1, s%nkpoints
+              ! phase for non-gamma kpoints
+              vec = r2 - r1
+              sks = s%kpoints(ikpoint)%k
+              dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+              phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
+
+              do iband = 1, pkpoint%nbands
+
                 ! Cut some lengthy notation
-                nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+                nullify (piband); piband=>pkpoint%transition(iband)
 
-                ! phase for non-gamma kpoints
-                vec = r2 - r1
-                sks = s%kpoints(ikpoint)%k
-                dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
-                phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
+                eigen_i = pkpoint%eigen(piband%imap)
+                do jband = iband + 1, pkpoint%nbands
 
-                do iband = 1, pkpoint%nbands
                   ! Cut some lengthy notation
-                  nullify (piband); piband=>pkpoint%transition(iband)
+                  nullify (pjband); pjband=>pkpoint%transition(jband)
 
-                  ! set the iband eigenvalue
-                  eigen_i = pkpoint%eigen(piband%imap)
-
-                  do jband = iband + 1, pkpoint%nbands
-
-                    ! Cut some lengthy notation
-                    nullify (pjband); pjband=>pkpoint%transition(jband)
-
-                    ! set the jband eigenvalue
-                    eigen_j = pkpoint%eigen(pjband%imap)
-
-                    do jnu = 1, norb_nu
-                      phase = phasex
-                      nnu = jnu + s%iblock_slot(jatom)
-                      step1 = phase*pjband%c_mdet(nnu)
-                      do imu = 1, norb_mu
-                        mmu = imu + s%iblock_slot(iatom)
-                        step2 = step1*conjg(piband%c_mdet(mmu))
-                        cmunu = real(step2)
+                  eigen_j = pkpoint%eigen(pjband%imap)
+                  do jnu = 1, norb_nu
+                    phase = phasex
+                    nnu = jnu + s%iblock_slot(jatom)
+                    step1 = phase*pjband%c_mdet(nnu)
+                    do imu = 1, norb_mu
+                      mmu = imu + s%iblock_slot(iatom)
+                      step2 = step1*conjg(piband%c_mdet(mmu))
+                      cmunu = real(step2)
+                      
+                      if (iatom .eq. jatom .and. mbeta .eq. 0) then
+                      ! FIXME FIXME FIXME FIXME
+                      ! 1c part of derivative of overlap
+                      else      
+                      ! 2c part of derivative of overlap                   
                         piband%dij(:,iatom,jband) =                          &
-      &                   piband%dij(:,iatom,jband) + cmunu*eigen_j*vdsx(:,imu,jnu)
-  
+     &                    piband%dij(:,iatom,jband) + cmunu*eigen_j*vdsx(:,imu,jnu)
                         piband%dij(:,jatom,jband) =                          &
-      &                   piband%dij(:,jatom,jband) - cmunu*eigen_i*vdsx(:,imu,jnu)
-                      end do
+     &                    piband%dij(:,jatom,jband) - cmunu*eigen_i*vdsx(:,imu,jnu)
+                      end if ! iatom .neq. jatom
                     end do
-
-                    ! NAC force anti-symmetry for NAC
-                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
                   end do
-                end do ! end loop over bands
-              end do  ! end loop over kpoints
-            end if ! iatom .neq. jatom
-! ===========================================================================
+
+                  ! NAC force anti-symmetry for NAC
+                  pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
+                  pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
+                end do
+              end do 
+            end do  ! end loop over kpoints
+! ===========================================================================            
 
             deallocate (sm, sx, dsm, vdsm, vdsx)
-            nullify (pS_neighbors)
           end do ! end loop over neighbors
-          nullify (poverlap)
         end do ! end loop over atoms
 
 ! Deallocate Arrays
@@ -405,9 +402,9 @@
 
         integer norb_mu, norb_nu         !< size of the block for the pair
 
-        real cmunu                        !< density matrix elements for mdet
-        real dot                          !< dot product between k and r
-        real z                            !< distance between r1 and r2
+        real z                           !< distance between r1 and r2
+        real dot 
+        real cmunu 
 
         real, dimension (3) :: eta        !< vector part of epsilon eps(:,3)
         real, dimension (3, 3) :: eps     !< the epsilon matrix
@@ -548,8 +545,8 @@
 ! Store the derivitive, rotate vector matrix.
             pK_neighbors%Dblock = vdtx
 
-! ===========================================================================
-! NAC derivative of vna - ontop case
+!============================================================================
+! NAC derivative of kinetics energy follows the ontop case
 ! NAC Zhaofa Li have changed inu to jnu to match the formula in
 ! J. Chem. Phys. 138, 154106 (2013)
 ! ===========================================================================
@@ -559,6 +556,7 @@
 
             else
               do ikpoint = 1, s%nkpoints
+
                 ! Cut some lengthy notation
                 nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
 
@@ -569,10 +567,12 @@
                 phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
 
                 do iband = 1, pkpoint%nbands
+
                   ! Cut some lengthy notation
                   nullify (piband); piband=>pkpoint%transition(iband)
 
                   do jband = iband + 1, pkpoint%nbands
+
                     ! Cut some lengthy notation
                     nullify (pjband); pjband=>pkpoint%transition(jband)
 
@@ -584,27 +584,26 @@
                         mmu = imu + s%iblock_slot(iatom)
                         step2 = step1*conjg(piband%c_mdet(mmu))
                         cmunu = real(step2)
+                        
                         piband%dij(:,iatom,jband) =                          &
-      &                   piband%dij(:,iatom,jband) - cmunu*vdtx(:,imu,jnu)
+     &                    piband%dij(:,iatom,jband) - cmunu*vdtx(:,imu,jnu)
   
                         piband%dij(:,jatom,jband) =                          &
-      &                   piband%dij(:,jatom,jband) + cmunu*vdtx(:,imu,jnu)
+     &                    piband%dij(:,jatom,jband) + cmunu*vdtx(:,imu,jnu)
                       end do
                     end do
-
+  
                     ! NAC force anti-symmetry for NAC
-                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
+                    pjband%dij(:,iatom,iband) = -piband%dij(:,iatom,jband)
+                    pjband%dij(:,jatom,iband) = -piband%dij(:,jatom,jband)
                   end do
-                end do ! end loop over bands
+                end do 
               end do  ! end loop over kpoints
             end if ! iatom .neq. jatom
 ! ==============================================================================            
 
             deallocate (tm, tx, dtm, vdtm, vdtx)
-            nullify (pK_neighbors)
           end do ! end loop over neighbors
-          nullify (pkinetic)
         end do ! end loop 
 
 ! Deallocate Arrays
@@ -865,14 +864,14 @@
 
         integer norb_mu, norb_nu        !< size of the block for the pair
 
-        real cmunu                      !< density matrix elements for mdet
-        real dot                        !< dot product between k and r
         real dQ                         !< net charge on atom
         real rcutoff1_min, rcutoff2_min, rend  !< for smoothing
         real smooth                     !< smoothing value
         real Dsmooth                    !< derivative smoothing value
         real xsmooth                    !< for smoothing function
         real z                          !< distance between r1 and r2
+        real dot                        !< dot product between K and r
+        real cmunu                !< density matrix elements for mdet
 
         real, dimension (3) :: eta        !< vector part of epsilon eps(:,3)
         real, dimension (3, 3) :: eps     !< the epsilon matrix
@@ -1062,12 +1061,13 @@
                 end do
               end do
 
-! ===========================================================================
+!============================================================================
 ! NAC derivative of vna - ontop left case
 ! NAC Zhaofa Li have changed inu to jnu to match the formula in
 ! J. Chem. Phys. 138, 154106 (2013)
 ! ===========================================================================
               do ikpoint = 1, s%nkpoints
+
                 ! Cut some lengthy notation
                 nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
 
@@ -1078,10 +1078,12 @@
                 phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
 
                 do iband = 1, pkpoint%nbands
+
                   ! Cut some lengthy notation
                   nullify (piband); piband=>pkpoint%transition(iband)
 
                   do jband = iband + 1, pkpoint%nbands
+
                     ! Cut some lengthy notation
                     nullify (pjband); pjband=>pkpoint%transition(jband)
 
@@ -1093,6 +1095,7 @@
                         mmu = imu + s%iblock_slot(iatom)
                         step2 = step1*conjg(piband%c_mdet(mmu))
                         cmunu = real(step2)
+                        
                         piband%dij(:,iatom,jband) =                                &
       &                   piband%dij(:,iatom,jband) - cmunu*vdbcnax(:,imu,jnu)*P_eq2
 
@@ -1141,12 +1144,13 @@
                   end do
                 end do
 
-! ===========================================================================
-! NAC derivative of vna - ontop left (charged atom) case
+!============================================================================
+! NAC derivative of vna - ontop left case for charged atoms
 ! NAC Zhaofa Li have changed inu to jnu to match the formula in
 ! J. Chem. Phys. 138, 154106 (2013)
 ! ===========================================================================
                 do ikpoint = 1, s%nkpoints
+
                   ! Cut off lenthy notation                
                   nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
   
@@ -1157,10 +1161,12 @@
                   phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
  
                   do iband = 1, pkpoint%nbands
+
                     ! Cut off lengthy notation
                     nullify (piband); piband=>pkpoint%transition(iband)
 
                     do jband = iband + 1, pkpoint%nbands
+
                       ! Cut off lengthy notation
                       nullify (pjband); pjband=>pkpoint%transition(jband)
 
@@ -1172,11 +1178,11 @@
                           mmu = imu + s%iblock_slot(iatom)
                           step2 = step1*conjg(piband%c_mdet(mmu))
                           cmunu = real(step2)
+                          
                           piband%dij(:,iatom,jband) =                        &
-                &           piband%dij(:,iatom,jband) - cmunu*dQ*vdbcnax(:,imu,jnu)*P_eq2
-
+     &                      piband%dij(:,iatom,jband) - cmunu*dQ*vdbcnax(:,imu,jnu)*P_eq2
                           piband%dij(:,jatom,jband) =                        &
-                &           piband%dij(:,jatom,jband) + cmunu*dQ*vdbcnax(:,imu,jnu)*P_eq2                
+     &                      piband%dij(:,jatom,jband) + cmunu*dQ*vdbcnax(:,imu,jnu)*P_eq2
                          end do
                       end do
 
@@ -1184,7 +1190,7 @@
                       pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
                       pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
                     end do
-                  end do  ! end loop over bands
+                  end do 
                 end do  ! end loop over kpoints
                end do ! end loop over isorp
 ! ===========================================================================
@@ -1230,12 +1236,13 @@
                 end do
               end do
 
-! ===========================================================================
+!============================================================================
 ! NAC derivative of vna - ontop right case
 ! NAC Zhaofa Li have changed inu to jnu to match the formula in
 ! J. Chem. Phys. 138, 154106 (2013)
 ! ===========================================================================
               do ikpoint = 1, s%nkpoints
+
                 ! Cut off lenthy notation                                   
                 nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
 
@@ -1246,12 +1253,16 @@
                 phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
    
                 do iband = 1, pkpoint%nbands
+
                   ! Cut off lengthy notation
-                  nullify (piband); piband=>pkpoint%transition(iband)
+                  nullify (piband)
+                  piband=>pkpoint%transition(iband)
 
                   do jband = iband + 1, pkpoint%nbands
+
                     ! Cut off lengthy notation
-                    nullify (pjband); pjband=>pkpoint%transition(jband)
+                    nullify (pjband)
+                    pjband=>pkpoint%transition(jband)
 
                     do jnu = 1, norb_nu
                       phase = phasex
@@ -1261,19 +1272,19 @@
                         mmu = imu + s%iblock_slot(iatom)
                         step2 = step1*conjg(piband%c_mdet(mmu))
                         cmunu = real(step2)
-                        piband%dij(:,iatom,jband) =                          &
-      &                  piband%dij(:,iatom,jband) - cmunu*vdbcnax(:,imu,jnu)*P_eq2
-
-                        piband%dij(:,jatom,jband) =                          &
-      &                  piband%dij(:,jatom,jband) + cmunu*vdbcnax(:,imu,jnu)*P_eq2
-                      end do
+                        
+                       piband%dij(:,iatom,jband) =                           &
+     &                    piband%dij(:,iatom,jband) - cmunu*vdbcnax(:,imu,jnu)*P_eq2
+                       piband%dij(:,jatom,jband) =                           &
+     &                   piband%dij(:,jatom,jband) + cmunu*vdbcnax(:,imu,jnu)*P_eq2
+                       end do
                     end do
 
                     ! NAC force anti-symmetry for NAC
                     pjband%dij(:,iatom,iband) = -piband%dij(:,iatom,jband)
                     pjband%dij(:,jatom,iband) = -piband%dij(:,jatom,jband)
                   end do
-                end do  ! end loops over bands
+                end do 
               end do  ! end loop over kpoints
 ! ===========================================================================
 
@@ -1310,15 +1321,16 @@
                   end do
                 end do
 
-! ===========================================================================
-! NAC derivative of vna - ontop right (charged atom) case
+!============================================================================
+! NAC derivative of vna - ontop right case for charged atoms
 ! NAC Zhaofa Li have changed inu to jnu to match the formula in
 ! J. Chem. Phys. 138, 154106 (2013)
 ! ===========================================================================
                 do ikpoint = 1, s%nkpoints
+
                   ! Cut off lenthy notation                                                  
                   nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
-
+  
                   ! phase for non-gamma kpoints
                   vec = r2 - r1
                   sks = s%kpoints(ikpoint)%k
@@ -1326,10 +1338,12 @@
                   phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
   
                   do iband = 1, pkpoint%nbands
+
                     ! Cut off lengthy notation                 
                     nullify (piband); piband=>pkpoint%transition(iband)
 
                     do jband = iband + 1, pkpoint%nbands
+
                       ! Cut off lengthy notation
                       nullify (pjband); pjband=>pkpoint%transition(jband)
 
@@ -1341,11 +1355,12 @@
                           mmu = imu + s%iblock_slot(iatom)
                           step2 = step1*conjg(piband%c_mdet(mmu))
                           cmunu = real(step2)
+                          
                           piband%dij(:,iatom,jband) =                        &
-        &                   piband%dij(:,iatom,jband) - cmunu*dQ*vdbcnax(:,imu,jnu)*P_eq2
+     &                      piband%dij(:,iatom,jband) - cmunu*dQ*vdbcnax(:,imu,jnu)*P_eq2
 
                           piband%dij(:,jatom,jband) =                        &
-        &                   piband%dij(:,jatom,jband) + cmunu*dQ*vdbcnax(:,imu,jnu)*P_eq2
+     &                      piband%dij(:,jatom,jband) + cmunu*dQ*vdbcnax(:,imu,jnu)*P_eq2
                         end do
                       end do
 
@@ -1353,16 +1368,14 @@
                       pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
                       pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
                     end do
-                  end do  ! end loop over bands
+                  end do 
                 end do  ! end loop over kpoints
 ! ============================================================================
 
               end do ! end loop over isorp
               deallocate (bcnam, dbcnam, vdbcnam, vdbcnax)
             end if ! end if for r1 .eq. r2 case
-            nullify (pRho_neighbors)
           end do ! end loop over neighbors
-          nullify (pfi, pdenmat)
         end do ! end loop over atoms
 
 ! FORCES - ATM CASE
@@ -1496,8 +1509,11 @@
                end do
             end do
 
-! NAC derivative of vna
-! ========================================================================
+!============================================================================
+! NAC derivative of vna - atom case
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
             do ikpoint = 1, s%nkpoints
 
               ! Cut off lenthy notation                                                                    
@@ -1519,23 +1535,20 @@
                     do imu = 1, norb_mu
                       mmu = imu + s%iblock_slot(iatom)
                       step2 = step1*conjg(piband%c_mdet(mmu))
-                      gutr = real(step2)
-                      cmunu = gutr               
-                     piband%dij(:,iatom,jband) =         &
-      &               piband%dij(:,iatom,jband) - cmunu*vdbcnax(:,imu,jnu)*P_eq2
-                     piband%dij(:,jatom,jband) =         &
-      &               piband%dij(:,jatom,jband) + cmunu*vdbcnax(:,imu,jnu)*P_eq2   
+                      cmunu = real(step2)
+                                     
+                      piband%dij(:,iatom,jband) =                            &
+     &                  piband%dij(:,iatom,jband) - cmunu*vdbcnax(:,imu,jnu)*P_eq2
+                      piband%dij(:,jatom,jband) =                            &
+     &                  piband%dij(:,jatom,jband) + cmunu*vdbcnax(:,imu,jnu)*P_eq2
                     end do
                   end do
 
-                  pjband%dij(:,iatom,iband) = -piband%dij(:,iatom,jband)
-                  pjband%dij(:,jatom,iband) = -piband%dij(:,jatom,jband)
-                  nullify (pjband)
-
+                  ! NAC force anti-symmetry for NAC
+                  pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
+                  pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
                 end do
-                nullify (piband)
               end do 
-              nullify (pkpoint)
             end do  ! end loop over kpoints
 ! ===============================================================================
 
@@ -1582,56 +1595,57 @@
       &                - eta(:)*Dsmooth*bcnax(imu,inu)                         &
       &                + (1.0d0 - smooth)*vdemnpl(:,imu,inu)                   &
       &                + eta(:)*Dsmooth*emnpl(imu,inu))
-                       ! This last term is really (- eta) and (-Dsmooth)
+                       ! This last term is really (- eta) and (- Dsmooth)
                 end do
               end do
 
-! NAC derivative of vna_2c
-! ==============================================================================
+!============================================================================
+! NAC derivative of vna - atom case for charged atoms
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
               do ikpoint = 1, s%nkpoints
+
                 ! Cut off lenthy notation                                                                    
                 nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
   
                 do iband = 1, pkpoint%nbands
+
                   ! Cut off lengthy notation                
                   nullify (piband); piband=>pkpoint%transition(iband)
+
                   do jband = iband + 1, pkpoint%nbands
+
                     ! Cut off lengthy notation
                     nullify (pjband); pjband=>pkpoint%transition(jband)
+
                     do jnu = 1, norb_nu
                       nnu = jnu + s%iblock_slot(jatom)
                       step1 = pjband%c_mdet(nnu)
                       do imu = 1, norb_mu
                         mmu = imu + s%iblock_slot(iatom)
                         step2 = step1*conjg(piband%c_mdet(mmu))
-                        gutr = real(step2)
-                        cmunu = gutr
+                        cmunu = real(step2)
+                        
+                        piband%dij(:,iatom,jband) = piband%dij(:,iatom,jband) &
+     &                   - cmunu*P_eq2*dQ*(smooth*vdbcnax(:,imu,jnu)          &
+     &                                     - eta(:)*Dsmooth*bcnax(imu,jnu)    &
+     &                                     + (1.0d0 - smooth)*vdemnpl(:,imu,jnu) &
+     &                                     + eta(:)*Dsmooth*emnpl(imu,jnu))
 
-                        piband%dij(:,iatom,jband) = piband%dij(:,iatom,jband)           &
-      &                       - cmunu*vdbcnax(:,imu,jnu)*P_eq2*dQ             &
-      &                        *(smooth*vdbcnax(:,imu,jnu)                               &
-      &                          - eta(:)*Dsmooth*bcnax(imu,jnu)                         &
-      &                          + (1.0d0 - smooth)*vdemnpl(:,imu,jnu)                   &
-      &                          + eta(:)*Dsmooth*emnpl(imu,jnu))
-
-                        piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband)           &
-      &                       + cmunu*vdbcnax(:,imu,jnu)*P_eq2*dQ             &
-      &                        *(smooth*vdbcnax(:,imu,jnu)                               &
-      &                          + eta(:)*Dsmooth*bcnax(imu,jnu)                         &
-      &                          - (1.0d0 - smooth)*vdemnpl(:,imu,jnu)                   &
-      &                          - eta(:)*Dsmooth*emnpl(imu,jnu))      
-
+                        piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband) &
+     &                   + cmunu*P_eq2*dQ*(smooth*vdbcnax(:,imu,jnu)          &
+     &                                     + eta(:)*Dsmooth*bcnax(imu,jnu)    &
+     &                                     - (1.0d0 - smooth)*vdemnpl(:,imu,jnu) &
+     &                                     - eta(:)*Dsmooth*emnpl(imu,jnu))
                       end do
                     end do
 
+                    ! NAC force anti-symmetry for NAC
                     pjband%dij(:,iatom,iband) = -piband%dij(:,iatom,jband)
                     pjband%dij(:,jatom,iband) = -piband%dij(:,jatom,jband)
-                    nullify (pjband)
-
                   end do
-                  nullify (piband)
                 end do 
-                nullify (pkpoint)
               end do  ! end loop over kpoints
 
               deallocate (emnpl, vdemnpl)
