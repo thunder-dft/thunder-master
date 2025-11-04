@@ -187,8 +187,7 @@
           num_neigh = s%neighbors(iatom)%neighn
 
           ! cut some lengthy notation
-          nullify (poverlap)
-          poverlap=>s%overlap(iatom)
+          nullify (poverlap); poverlap=>s%overlap(iatom)
 
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
@@ -198,8 +197,7 @@
             in2 = s%atom(jatom)%imass
 
             ! cut some more lengthy notation
-            nullify (pS_neighbors)
-            pS_neighbors=>poverlap%neighbors(ineigh)
+            nullify (pS_neighbors); pS_neighbors=>poverlap%neighbors(ineigh)
 
 ! Allocate the block size
             norb_nu = species(in2)%norb_max
@@ -313,10 +311,10 @@
                       cmunu = real(step2)
                       
                       if (iatom .eq. jatom .and. mbeta .eq. 0) then
-                      ! FIXME FIXME FIXME FIXME
-                      ! 1c part of derivative of overlap
+                        ! FIXME FIXME FIXME FIXME
+                        ! 1c part of derivative of overlap
                       else      
-                      ! 2c part of derivative of overlap                   
+                        ! 2c part of derivative of overlap
                         piband%dij(:,iatom,jband) =                          &
      &                    piband%dij(:,iatom,jband) + cmunu*eigen_j*vdsx(:,imu,jnu)
                         piband%dij(:,jatom,jband) =                          &
@@ -458,8 +456,7 @@
           num_neigh = s%neighbors(iatom)%neighn
 
           ! cut some lengthy notation
-          nullify (pkinetic)
-          pkinetic=>s%kinetic(iatom)
+          nullify (pkinetic); pkinetic=>s%kinetic(iatom)
 
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
@@ -469,8 +466,7 @@
             in2 = s%atom(jatom)%imass
 
             ! cut some more lengthy notation
-            nullify (pK_neighbors)
-            pK_neighbors=>pkinetic%neighbors(ineigh)
+            nullify (pK_neighbors); pK_neighbors=>pkinetic%neighbors(ineigh)
 
 ! Allocate block size
             norb_nu = species(in2)%norb_max
@@ -707,8 +703,7 @@
           num_neigh = s%neighbors(iatom)%neighn
 
           ! cut some lengthy notation
-          nullify (pdipole_z)
-          pdipole_z=>s%dipole_z(iatom)
+          nullify (pdipole_z); pdipole_z=>s%dipole_z(iatom)
 
 ! Loop over the neighbors of each iatom.
           do ineigh = 1, num_neigh  ! <==== loop over i's neighbors
@@ -718,8 +713,7 @@
             in2 = s%atom(jatom)%imass
 
             ! cut some more lengthy notation
-            nullify (pdip_neighbors)
-            pdip_neighbors=>pdipole_z%neighbors(ineigh)
+            nullify (pdip_neighbors); pdip_neighbors=>pdipole_z%neighbors(ineigh)
 
 ! Allocate the block size
             norb_nu = species(in2)%norb_max
@@ -977,8 +971,7 @@
             norb_nu = species(in2)%norb_max
 
             ! cut some more lengthy notation
-            nullify (pRho_neighbors)
-            pRho_neighbors=>pdenmat%neighbors(ineigh)
+            nullify (pRho_neighbors); pRho_neighbors=>pdenmat%neighbors(ineigh)
 
 ! SET-UP STUFF
 ! ****************************************************************************
@@ -1273,16 +1266,16 @@
                         step2 = step1*conjg(piband%c_mdet(mmu))
                         cmunu = real(step2)
                         
-                       piband%dij(:,iatom,jband) =                           &
+                        piband%dij(:,iatom,jband) =                          &
      &                    piband%dij(:,iatom,jband) - cmunu*vdbcnax(:,imu,jnu)*P_eq2
-                       piband%dij(:,jatom,jband) =                           &
-     &                   piband%dij(:,jatom,jband) + cmunu*vdbcnax(:,imu,jnu)*P_eq2
+                        piband%dij(:,jatom,jband) =                          &
+     &                    piband%dij(:,jatom,jband) + cmunu*vdbcnax(:,imu,jnu)*P_eq2
                        end do
                     end do
 
                     ! NAC force anti-symmetry for NAC
-                    pjband%dij(:,iatom,iband) = -piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = -piband%dij(:,jatom,jband)
+                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
+                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
                   end do
                 end do 
               end do  ! end loop over kpoints
@@ -1358,7 +1351,6 @@
                           
                           piband%dij(:,iatom,jband) =                        &
      &                      piband%dij(:,iatom,jband) - cmunu*dQ*vdbcnax(:,imu,jnu)*P_eq2
-
                           piband%dij(:,jatom,jband) =                        &
      &                      piband%dij(:,jatom,jband) + cmunu*dQ*vdbcnax(:,imu,jnu)*P_eq2
                         end do
@@ -1632,7 +1624,6 @@
      &                                     - eta(:)*Dsmooth*bcnax(imu,jnu)    &
      &                                     + (1.0d0 - smooth)*vdemnpl(:,imu,jnu) &
      &                                     + eta(:)*Dsmooth*emnpl(imu,jnu))
-
                         piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband) &
      &                   + cmunu*P_eq2*dQ*(smooth*vdbcnax(:,imu,jnu)          &
      &                                     + eta(:)*Dsmooth*bcnax(imu,jnu)    &
@@ -1642,8 +1633,8 @@
                     end do
 
                     ! NAC force anti-symmetry for NAC
-                    pjband%dij(:,iatom,iband) = -piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = -piband%dij(:,jatom,jband)
+                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
+                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
                   end do
                 end do 
               end do  ! end loop over kpoints
