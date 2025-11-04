@@ -1,6 +1,6 @@
 ! copyright info:
 !
-!                             @Copyright 2022
+!                             @Copyright 2025
 !                           Fireball Committee
 ! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
 ! Universidad de Madrid - Jose Ortega
@@ -253,10 +253,10 @@
         integer num_neigh                !< number of neighbors
         integer mbeta                    !< cell containing neighbor of iatom
 
-        integer imu, inu
+        integer imu, inu, jnu            !< counters over orbitals
         integer norb_mu, norb_nu         !< size of the block for the pair
 
-        real z                           !< distance between r1 and r2
+        real z                          !< distance between r1 and r2
 
         real, dimension (3) :: eta        !< vector part of epsilon eps(:,3)
         real, dimension (3, 3) :: eps    !< the epsilon matrix
@@ -450,9 +450,22 @@
         integer mneigh_self, jneigh
         integer kneigh, num_neigh
 
-        integer imu, inu
+        integer imu, inu, jnu            !< counters over orbitals
         integer ncc                      !< counter over pseudo-orbitals
         integer norb_mu, norb_nu         !< size of the block for the pair
+        integer mmu, nnu                 !< counter over coefficients of wavefunctions
+        integer iband, jband             !< counter over transitions
+        integer ikpoint                  !< counter over kpoints
+
+        real dot                        !< dot product between K and r        
+        real cmunu                !< density matrix elements for mdet
+
+        real, dimension (3) :: r1, r2    !< positions of iatom and jatom
+        real, dimension (3) :: sks       !< k point value
+        real, dimension (3) :: vec
+
+        complex phase, phasex            !< phase between K and r
+        complex step1, step2
 
         real, pointer :: cl_value (:)
         real, dimension (:, :, :), allocatable :: PPx
@@ -472,6 +485,11 @@
         type(T_assemble_block), pointer :: pRho_neighbors_matom
 
         type(T_forces), pointer :: pfi
+
+        ! NAC Stuff
+        type(T_kpoint), pointer :: pkpoint
+        type(T_transition), pointer :: piband
+        type(T_transition), pointer :: pjband
         
         interface
           function cl(ispecies)
@@ -554,6 +572,50 @@
       &            - pRho_neighbors_matom%block(imu,inu)*PPx(:,imu,inu)
               end do
             end do
+
+!============================================================================
+! NAC derivative of vnl - atom case
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
+            do ikpoint = 1, s%nkpoints
+
+              ! Cut some lengthy notation
+              nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+    
+              do iband = 1, pkpoint%nbands 
+
+                ! Cut some lengthy notation
+                nullify (piband); piband=>pkpoint%transition(iband)
+
+                do jband = iband + 1, pkpoint%nbands
+
+                  ! Cut some lengthy notation
+                  nullify (pjband); pjband=>pkpoint%transition(jband)
+
+                  do jnu = 1, norb_mu
+                    nnu = jnu + s%iblock_slot(jatom)
+                    step1 = pjband%c_mdet(nnu)
+                    do imu = 1, norb_mu
+                      mmu = imu + s%iblock_slot(iatom)
+                      step2 = step1*conjg(piband%c_mdet(mmu))
+                      cmunu = real(step2)
+                      
+                      piband%dij(:,iatom,jband) =                            &
+     &                  piband%dij(:,iatom,jband) - cmunu*PPx(:,imu,jnu)
+                      piband%dij(:,jatom,jband) =                            &
+     &                  piband%dij(:,jatom,jband) + cmunu*PPx(:,imu,jnu)
+                     end do
+                  end do
+
+                  ! NAC force anti-symmetry for NAC
+                  pjband%dij(:,iatom,iband) = -piband%dij(:,iatom,jband)
+                  pjband%dij(:,jatom,iband) = -piband%dij(:,jatom,jband)
+                end do
+              end do 
+            end do  ! end loop over kpoints
+! =====================================================================================            
+
             deallocate (PPx)
             deallocate (cl_value)
           end do ! end do ineigh
@@ -645,6 +707,57 @@
      &              - pRho_neighbors%block(imu,inu)*PPx(:,imu,inu)
                 end do
               end do
+
+!============================================================================
+! NAC derivative of vnl - on the left case
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
+              do ikpoint = 1, s%nkpoints
+
+                ! Cut some lengthy notation
+                nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+                ! phase for non-gamma kpoints
+                vec = r2 - r1
+                sks = s%kpoints(ikpoint)%k
+                dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+                phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
+    
+                do iband = 1, pkpoint%nbands  
+
+                  ! Cut some lengthy notation
+                  nullify (piband); piband=>pkpoint%transition(iband)
+
+                  do jband = iband + 1, pkpoint%nbands
+
+                    ! Cut some lengthy notation
+                    nullify (pjband); pjband=>pkpoint%transition(jband)
+
+                    do jnu = 1, norb_nu
+                      phase = phasex
+                      nnu = jnu + s%iblock_slot(jatom)
+                      step1 = phase*pjband%c_mdet(nnu)
+                      do imu = 1, norb_mu
+                        mmu = imu + s%iblock_slot(iatom)
+                        step2 = step1*conjg(piband%c_mdet(mmu))
+                        cmunu = real(step2)
+                        
+                        piband%dij(:,iatom,jband) =                          &
+     &                    piband%dij(:,iatom,jband) - cmunu*PPx(:,imu,jnu)
+                        piband%dij(:,jatom,jband) =                          &
+     &                    piband%dij(:,jatom,jband) + cmunu*PPx(:,imu,jnu)
+                       end do
+                    end do
+
+                    ! NAC force anti-symmetry for NAC
+                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
+                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
+                  end do
+                end do 
+              end do  ! end loop over kpoints   
+! ===============================================================================
+
               deallocate (PPx)
               deallocate (cl_value)
             end if
@@ -737,6 +850,57 @@
 !    &             + pRho_neighbors%block(imu,inu)*PPx(:,imu,inu)
                 end do
               end do
+
+!============================================================================
+! NAC derivative of vnl - ontop right case
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
+              do ikpoint = 1, s%nkpoints
+                                
+                ! Cut some lengthy notation
+                nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+                ! phase for non-gamma kpoints
+                vec = r2 - r1
+                sks = s%kpoints(ikpoint)%k
+                dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+                phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
+
+                do iband = 1, pkpoint%nbands      
+
+                  ! Cut some lengthy notation
+                  nullify (piband); piband=>pkpoint%transition(iband)
+
+                  do jband = iband + 1, pkpoint%nbands
+
+                    ! Cut some lengthy notation
+                    nullify (pjband); pjband=>pkpoint%transition(jband)
+
+                    do jnu = 1, norb_nu
+                      phase = phasex
+                      nnu = jnu + s%iblock_slot(jatom)
+                      step1 = phase*pjband%c_mdet(nnu)
+                      do imu = 1, norb_mu
+                        mmu = imu + s%iblock_slot(iatom)
+                        step2 = step1*conjg(piband%c_mdet(mmu))
+                        cmunu = real(step2)
+                        
+                        piband%dij(:,iatom,jband) =                          &
+     &                    piband%dij(:,iatom,jband) - cmunu*PPx(:,imu,jnu)
+                        piband%dij(:,jatom,jband) =                          &
+     &                    piband%dij(:,jatom,jband) + cmunu*PPx(:,imu,jnu)
+                      end do
+                    end do
+
+                    ! NAC force anti-symmetry for NAC
+                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
+                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
+                  end do
+                end do 
+              end do  ! end loop over kpoints
+! ==============================================================================              
+
               deallocate (PPx)
               deallocate (cl_value)
             end if  ! if (iatom .eq. jatom)

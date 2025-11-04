@@ -1,6 +1,6 @@
 ! copyright info:
 !
-!                             @Copyright 2022
+!                             @Copyright 2025
 !                           Fireball Committee
 ! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
 ! Universidad de Madrid - Jose Ortega
@@ -21,7 +21,6 @@
 ! West Virginia University - Ning Ma and Hao Wang
 ! also Gary Adams, Juergen Frisch, John Tomfohr, Kevin Schmidt,
 !      and Spencer Shellman
-
 !
 ! RESTRICTED RIGHTS LEGEND
 ! Use, duplication, or disclosure of this software and its documentation
@@ -66,7 +65,6 @@
 ! module procedures
         contains
 
-
 ! ===========================================================================
 ! Dassemble_ewaldsr.f90
 ! ===========================================================================
@@ -107,7 +105,7 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer ialpha, iatom, jatom   !< the three parties involved
+        integer ialpha, iatom, jatom, katom   !< the three parties involved
         integer ibeta, jbeta           !< cells for three atoms
         integer ineigh, mneigh         !< counter over neighbors
         integer in1, in2, indna        !< species numbers
@@ -117,12 +115,20 @@
         integer matom                  !< matom is the self-interaction atom
         integer mbeta                  !< the cell containing neighbor of iatom
 
-        integer imu, inu                !< counter over MEs
+        integer imu, inu, jnu                !< counter over MEs
         integer norb_mu, norb_nu       !< size of the block for the pair
+
+        integer mmu, nnu               !< counter over coefficients of wavefunctions
+        integer iband, jband           !< counter over transitions
+        integer ikpoint                !< counter over kpoints
+        integer nbands                 !< number of bands        
 
         real distance_13, distance_23  !< distance from 3rd atom
         real z                         !< distance between r1 and r2
         real x                         !< dnabc
+
+        real dot                        !< dot product between K and r
+        real cmunu                !< density matrix elements for mdet
 
 ! The charge transfer bit = need a +-dq on each orbital.
         real, allocatable :: dQ (:)       !< charge on atom, i.e. ionic
@@ -134,6 +140,12 @@
         real, dimension (3) :: sighat   !< unit vector along r2 - r1
         real, dimension (3) :: rhatA1    !< unit vector along rna - r1
         real, dimension (3) :: rhatA2    !< unit vector along rna - r2
+
+        real, dimension (3) :: sks       !< k point value
+        real, dimension (3) :: vec
+
+        complex phase, phasex            !< phase between K and r
+        complex step1, step2
 
         real, dimension (:, :), allocatable :: dterm
         real, dimension (:, :, :), allocatable :: dpterm
@@ -167,6 +179,13 @@
         type(T_forces), pointer :: pfi
         type(T_forces), pointer :: pfj
 
+        ! NAC Stuff
+        real, dimension (:, :, :, :, :, :), allocatable :: gh_2c
+
+        type(T_kpoint), pointer :: pkpoint
+        type(T_transition), pointer :: piband
+        type(T_transition), pointer :: pjband
+
 ! Allocate Arrays
 ! ===========================================================================
 ! We build the ewald forces here, so we allocate and initialize
@@ -181,6 +200,19 @@
         allocate (Q0 (s%natoms))
         allocate (Q (s%natoms))
         allocate (dQ (s%natoms))
+
+!============================================================================
+! NAC ewald short range case for two-center ewald gradient
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
+        do ikpoint = 1, s%nkpoints
+          nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+          nbands = pkpoint%nbands
+          allocate (gh_3c (3, s%natoms, s%natoms, s%nkpoints, nbands, nbands))
+          gh_3c = 0.0d0
+        end do
 
 ! Procedure
 ! ===========================================================================
@@ -215,8 +247,7 @@
           pRho_neighbors_matom=>pdenmat%neighbors(matom)
 
           ! cut some lengthy notation
-          nullify (pfi)
-          pfi=>s%forces(iatom)
+          nullify (pfi); pfi=>s%forces(iatom)
 
 ! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
@@ -259,6 +290,51 @@
       &                    *(pS_neighbors%block(imu,inu)/z**2)*sighat(:)
                 end do
               end do
+
+!============================================================================
+! NAC derivative of ewald short range case for two-center overlap monopole
+! which follows atom case
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
+              do ikpoint = 1, s%nkpoints
+
+                ! Cut some lengthy notation
+                nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+                do iband = 1, pkpoint%nbands
+                
+                  ! Cut some lengthy notation
+                  nullify (piband); piband=>pkpoint%transition(iband)
+
+                  do jband = iband + 1, pkpoint%nbands
+
+                    ! Cut some lengthy notation
+                    nullify (pjband); pjband=>pkpoint%transition(jband)
+
+                    do jnu = 1, norb_mu
+                      nnu = jnu + s%iblock_slot(jatom)
+                      step1 = pjband%c_mdet(nnu)
+                      do imu = 1, norb_mu
+                        mmu = imu + s%iblock_slot(iatom)
+                        step2 = step1*conjg(piband%c_mdet(mmu))
+                        cmunu = real(step2)
+                        
+                        piband%dij(:,iatom,jband) = piband%dij(:,iatom,jband) &
+     &                    + P_eq2*cmunu*dQ(jatom)*(pS_neighbors%block(imu,jnu)/z**2)*sighat(:)
+                        piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband) &
+     &                    - P_eq2*cmunu*dQ(iatom)*(pS_neighbors%block(imu,jnu)/z**2)*sighat(:)
+                      end do
+                    end do
+
+                    ! NAC force anti-symmetry for NAC
+                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
+                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
+                  end do
+                end do 
+              end do  ! end loop over kpoints
+! ===========================================================================
+              
             end if
           end do ! end loop over neighbors
           nullify (pfi)
@@ -280,12 +356,10 @@
           pdipole_z=>s%dipole_z(iatom)
 
           ! density matrix
-          nullify (pdenmat)
-          pdenmat=>s%denmat(iatom)
+          nullify (pdenmat); pdenmat=>s%denmat(iatom)
 
           ! force on iatom
-          nullify (pfi)
-          pfi=>s%forces(iatom)
+          nullify (pfi); pfi=>s%forces(iatom)
 
 ! Loop over the neighbors of each iatom.
           num_neigh = s%neighbors(iatom)%neighn
@@ -357,6 +431,73 @@
      &                                - 2.0d0*dterm(imu,inu))*(sighat(:)/z)
                 end do
               end do
+
+!============================================================================
+! NAC derivative of ewald short range case for 2c overlap dipole
+! which follows ontop case
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
+                do ikpoint = 1, s%nkpoints
+                                  
+                  ! Cut some lengthy notation
+                  nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+  
+                  ! phase for non-gamma kpoints
+                  vec = r2 - r1
+                  sks = s%kpoints(ikpoint)%k
+                  dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+                  phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
+    
+                  do iband = 1, pkpoint%nbands
+                  
+                    ! Cut some lengthy notation
+                    nullify (piband); piband=>pkpoint%transition(iband)
+
+                    do jband = iband + 1, pkpoint%nbands
+
+                      ! Cut some lengthy notation
+                      nullify (pjband); pjband=>pkpoint%transition(jband)
+
+                      do jnu = 1, norb_nu
+                        phase = phasex
+                        nnu = jnu + s%iblock_slot(jatom)
+                        step1 = phase*pjband%c_mdet(nnu)
+                        do imu = 1, norb_mu
+                          mmu = imu + s%iblock_slot(iatom)
+                          step2 = step1*conjg(piband%c_mdet(mmu))
+                          cmunu = real(step2)
+                          
+                          piband%dij(:,iatom,jband) = piband%dij(:,iatom,jband) &
+     &                      + P_eq2*cmunu*dQ(iatom)*(spterm(:,imu,jnu)       &
+                                                     + dpterm(:,imu,jnu))    &
+     &                      + P_eq2*cmunu*dQ(iatom)*(sterm(imu,jnu)          &
+     &                                               + 2.0d0*dterm(imu,jnu))*(sighat(:)/z) &
+     &                      + P_eq2*cmunu*dQ(jatom)*(spterm(:,imu,jnu)       &
+     &                                               - dpterm(:,imu,jnu))    &
+     &                      + P_eq2*cmunu*dQ(jatom)*(sterm(imu,jnu)          &
+     &                                               - 2.0d0*dterm(imu,jnu))*(sighat(:)/z)
+
+                          piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband) &
+     &                      - P_eq2*cmunu*dQ(jatom)*(spterm(:,imu,jnu)       &
+     &                                               - dpterm(:,imu,jnu))    &
+     &                      - P_eq2*cmunu*dQ(jatom)*(sterm(imu,jnu)          &
+     &                                               - 2.0d0*dterm(imu,jnu))*(sighat(:)/z) &
+     &                      - P_eq2*cmunu*dQ(iatom)*(spterm(:,imu,jnu)       &
+     &                                               + dpterm(:,imu,jnu))    &
+     &                      - P_eq2*cmunu*dQ(iatom)*(sterm(imu,jnu)          &
+     &                                               + 2.0d0*dterm(imu,jnu))*(sighat(:)/z)
+                        end do
+                      end do
+
+                      ! NAC force anti-symmetry for NAC
+                      pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
+                      pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
+                    end do
+                  end do 
+                end do  ! end loop over kpoints
+! =================================================================================
+              
               deallocate (sterm, spterm)
               deallocate (dterm, dpterm)
             end if
@@ -501,6 +642,57 @@
       &             - P_eq2*pRho_neighbors%block(imu,inu)*demnplC(:,imu,inu)
                 end do
               end do
+
+!============================================================================
+! NAC derivative of ewald short range case for three-center overlap dipole
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
+              do ikpoint = 1, s%nkpoints
+                                
+                ! Cut some lengthy notation
+                nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+                ! phase for non-gamma kpoints
+                vec = r2 - r1
+                sks = s%kpoints(ikpoint)%k
+                dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+                phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
+   
+                do iband = 1, pkpoint%nbands
+
+                  ! Cut some lengthy notation
+                  nullify (piband); piband=>pkpoint%transition(iband)
+
+                  do jband = iband + 1, pkpoint%nbands
+
+                    ! Cut some lengthy notation
+                    nullify (pjband); pjband=>pkpoint%transition(jband)
+
+                    do jnu = 1, norb_nu
+                      phase = phasex
+                      nnu = jnu + s%iblock_slot(jatom)
+                      step1 = phase*pjband%c_mdet(nnu)
+                      do imu = 1, norb_mu
+                        mmu = imu + s%iblock_slot(iatom)
+                        step2 = step1*conjg(piband%c_mdet(mmu))
+                        cmunu = real(step2)
+                        
+                        gh_3c(:,ialpha,iatom,ikpoint,iband,jband) =          &
+     &                    gh_3c(:,ialpha,iatom,ikpoint,iband,jband)          &
+     &                     - cmunu*demnplA(:,imu,jnu)*P_eq2
+                        gh_3c(:,iatom,iatom,ikpoint,iband,jband,iatom) =     &
+     &                    gh_3c(:,iatom,iatom,ikpoint,iband,jband)           &
+     &                     - cmunu*demnplB(:,imu,jnu)*P_eq2
+                        gh_3c(:,jatom,ikpoint,iband,jband,iatom) =           &
+     &                    gh_3c(:,jatom,iatom,ikpoint,iband,jband)           &
+     &                     - cmunu*demnplC(:,imu,jnu)*P_eq2
+                       end do
+                    end do
+                  end do
+                end do 
+              end do  ! end loop over kpoints
+
               deallocate (sterm, spterm)
               deallocate (dterm, dpterm)
               deallocate (demnplA, demnplB, demnplC)
@@ -513,10 +705,43 @@
           nullify (pfi, pfj)
         end do ! end loop over atoms
 
+!============================================================================
+! NAC ewald short range case for three-center overlap dipole
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
+        do katom = 1, s%natoms
+          do ikpoint = 1, s%nkpoints
+                            
+            ! Cut some lengthy notation
+            nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+            do iband = 1, pkpoint%nbands
+            
+              ! Cut some lengthy notation
+              nullify (piband); piband=>pkpoint%transition(iband)
+
+              do jband = iband + 1, nbands
+
+                ! Cut some lengthy notation
+                nullify (pjband); pjband=>pkpoint%transition(jband)
+
+                do iatom = 1, s%natoms
+                  piband%dij(:,katom,jband) = piband%dij(:,katom,jband)      &
+      &             + gh_3c(:,katom,ikpoint,iband,jband,iatom)
+                end do
+
+                ! NAC force anti-symmetry for NAC
+                pjband%dij(:,katom,iband) = -piband%dij(:,katom,jband
+              end do
+            end do 
+          end do  ! end loop over kpoints
+        end do ! end loop over atoms
+
 ! Deallocate Arrays
 ! ===========================================================================
         deallocate (Q0, Q, dQ)
-
+        deallocate (gh_3c)
 ! Format Statements
 ! ===========================================================================
 ! None
@@ -574,12 +799,19 @@
         integer num_neigh               !< number of neighbors
         integer mbeta                   !< the cell containing neighbor of iatom
 
-        integer imu, inu                !< counter over MEs
+        integer imu, inu, jnu           !< counter over MEs
         integer norb_mu, norb_nu        !< size of the block for the pair
+        integer mmu, nnu                 !< counter over coefficients of wavefunctions
+        integer iband, jband             !< counter over transitions
+        integer ikpoint                  !< counter over kpoints
+        integer nbands                   !< number of bands
 
         integer logfile                 !< which unit to write output
 
         real z                          !< distance between r1 and r2
+
+        real dot                        !< dot product between K and r
+        real cmunu                !< density matrix elements for mdet
 
 ! The charge transfer bit = need a +-dq on each orbital.
         real, allocatable :: dQ (:)       !< charge on atom, i.e. ionic
@@ -589,12 +821,20 @@
         real, dimension (3) :: r1, r2   !< positions of iatom and jatom
         real, dimension (3) :: sighat   !< unit vector along r2 - r1
 
+        real, dimension (3) :: sks       !< k point value
+        real, dimension (3) :: vec
+
+        complex phase, phasex            !< phase between K and r
+        complex step1, step2
+
         real, allocatable, dimension (:, :) :: dterm
         real, allocatable, dimension (:, :, :) :: dpterm
         real, allocatable, dimension (:, :) :: sterm
         real, allocatable, dimension (:, :, :) :: spterm
         real, allocatable, dimension (:) :: sum_ewald
         real, allocatable, dimension (:, :) :: sum_dewald
+
+        real, dimension (:, :, :, :, :, :), allocatable :: gh_3c
 
         interface
           function distance (a, b)
@@ -617,6 +857,11 @@
         type(T_forces), pointer :: pfj
         type(T_forces), pointer :: pfk
 
+        ! NAC Stuff
+        type(T_kpoint), pointer :: pkpoint
+        type(T_transition), pointer :: piband
+        type(T_transition), pointer :: pjband
+
 ! Allocate Arrays
 ! ===========================================================================
         allocate (sum_ewald (s%natoms)); sum_ewald = 0.0d0
@@ -626,6 +871,19 @@
         allocate (Q0 (s%natoms))
         allocate (Q (s%natoms))
         allocate (dQ (s%natoms))
+
+! ============================================================================
+! NAC ewald long range case - allocate three-center gradient of the Hamiltonian.
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ============================================================================
+        do ikpoint = 1, s%nkpoints
+          nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+          nbands = pkpoint%nbands
+          allocate (gh_3c (3, s%natoms, s%nkpoints, nbands, nbands, s%natoms))
+          gh_3c = 0.0d0
+        end do
 
 ! Procedure
 ! ===========================================================================
@@ -747,6 +1005,55 @@
      &              - P_eq2*pRho_neighbors%block(imu,inu)*sterm(imu,inu)*sum_dewald(:,jatom)
                 end do
               end do
+
+!============================================================================
+! NAC derivative of ewald long range case
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
+              do ikpoint = 1, s%nkpoints
+
+                ! Cut some lengthy notation
+                nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+                ! phase for non-gamma kpoints
+                vec = r2 - r1
+                sks = s%kpoints(ikpoint)%k
+                dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+                phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
+   
+                do iband = 1, pkpoint%nbands
+
+                  ! Cut some lengthy notation
+                  nullify (piband); piband=>pkpoint%transition(iband)
+
+                  do jband = iband + 1, pkpoint%nbands
+
+                    ! Cut some lengthy notation
+                    nullify (pjband); pjband=>pkpoint%transition(jband)
+
+                    do jnu = 1, norb_nu
+                      phase = phasex
+                      nnu = jnu + s%iblock_slot(jatom)
+                      step1 = phase*pjband%c_mdet(nnu)
+                      do imu = 1, norb_mu
+                        mmu = imu + s%iblock_slot(iatom)
+                        step2 = step1*conjg(piband%c_mdet(mmu))
+                        cmunu = real(step2)
+                        
+                        gh_3c(:,iatom,ikpoint,iband,jband,iatom) =           &
+     &                    gh_3c(:,iatom,ikpoint,iband,jband,iatom)           &
+     &                     - P_eq2*cmunu*sterm(imu,jnu)*sum_dewald(:,iatom)
+                        gh_3c(:,jatom,ikpoint,iband,jband,iatom) =           &
+     &                    gh_3c(:,jatom,ikpoint,iband,jband,iatom)           &
+     &                     - P_eq2*cmunu*sterm(imu,jnu)*sum_dewald(:,jatom)
+                       end do
+                    end do
+                  end do
+                end do 
+              end do  ! end loop over kpoints
+! ===========================================================================
+
             else
               spterm = pS_neighbors%Dblock/2.0d0
               dterm = pdip_neighbors%block/z
@@ -788,6 +1095,70 @@
       &               *(spterm(:,imu,inu) + dpterm(:,imu,inu))*sum_ewald(jatom)
                 end do
               end do
+
+!============================================================================
+! NAC derivative of ewald long range case
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
+              do ikpoint = 1, s%nkpoints
+
+                ! Cut some lengthy notation
+                nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+                ! phase for non-gamma kpoints
+                vec = r2 - r1
+                sks = s%kpoints(ikpoint)%k
+                dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+                phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
+   
+                do iband = 1, pkpoint%nbands
+
+                  ! Cut some lengthy notation
+                  nullify (piband); piband=>pkpoint%transition(iband)
+
+                  do jband = iband + 1, pkpoint%nbands
+
+                    ! Cut some lengthy notation
+                    nullify (pjband); pjband=>pkpoint%transition(jband)
+
+                    do jnu = 1, norb_nu
+                      phase = phasex
+                      nnu = jnu + s%iblock_slot(jatom)
+                      step1 = phase*pjband%c_mdet(nnu)
+                      do imu = 1, norb_mu
+                        mmu = imu + s%iblock_slot(iatom)
+                        step2 = step1*conjg(piband%c_mdet(mmu))
+                        cmunu = real(step2)
+
+                        gh_3c(:,iatom,ikpoint,iband,jband,iatom) =             &
+     &                   gh_3c(:,iatom,ikpoint,iband,jband,iatom)              &
+     &                    - P_eq2*cmunu*(sterm(imu,jnu)                        &
+     &                                   - dterm(imu,jnu))*sum_dewald(:,iatom) &
+     &                    - P_eq2*cmunu*(spterm(:,imu,jnu)                     &
+     &                                   - dpterm(:,imu,jnu))*sum_ewald(iatom) &
+     &                    - P_eq2*cmunu*(sterm(imu,jnu)                        &
+     &                                   + dterm(imu,jnu))*dQ(iatom)*s%dewald(:,iatom,jatom) &
+     &                    - P_eq2*cmunu*(spterm(:,imu,jnu)                     &
+     &                                   + dpterm(:,imu,jnu))*sum_ewald(jatom)
+
+                        gh_3c(:,jatom,ikpoint,iband,jband,iatom) =             &
+     &                   gh_3c(:,jatom,ikpoint,iband,jband,iatom)              &
+     &                    - P_eq2*cmunu*(sterm(imu,jnu)                        &
+     &                                   - dterm(imu,jnu))*dQ(jatom)*s%dewald(:,jatom,iatom) &
+     &                    + P_eq2*cmunu*(spterm(:,imu,jnu)                     &
+     &                                   - dpterm(:,imu,jnu))*sum_ewald(iatom) &
+     &                    - P_eq2*cmunu*(sterm(imu,jnu)                        &
+     &                                   + dterm(imu,jnu))*sum_dewald(:,jatom) &
+     &                    + P_eq2*cmunu*(spterm(:,imu,jnu)                     &
+     &                                   + dpterm(:,imu,jnu))*sum_ewald(jatom)
+                       end do
+                    end do
+                  end do
+                end do 
+              end do  ! end loop over kpoints
+! ===========================================================================
+
             end if ! end if for r1 .eq. r2 case
 
 ! ****************************************************************************
@@ -797,8 +1168,7 @@
             do katom = 1, s%natoms
 
               ! force on jatom
-              nullify (pfk)
-              pfk=>s%forces(katom)
+              nullify (pfk); pfk=>s%forces(katom)
 
               if (katom .ne. iatom .and. katom .ne. jatom) then
                 ! force on katom
@@ -808,9 +1178,58 @@
      &                - pRho_neighbors%block(imu,inu)*dQ(katom)*P_eq2         &
      &                 *(sterm(imu,inu) - dterm(imu,inu))*s%dewald(:,katom,iatom) &
      &                - pRho_neighbors%block(imu,inu)*dQ(katom)*P_eq2         &
-     &                 *(sterm(imu,inu) + dterm(imu,inu))*s%dewald(:,katom,jatom)
+     &                 *(sterm(imu,inu) + dterm(imu,inu))*s%dewald(:,katom,jatom)    
                   end do
                 end do
+
+!============================================================================
+! NAC derivative of ewald long range case
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
+                do ikpoint = 1, s%nkpoints
+
+                  ! Cut some lengthy notation
+                  nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+                  ! phase for non-gamma kpoints
+                  vec = r2 - r1
+                  sks = s%kpoints(ikpoint)%k
+                  dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+                  phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
+
+                  do iband = 1, pkpoint%nbands
+
+                    ! Cut some lengthy notation
+                    nullify (piband); piband=>pkpoint%transition(iband)
+
+                    do jband = iband + 1, pkpoint%nbands
+
+                      ! Cut some lengthy notation
+                      nullify (pjband); pjband=>pkpoint%transition(jband)
+
+                      do jnu = 1, norb_nu
+                        phase = phasex
+                        nnu = jnu + s%iblock_slot(jatom)
+                        step1 = phase*pjband%c_mdet(nnu)
+                        do imu = 1, norb_mu
+                          mmu = imu + s%iblock_slot(iatom)
+                          step2 = step1*conjg(piband%c_mdet(mmu))
+                          cmunu = real(step2)
+
+                          gh_3c(:,katom,ikpoint,iband,jband,iatom) =         &
+     &                     gh_3c(:,katom,ikpoint,iband,jband,iatom)          &
+     &                      - cmunu*dQ(katom)*P_eq2*(sterm(imu,jnu)          &
+     &                                               - dterm(imu,jnu))*s%dewald(:,katom,iatom) &
+     &                      - cmunu*dQ(katom)*P_eq2*(sterm(imu,jnu)          &
+     &                                               + dterm(imu,jnu))*s%dewald(:,katom,jatom)
+                         end do
+                      end do
+                    end do
+                  end do 
+                end do  ! end loop over kpoints
+! ===========================================================================
+
               end if ! end if for katom not iatom or jatom
             end do ! end loop over katom
             deallocate (sterm, spterm)
@@ -822,10 +1241,45 @@
           nullify (poverlap, pdipole_z)
         end do ! end loop over atoms
 
+!============================================================================
+! NAC ewald long range case
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
+        do katom = 1, s%natoms
+          do ikpoint = 1, s%nkpoints
+                            
+            ! Cut some lengthy notation
+            nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+            do iband = 1, pkpoint%nbands
+            
+              ! Cut some lengthy notation
+              nullify (piband); piband=>pkpoint%transition(iband)
+
+              do jband = iband + 1, nbands
+
+                ! Cut some lengthy notation
+                nullify (pjband); pjband=>pkpoint%transition(jband)
+
+                do iatom = 1, s%natoms
+                  piband%dij(:,katom,jband) =                                &
+      &            piband%dij(:,katom,jband) + gh_3c(:,katom,ikpoint,iband,jband,iatom)
+                end do
+
+                ! NAC force anti-symmetry for NAC
+                pjband%dij(:,katom,iband) = - piband%dij(:,katom,jband)
+              end do
+            end do 
+          end do  ! end loop over kpoints
+        end do ! end loop over atoms
+
 ! Deallocate Arrays
 ! ===========================================================================
         deallocate (Q0, Q, dQ)
         deallocate (sum_ewald, sum_dewald)
+
+        deallocate (gh_3c)
 
 ! Format Statements
 ! ===========================================================================
