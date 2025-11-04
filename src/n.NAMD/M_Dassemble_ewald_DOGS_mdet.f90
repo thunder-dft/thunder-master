@@ -180,8 +180,7 @@
         type(T_forces), pointer :: pfj
 
         ! NAC Stuff
-        real, dimension (:, :, :, :, :, :), allocatable :: gh_2c
-
+        real, dimension (:, :, :, :, :, :), allocatable :: gh_3c
         type(T_kpoint), pointer :: pkpoint
         type(T_transition), pointer :: piband
         type(T_transition), pointer :: pjband
@@ -742,6 +741,7 @@
 ! ===========================================================================
         deallocate (Q0, Q, dQ)
         deallocate (gh_3c)
+
 ! Format Statements
 ! ===========================================================================
 ! None
@@ -834,8 +834,6 @@
         real, allocatable, dimension (:) :: sum_ewald
         real, allocatable, dimension (:, :) :: sum_dewald
 
-        real, dimension (:, :, :, :, :, :), allocatable :: gh_3c
-
         interface
           function distance (a, b)
             real distance
@@ -858,6 +856,7 @@
         type(T_forces), pointer :: pfk
 
         ! NAC Stuff
+        real, dimension (:, :, :, :, :, :), allocatable :: gh_3c
         type(T_kpoint), pointer :: pkpoint
         type(T_transition), pointer :: piband
         type(T_transition), pointer :: pjband
@@ -1242,7 +1241,7 @@
         end do ! end loop over atoms
 
 !============================================================================
-! NAC ewald long range case
+! NAC coupling vector
 ! NAC Zhaofa Li have changed inu to jnu to match the formula in
 ! J. Chem. Phys. 138, 154106 (2013)
 ! ===========================================================================
