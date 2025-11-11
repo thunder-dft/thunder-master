@@ -895,7 +895,6 @@
         type(T_assemble_block), pointer :: pRho_neighbors
 
         ! NAC Stuff
-        real, dimension (:, :, :, :, :, :), allocatable :: gh_3c
         type(T_kpoint), pointer :: pkpoint
         type(T_transition), pointer :: piband
         type(T_transition), pointer :: pjband
@@ -915,13 +914,6 @@
         allocate (Q (s%natoms))
         allocate (dQ (s%natoms))
 
-        do ikpoint = 1, s%nkpoints
-          nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
-
-          nbands = pkpoint%nbands
-          allocate (gh_3c(3,s%natoms,s%natoms,s%nkpoints,nbands,nbands))
-          gh_3c = 0.0d0
-        end do
 
 ! Procedure
 ! ===========================================================================
@@ -1173,17 +1165,17 @@
                         step2 = step1*conjg(piband%c_mdet(mmu))
                         cmunu = real(step2)
 
-                        gh_3c(:,ialpha,iatom,ikpoint,iband,jband) =          &
-     &                    gh_3c(:,ialpha,iatom,ikpoint,iband,jband)          &
+                        piband%dij(:,ialpha,jband) = piband%dij(:,ialpha,jband)    &
      &                      - cmunu*f3xcXa(:,imu,jnu)
-                        gh_3c(:,iatom,iatom,ikpoint,iband,jband) =           &
-     &                    gh_3c(:,iatom,iatom,ikpoint,iband,jband)           &
+                        piband%dij(:,iatom,jband) = piband%dij(:,iatom,jband)      &
      &                      - cmunu*f3xcXb(:,imu,jnu)
-                        gh_3c(:,jatom,iatom,ikpoint,iband,jband,iatom) =     &
-     &                    gh_3c(:,jatom,iatom,ikpoint,iband,jband)           &
+                        piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband)      &
      &                      - cmunu*f3xcXc(:,imu,jnu)
                        end do
                     end do
+                    pjband%dij(:,ialpha,iband) = -piband%dij(:,ialpha,jband)
+                    pjband%dij(:,iatom,iband) = -piband%dij(:,iatom,jband)
+                    pjband%dij(:,jatom,iband) = -piband%dij(:,jatom,jband)           
                   end do
                 end do 
               end do  ! end loop over kpoints
@@ -1306,17 +1298,17 @@
                           step2 = step1*conjg(piband%c_mdet(mmu))
                           cmunu = real(step2)
  
-                          gh_3c(:,ialpha,iatom,ikpoint,iband,jband) =         &
-     &                      gh_3c(:,ialpha,iatom,ikpoint,iband,jband)         &
+                          piband%dij(:,ialpha,jband) = piband%dij(:,ialpha,jband)    &
      &                        - cmunu*dQ_factor(ideriv)*f3xcXa(:,imu,jnu)
-                          gh_3c(:,iatom,iatom,ikpoint,iband,jband) =          &
-     &                      gh_3c(:,iatom,iatom,ikpoint,iband,jband)          &
+                          piband%dij(:,iatom,jband) = piband%dij(:,iatom,jband)      &
      &                        - cmunu*dQ_factor(ideriv)*f3xcXb(:,imu,jnu)
-                          gh_3c(:,jatom,iatom,ikpoint,iband,jband) =          &
-     &                      gh_3c(:,jatom,iatom,ikpoint,iband,jband)          &
+                          piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband)      &
      &                        - cmunu*dQ_factor(ideriv)*f3xcXc(:,imu,jnu)
                          end do
                       end do
+                      pjband%dij(:,ialpha,iband) = -piband%dij(:,ialpha,jband)
+                      pjband%dij(:,iatom,iband) = -piband%dij(:,iatom,jband)
+                      pjband%dij(:,jatom,iband) = -piband%dij(:,jatom,jband)       
                     end do
                   end do 
                 end do  ! end loop over kpoints
@@ -1330,44 +1322,11 @@
           end do ! end loop over neighbors
         end do ! end loop over atoms
 
-! ============================================================================
-! NAC coupling vector
-! NAC Zhaofa Li have changed inu to jnu to match the formula in
-! J. Chem. Phys. 138, 154106 (2013)
-! ===========================================================================
-        do katom = 1, s%natoms
-          do ikpoint = 1, s%nkpoints
-
-            ! Cut some lengthy notation
-            nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
-
-            do iband = 1, pkpoint%nbands
-            
-              ! Cut some lengthy notation
-              nullify (piband); piband=>pkpoint%transition(iband)
-
-              do jband = iband + 1, nbands
-
-                ! Cut some lengthy notation
-                nullify (pjband); pjband=>pkpoint%transition(jband)
-
-                do iatom = 1, s%natoms
-                  piband%dij(:,katom,jband) = piband%dij(:,katom,jband)      &
-      &             + gh_3c(:,katom,ikpoint,iband,jband,iatom)
-                end do
-
-                ! NAC force anti-symmetry for NAC
-                pjband%dij(:,katom,iband) = - piband%dij(:,katom,jband)
-              end do
-            end do 
-          end do  ! end loop over kpoints
-        end do ! end loop over atoms
 
 ! Deallocate Arrays
 ! ===========================================================================
         deallocate (dqorb, Q0, Q, dQ)
 
-        deallocate (gh_3c)
 
 ! Format Statements
 ! ===========================================================================
