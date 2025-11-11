@@ -180,7 +180,6 @@
         type(T_forces), pointer :: pfj
 
         ! NAC Stuff
-        real, dimension (:, :, :, :, :, :), allocatable :: gh_3c
         type(T_kpoint), pointer :: pkpoint
         type(T_transition), pointer :: piband
         type(T_transition), pointer :: pjband
@@ -205,13 +204,7 @@
 ! NAC Zhaofa Li have changed inu to jnu to match the formula in
 ! J. Chem. Phys. 138, 154106 (2013)
 ! ===========================================================================
-        do ikpoint = 1, s%nkpoints
-          nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
-
-          nbands = pkpoint%nbands
-          allocate (gh_3c (3, s%natoms, s%natoms, s%nkpoints, nbands, nbands))
-          gh_3c = 0.0d0
-        end do
+! None
 
 ! Procedure
 ! ===========================================================================
@@ -677,17 +670,17 @@
                         step2 = step1*conjg(piband%c_mdet(mmu))
                         cmunu = real(step2)
                         
-                        gh_3c(:,ialpha,iatom,ikpoint,iband,jband) =          &
-     &                    gh_3c(:,ialpha,iatom,ikpoint,iband,jband)          &
-     &                     - cmunu*demnplA(:,imu,jnu)*P_eq2
-                        gh_3c(:,iatom,iatom,ikpoint,iband,jband,iatom) =     &
-     &                    gh_3c(:,iatom,iatom,ikpoint,iband,jband)           &
-     &                     - cmunu*demnplB(:,imu,jnu)*P_eq2
-                        gh_3c(:,jatom,ikpoint,iband,jband,iatom) =           &
-     &                    gh_3c(:,jatom,iatom,ikpoint,iband,jband)           &
-     &                     - cmunu*demnplC(:,imu,jnu)*P_eq2
+                        piband%dij(:,ialpha,jband) =                         &
+     &                    piband%dij(:,ialpha,jband) - cmunu*demnplA(:,imu,jnu)*P_eq2
+                        piband%dij(:,iatom,jband) =                          &
+     &                    piband%dij(:,iatom,jband) - cmunu*demnplB(:,imu,jnu)*P_eq2
+                        piband%dij(:,jatom,jband) =                          &
+     &                    piband%dij(:,jatom,jband) - cmunu*demnplC(:,imu,jnu)*P_eq2
                        end do
                     end do
+                    pjband%dij(:,ialpha,iband) = - piband%dij(:,ialpha,jband)
+                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
+                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
                   end do
                 end do 
               end do  ! end loop over kpoints
@@ -704,43 +697,10 @@
           nullify (pfi, pfj)
         end do ! end loop over atoms
 
-!============================================================================
-! NAC ewald short range case for three-center overlap dipole
-! NAC Zhaofa Li have changed inu to jnu to match the formula in
-! J. Chem. Phys. 138, 154106 (2013)
-! ===========================================================================
-        do katom = 1, s%natoms
-          do ikpoint = 1, s%nkpoints
-                            
-            ! Cut some lengthy notation
-            nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
-
-            do iband = 1, pkpoint%nbands
-            
-              ! Cut some lengthy notation
-              nullify (piband); piband=>pkpoint%transition(iband)
-
-              do jband = iband + 1, nbands
-
-                ! Cut some lengthy notation
-                nullify (pjband); pjband=>pkpoint%transition(jband)
-
-                do iatom = 1, s%natoms
-                  piband%dij(:,katom,jband) = piband%dij(:,katom,jband)      &
-      &             + gh_3c(:,katom,ikpoint,iband,jband,iatom)
-                end do
-
-                ! NAC force anti-symmetry for NAC
-                pjband%dij(:,katom,iband) = -piband%dij(:,katom,jband
-              end do
-            end do 
-          end do  ! end loop over kpoints
-        end do ! end loop over atoms
 
 ! Deallocate Arrays
 ! ===========================================================================
         deallocate (Q0, Q, dQ)
-        deallocate (gh_3c)
 
 ! Format Statements
 ! ===========================================================================
@@ -856,7 +816,6 @@
         type(T_forces), pointer :: pfk
 
         ! NAC Stuff
-        real, dimension (:, :, :, :, :, :), allocatable :: gh_3c
         type(T_kpoint), pointer :: pkpoint
         type(T_transition), pointer :: piband
         type(T_transition), pointer :: pjband
@@ -872,17 +831,7 @@
         allocate (dQ (s%natoms))
 
 ! ============================================================================
-! NAC ewald long range case - allocate three-center gradient of the Hamiltonian.
-! NAC Zhaofa Li have changed inu to jnu to match the formula in
-! J. Chem. Phys. 138, 154106 (2013)
-! ============================================================================
-        do ikpoint = 1, s%nkpoints
-          nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
-
-          nbands = pkpoint%nbands
-          allocate (gh_3c (3, s%natoms, s%nkpoints, nbands, nbands, s%natoms))
-          gh_3c = 0.0d0
-        end do
+! None
 
 ! Procedure
 ! ===========================================================================
@@ -1040,14 +989,14 @@
                         step2 = step1*conjg(piband%c_mdet(mmu))
                         cmunu = real(step2)
                         
-                        gh_3c(:,iatom,ikpoint,iband,jband,iatom) =           &
-     &                    gh_3c(:,iatom,ikpoint,iband,jband,iatom)           &
-     &                     - P_eq2*cmunu*sterm(imu,jnu)*sum_dewald(:,iatom)
-                        gh_3c(:,jatom,ikpoint,iband,jband,iatom) =           &
-     &                    gh_3c(:,jatom,ikpoint,iband,jband,iatom)           &
-     &                     - P_eq2*cmunu*sterm(imu,jnu)*sum_dewald(:,jatom)
-                       end do
+                        piband%dij(:,iatom,jband) = piband%dij(:,iatom,jband) &
+     &                    - P_eq2*cmunu*sterm(imu,jnu)*sum_dewald(:,iatom)
+                        piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband) &
+     &                    - P_eq2*cmunu*sterm(imu,jnu)*sum_dewald(:,jatom)
+                      end do
                     end do
+                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
+                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
                   end do
                 end do 
               end do  ! end loop over kpoints
@@ -1130,29 +1079,28 @@
                         step2 = step1*conjg(piband%c_mdet(mmu))
                         cmunu = real(step2)
 
-                        gh_3c(:,iatom,ikpoint,iband,jband,iatom) =             &
-     &                   gh_3c(:,iatom,ikpoint,iband,jband,iatom)              &
-     &                    - P_eq2*cmunu*(sterm(imu,jnu)                        &
-     &                                   - dterm(imu,jnu))*sum_dewald(:,iatom) &
-     &                    - P_eq2*cmunu*(spterm(:,imu,jnu)                     &
-     &                                   - dpterm(:,imu,jnu))*sum_ewald(iatom) &
-     &                    - P_eq2*cmunu*(sterm(imu,jnu)                        &
-     &                                   + dterm(imu,jnu))*dQ(iatom)*s%dewald(:,iatom,jatom) &
-     &                    - P_eq2*cmunu*(spterm(:,imu,jnu)                     &
-     &                                   + dpterm(:,imu,jnu))*sum_ewald(jatom)
-
-                        gh_3c(:,jatom,ikpoint,iband,jband,iatom) =             &
-     &                   gh_3c(:,jatom,ikpoint,iband,jband,iatom)              &
-     &                    - P_eq2*cmunu*(sterm(imu,jnu)                        &
-     &                                   - dterm(imu,jnu))*dQ(jatom)*s%dewald(:,jatom,iatom) &
-     &                    + P_eq2*cmunu*(spterm(:,imu,jnu)                     &
-     &                                   - dpterm(:,imu,jnu))*sum_ewald(iatom) &
-     &                    - P_eq2*cmunu*(sterm(imu,jnu)                        &
-     &                                   + dterm(imu,jnu))*sum_dewald(:,jatom) &
-     &                    + P_eq2*cmunu*(spterm(:,imu,jnu)                     &
-     &                                   + dpterm(:,imu,jnu))*sum_ewald(jatom)
+                        piband%dij(:,iatom,jband) = piband%dij(:,iatom,jband) &
+       &                 - P_eq2*cmunu*(sterm(imu,jnu)                        &
+       &                                - dterm(imu,jnu))*sum_dewald(:,iatom) &
+       &                 - P_eq2*cmunu*(spterm(:,imu,jnu)                     &
+       &                                - dpterm(:,imu,jnu))*sum_ewald(iatom) &
+       &                 - P_eq2*cmunu*(sterm(imu,jnu)                        &
+       &                                + dterm(imu,jnu))*dQ(iatom)*s%dewald(:,iatom,jatom) &
+       &                 - P_eq2*cmunu*(spterm(:,imu,jnu)                     &
+       &                                + dpterm(:,imu,jnu))*sum_ewald(jatom)
+                        piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband) &
+       &                 - P_eq2*cmunu*(sterm(imu,jnu)                        &
+       &                                - dterm(imu,jnu))*dQ(jatom)*s%dewald(:,jatom,iatom) &
+       &                 + P_eq2*cmunu*(spterm(:,imu,jnu)                     &
+       &                                - dpterm(:,imu,jnu))*sum_ewald(iatom) &
+       &                 - P_eq2*cmunu*(sterm(imu,jnu)                        &
+       &                                + dterm(imu,jnu))*sum_dewald(:,jatom) &
+       &                 + P_eq2*cmunu*(spterm(:,imu,jnu)                     &
+       &                                + dpterm(:,imu,jnu))*sum_ewald(jatom)
                        end do
                     end do
+                    pjband%dij(:,iatom,iband) = -piband%dij(:,iatom,jband)
+                    pjband%dij(:,jatom,iband) = -piband%dij(:,jatom,jband)
                   end do
                 end do 
               end do  ! end loop over kpoints
@@ -1216,14 +1164,14 @@
                           step2 = step1*conjg(piband%c_mdet(mmu))
                           cmunu = real(step2)
 
-                          gh_3c(:,katom,ikpoint,iband,jband,iatom) =         &
-     &                     gh_3c(:,katom,ikpoint,iband,jband,iatom)          &
+                          piband%dij(:,katom,jband) = piband%dij(:,katom,jband)  &
      &                      - cmunu*dQ(katom)*P_eq2*(sterm(imu,jnu)          &
      &                                               - dterm(imu,jnu))*s%dewald(:,katom,iatom) &
      &                      - cmunu*dQ(katom)*P_eq2*(sterm(imu,jnu)          &
      &                                               + dterm(imu,jnu))*s%dewald(:,katom,jatom)
                          end do
                       end do
+                      pjband%dij(:,katom,iband) = -piband%dij(:,katom,jband)
                     end do
                   end do 
                 end do  ! end loop over kpoints
@@ -1240,45 +1188,10 @@
           nullify (poverlap, pdipole_z)
         end do ! end loop over atoms
 
-!============================================================================
-! NAC coupling vector
-! NAC Zhaofa Li have changed inu to jnu to match the formula in
-! J. Chem. Phys. 138, 154106 (2013)
-! ===========================================================================
-        do katom = 1, s%natoms
-          do ikpoint = 1, s%nkpoints
-                            
-            ! Cut some lengthy notation
-            nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
-
-            do iband = 1, pkpoint%nbands
-            
-              ! Cut some lengthy notation
-              nullify (piband); piband=>pkpoint%transition(iband)
-
-              do jband = iband + 1, nbands
-
-                ! Cut some lengthy notation
-                nullify (pjband); pjband=>pkpoint%transition(jband)
-
-                do iatom = 1, s%natoms
-                  piband%dij(:,katom,jband) =                                &
-      &            piband%dij(:,katom,jband) + gh_3c(:,katom,ikpoint,iband,jband,iatom)
-                end do
-
-                ! NAC force anti-symmetry for NAC
-                pjband%dij(:,katom,iband) = - piband%dij(:,katom,jband)
-              end do
-            end do 
-          end do  ! end loop over kpoints
-        end do ! end loop over atoms
-
 ! Deallocate Arrays
 ! ===========================================================================
         deallocate (Q0, Q, dQ)
         deallocate (sum_ewald, sum_dewald)
-
-        deallocate (gh_3c)
 
 ! Format Statements
 ! ===========================================================================
