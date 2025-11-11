@@ -454,15 +454,11 @@
      &                    piband%dij(:,iatom,jband) - cmunu*vdbcxcx(:,imu,jnu)
                         piband%dij(:,jatom,jband) =                          &
      &                    piband%dij(:,jatom,jband) + cmunu*vdbcxcx(:,imu,jnu)
-                       end do
-                    end do
-
-                    ! NAC force anti-symmetry for NAC
-                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                  end do
-                end do 
-              end do  ! end loop over kpoints
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
 ! =======================================================================              
 
 ! Loop over the different derivative types. We already did ideriv=0 case.
@@ -533,18 +529,14 @@
      &                      - cmunu*dQ_factor(ideriv)*vdbcxcx(:,imu,jnu)
                           piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband) &
      &                      + cmunu*dQ_factor(ideriv)*vdbcxcx(:,imu,jnu)
-                        end do
-                      end do
-
-                      ! NAC force anti-symmetry for NAC
-                      pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                      pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                    end do
-                  end do 
-                end do  ! end loop over kpoints
+                        end do ! end loop over imu
+                      end do ! end loop over jnu
+                    end do ! end loop over jband
+                  end do ! end loop over iband
+                end do ! end loop over kpoints
 ! ============================================================================
 
-              end do
+              end do ! end loop over ideriv
               deallocate (bcxcm, dbcxcm, vdbcxcm, vdbcxcx)
             end if ! end if for r1 .eq. r2 case
           end do ! end loop over neighbors
@@ -673,15 +665,11 @@
       &                 - cmunu*vdbcxcx(:,imu,jnu)
                       piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband)  &
       &                 + cmunu*vdbcxcx(:,imu,jnu)
-                    end do
-                  end do
-
-                  ! NAC force anti-symmetry for NAC
-                  pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                  pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                end do
-              end do 
-            end do  ! end loop over kpoints
+                    end do ! end loop over imu
+                  end do ! end loop over jnu
+                end do ! end loop over jband
+              end do ! end loop over iband
+            end do ! end loop over kpoints
 ! ==============================================================================
 
 ! Loop over the different derivative types. We already did ideriv=0 case.
@@ -745,19 +733,14 @@
      &                    - cmunu*dQ_factor(ideriv)*vdbcxcx(:,imu,jnu)
                         piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband) &
      &                    + cmunu*dQ_factor(ideriv)*vdbcxcx(:,imu,jnu)
-                       end do
-                    end do
-
-                    ! NAC force anti-symmetry for NAC
-                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                    end do
-                  end do 
-                end do  ! end loop over kpoints
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
 ! ===================================================================================
 
-              end do ! end loop over ideriv
-
+            end do ! end loop over ideriv
             deallocate (bcxcm, bcxcx, dbcxcm, vdbcxcm, vdbcxcx)
           end do ! end loop over neighbors
         end do ! end loop over atoms
@@ -1134,7 +1117,7 @@
 ! NAC derivative of three-center part of the exchange-correlation
 ! NAC Zhaofa Li have changed inu to jnu to match the formula in
 ! J. Chem. Phys. 138, 154106 (2013)
-! ===========================================================================
+! ============================================================================
               do ikpoint = 1, s%nkpoints
 
                 ! Cut some lengthy notation
@@ -1171,14 +1154,12 @@
      &                      - cmunu*f3xcXb(:,imu,jnu)
                         piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband)      &
      &                      - cmunu*f3xcXc(:,imu,jnu)
-                       end do
-                    end do
-                    pjband%dij(:,ialpha,iband) = -piband%dij(:,ialpha,jband)
-                    pjband%dij(:,iatom,iband) = -piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = -piband%dij(:,jatom,jband)           
-                  end do
-                end do 
-              end do  ! end loop over kpoints
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
+! ============================================================================
 
 ! ****************************************************************************
 ! DO CHARGE DERIVATIVE CASES HERE.
@@ -1267,7 +1248,7 @@
 ! NAC derivative of three-center part (charge part) of the exchange-correlation
 ! NAC Zhaofa Li have changed inu to jnu to match the formula in
 ! J. Chem. Phys. 138, 154106 (2013)
-! ===========================================================================
+! ============================================================================
                 do ikpoint = 1, s%nkpoints
                                   
                   ! Cut some lengthy notation
@@ -1304,14 +1285,11 @@
      &                        - cmunu*dQ_factor(ideriv)*f3xcXb(:,imu,jnu)
                           piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband)      &
      &                        - cmunu*dQ_factor(ideriv)*f3xcXc(:,imu,jnu)
-                         end do
-                      end do
-                      pjband%dij(:,ialpha,iband) = -piband%dij(:,ialpha,jband)
-                      pjband%dij(:,iatom,iband) = -piband%dij(:,iatom,jband)
-                      pjband%dij(:,jatom,iband) = -piband%dij(:,jatom,jband)       
-                    end do
-                  end do 
-                end do  ! end loop over kpoints
+                        end do ! end loop over imu
+                      end do ! end loop over jnu
+                    end do ! end loop over jband
+                  end do ! end loop over iband
+                end do ! end loop over kpoints
 ! =============================================================================
 
               end do ! end loop over charges

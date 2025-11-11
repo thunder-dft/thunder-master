@@ -316,18 +316,14 @@
      &                    + P_eq2*cmunu*dQ(jatom)*(pS_neighbors%block(imu,jnu)/z**2)*sighat(:)
                         piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband) &
      &                    - P_eq2*cmunu*dQ(iatom)*(pS_neighbors%block(imu,jnu)/z**2)*sighat(:)
-                      end do
-                    end do
-
-                    ! NAC force anti-symmetry for NAC
-                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                  end do
-                end do 
-              end do  ! end loop over kpoints
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
 ! ===========================================================================
               
-            end if
+            end if  ! iatom .eq. jatom
           end do ! end loop over neighbors
           nullify (pfi)
           nullify (poverlap, pS_neighbors)
@@ -479,15 +475,11 @@
      &                                               + dpterm(:,imu,jnu))    &
      &                      - P_eq2*cmunu*dQ(iatom)*(sterm(imu,jnu)          &
      &                                               + 2.0d0*dterm(imu,jnu))*(sighat(:)/z)
-                        end do
-                      end do
-
-                      ! NAC force anti-symmetry for NAC
-                      pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                      pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                    end do
-                  end do 
-                end do  ! end loop over kpoints
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
 ! =================================================================================
               
               deallocate (sterm, spterm)
@@ -676,14 +668,12 @@
      &                    piband%dij(:,iatom,jband) - cmunu*demnplB(:,imu,jnu)*P_eq2
                         piband%dij(:,jatom,jband) =                          &
      &                    piband%dij(:,jatom,jband) - cmunu*demnplC(:,imu,jnu)*P_eq2
-                       end do
-                    end do
-                    pjband%dij(:,ialpha,iband) = - piband%dij(:,ialpha,jband)
-                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                  end do
-                end do 
-              end do  ! end loop over kpoints
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
+! ===========================================================================
 
               deallocate (sterm, spterm)
               deallocate (dterm, dpterm)
@@ -696,7 +686,6 @@
           nullify (pfalpha)
           nullify (pfi, pfj)
         end do ! end loop over atoms
-
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -993,13 +982,11 @@
      &                    - P_eq2*cmunu*sterm(imu,jnu)*sum_dewald(:,iatom)
                         piband%dij(:,jatom,jband) = piband%dij(:,jatom,jband) &
      &                    - P_eq2*cmunu*sterm(imu,jnu)*sum_dewald(:,jatom)
-                      end do
-                    end do
-                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                  end do
-                end do 
-              end do  ! end loop over kpoints
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
 ! ===========================================================================
 
             else
@@ -1097,13 +1084,11 @@
        &                                + dterm(imu,jnu))*sum_dewald(:,jatom) &
        &                 + P_eq2*cmunu*(spterm(:,imu,jnu)                     &
        &                                + dpterm(:,imu,jnu))*sum_ewald(jatom)
-                       end do
-                    end do
-                    pjband%dij(:,iatom,iband) = -piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = -piband%dij(:,jatom,jband)
-                  end do
-                end do 
-              end do  ! end loop over kpoints
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
 ! ===========================================================================
 
             end if ! end if for r1 .eq. r2 case
@@ -1164,17 +1149,16 @@
                           step2 = step1*conjg(piband%c_mdet(mmu))
                           cmunu = real(step2)
 
-                          piband%dij(:,katom,jband) = piband%dij(:,katom,jband)  &
+                          piband%dij(:,katom,jband) = piband%dij(:,katom,jband) &
      &                      - cmunu*dQ(katom)*P_eq2*(sterm(imu,jnu)          &
      &                                               - dterm(imu,jnu))*s%dewald(:,katom,iatom) &
      &                      - cmunu*dQ(katom)*P_eq2*(sterm(imu,jnu)          &
      &                                               + dterm(imu,jnu))*s%dewald(:,katom,jatom)
-                         end do
-                      end do
-                      pjband%dij(:,katom,iband) = -piband%dij(:,katom,jband)
-                    end do
-                  end do 
-                end do  ! end loop over kpoints
+                        end do ! end loop over imu
+                      end do ! end loop over jnu
+                    end do ! end loop over jband
+                  end do ! end loop over iband
+                end do ! end loop over kpoints
 ! ===========================================================================
 
               end if ! end if for katom not iatom or jatom

@@ -605,15 +605,11 @@
      &                  piband%dij(:,iatom,jband) - cmunu*PPx(:,imu,jnu)
                       piband%dij(:,jatom,jband) =                            &
      &                  piband%dij(:,jatom,jband) + cmunu*PPx(:,imu,jnu)
-                     end do
-                  end do
-
-                  ! NAC force anti-symmetry for NAC
-                  pjband%dij(:,iatom,iband) = -piband%dij(:,iatom,jband)
-                  pjband%dij(:,jatom,iband) = -piband%dij(:,jatom,jband)
-                end do
-              end do 
-            end do  ! end loop over kpoints
+                    end do ! end loop over imu
+                  end do ! end loop over jnu
+                end do ! end loop over jband
+              end do ! end loop over iband
+            end do ! end loop over kpoints
 ! =====================================================================================            
 
             deallocate (PPx)
@@ -747,15 +743,11 @@
      &                    piband%dij(:,iatom,jband) - cmunu*PPx(:,imu,jnu)
                         piband%dij(:,jatom,jband) =                          &
      &                    piband%dij(:,jatom,jband) + cmunu*PPx(:,imu,jnu)
-                       end do
-                    end do
-
-                    ! NAC force anti-symmetry for NAC
-                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                  end do
-                end do 
-              end do  ! end loop over kpoints   
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
 ! ===============================================================================
 
               deallocate (PPx)
@@ -852,7 +844,7 @@
               end do
 
 !============================================================================
-! NAC derivative of vnl - ontop right case
+! NAC derivative of vnl - on the right case
 ! NAC Zhaofa Li have changed inu to jnu to match the formula in
 ! J. Chem. Phys. 138, 154106 (2013)
 ! ===========================================================================
@@ -890,15 +882,11 @@
      &                    piband%dij(:,iatom,jband) - cmunu*PPx(:,imu,jnu)
                         piband%dij(:,jatom,jband) =                          &
      &                    piband%dij(:,jatom,jband) + cmunu*PPx(:,imu,jnu)
-                      end do
-                    end do
-
-                    ! NAC force anti-symmetry for NAC
-                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                  end do
-                end do 
-              end do  ! end loop over kpoints
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
 ! ==============================================================================              
 
               deallocate (PPx)

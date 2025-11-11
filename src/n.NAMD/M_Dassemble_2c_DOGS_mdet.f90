@@ -320,15 +320,11 @@
                         piband%dij(:,jatom,jband) =                          &
      &                    piband%dij(:,jatom,jband) - cmunu*eigen_i*vdsx(:,imu,jnu)
                       end if ! iatom .neq. jatom
-                    end do
-                  end do
-
-                  ! NAC force anti-symmetry for NAC
-                  pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                  pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                end do
-              end do 
-            end do  ! end loop over kpoints
+                    end do ! end loop over imu
+                  end do ! end loop over jnu
+                end do ! end loop over jband
+              end do ! end loop over iband
+            end do ! end loop over kpoints
 ! ===========================================================================            
 
             deallocate (sm, sx, dsm, vdsm, vdsx)
@@ -583,18 +579,13 @@
                         
                         piband%dij(:,iatom,jband) =                          &
      &                    piband%dij(:,iatom,jband) - cmunu*vdtx(:,imu,jnu)
-  
                         piband%dij(:,jatom,jband) =                          &
      &                    piband%dij(:,jatom,jband) + cmunu*vdtx(:,imu,jnu)
-                      end do
-                    end do
-  
-                    ! NAC force anti-symmetry for NAC
-                    pjband%dij(:,iatom,iband) = -piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = -piband%dij(:,jatom,jband)
-                  end do
-                end do 
-              end do  ! end loop over kpoints
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
             end if ! iatom .neq. jatom
 ! ==============================================================================            
 
@@ -1091,15 +1082,10 @@
                         
                         piband%dij(:,iatom,jband) =                                &
       &                   piband%dij(:,iatom,jband) - cmunu*vdbcnax(:,imu,jnu)*P_eq2
-
                         piband%dij(:,jatom,jband) =                                &
       &                   piband%dij(:,jatom,jband) + cmunu*vdbcnax(:,imu,jnu)*P_eq2     
                       end do ! end loop over imu
                     end do ! end loop over jnu
-
-                    ! NAC force anti-symmetry for NAC
-                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
                   end do ! end loop over jband
                 end do ! end loop over iband
               end do ! end loop over kpoints
@@ -1176,17 +1162,14 @@
      &                      piband%dij(:,iatom,jband) - cmunu*dQ*vdbcnax(:,imu,jnu)*P_eq2
                           piband%dij(:,jatom,jband) =                        &
      &                      piband%dij(:,jatom,jband) + cmunu*dQ*vdbcnax(:,imu,jnu)*P_eq2
-                         end do
-                      end do
-
-                      ! NAC force anti-symmetry for NAC
-                      pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                      pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                    end do
-                  end do 
-                end do  ! end loop over kpoints
-               end do ! end loop over isorp
+                        end do ! end loop over imu
+                      end do ! end loop over jnu
+                    end do ! end loop over jband
+                  end do ! end loop over iband
+                end do ! end loop over kpoints
 ! ===========================================================================
+
+              end do ! end loop over isorp
 
 ! FORCES - ONTOP RIGHT CASE
 ! ****************************************************************************
@@ -1270,15 +1253,11 @@
      &                    piband%dij(:,iatom,jband) - cmunu*vdbcnax(:,imu,jnu)*P_eq2
                         piband%dij(:,jatom,jband) =                          &
      &                    piband%dij(:,jatom,jband) + cmunu*vdbcnax(:,imu,jnu)*P_eq2
-                       end do
-                    end do
-
-                    ! NAC force anti-symmetry for NAC
-                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                  end do
-                end do 
-              end do  ! end loop over kpoints
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
 ! ===========================================================================
 
 ! Charged atom case
@@ -1353,15 +1332,11 @@
      &                      piband%dij(:,iatom,jband) - cmunu*dQ*vdbcnax(:,imu,jnu)*P_eq2
                           piband%dij(:,jatom,jband) =                        &
      &                      piband%dij(:,jatom,jband) + cmunu*dQ*vdbcnax(:,imu,jnu)*P_eq2
-                        end do
-                      end do
-
-                      ! NAC force anti-symmetry for NAC
-                      pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                      pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                    end do
-                  end do 
-                end do  ! end loop over kpoints
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
 ! ============================================================================
 
               end do ! end loop over isorp
@@ -1533,15 +1508,11 @@
      &                  piband%dij(:,iatom,jband) - cmunu*vdbcnax(:,imu,jnu)*P_eq2
                       piband%dij(:,jatom,jband) =                            &
      &                  piband%dij(:,jatom,jband) + cmunu*vdbcnax(:,imu,jnu)*P_eq2
-                    end do
-                  end do
-
-                  ! NAC force anti-symmetry for NAC
-                  pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                  pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                end do
-              end do 
-            end do  ! end loop over kpoints
+                    end do ! end loop over imu
+                  end do ! end loop over jnu
+                end do ! end loop over jband
+              end do ! end loop over iband
+            end do ! end loop over kpoints
 ! ===============================================================================
 
 ! Charged atom case
@@ -1629,15 +1600,12 @@
      &                                     + eta(:)*Dsmooth*bcnax(imu,jnu)    &
      &                                     - (1.0d0 - smooth)*vdemnpl(:,imu,jnu) &
      &                                     - eta(:)*Dsmooth*emnpl(imu,jnu))
-                      end do
-                    end do
-
-                    ! NAC force anti-symmetry for NAC
-                    pjband%dij(:,iatom,iband) = - piband%dij(:,iatom,jband)
-                    pjband%dij(:,jatom,iband) = - piband%dij(:,jatom,jband)
-                  end do
-                end do 
-              end do  ! end loop over kpoints
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
+! ===========================================================================
 
               deallocate (emnpl, vdemnpl)
             end do ! end loop over isporp
