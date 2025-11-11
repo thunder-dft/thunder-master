@@ -1,6 +1,6 @@
 ! copyright info:
 !
-!                             @Copyright 2022
+!                             @Copyright 2025
 !                           Fireball Committee
 ! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
 ! Universidad de Madrid - Jose Ortega
@@ -109,19 +109,33 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer ialpha, iatom, jatom         !< counter over atoms and neighbors
+        integer ialpha, iatom, jatom, katom         !< counter over atoms and neighbors
         integer in1, in2, indna              !< species numbers
         integer num_neigh                    !< number of neighbors
         integer ibeta, jbeta
         integer ineigh, mneigh, m31, m32
         integer ncc
 
-        integer imu, inu
+        integer imu, inu, jnu
         integer norb_mu, norb_nu         !< size of the block for the pair
+
+        integer mmu, nnu                 !< counter over coefficients of wavefunctions
+        integer iband, jband             !< counter over transitions
+        integer ikpoint                  !< counter over kpoints
+        integer nbands                   !< number of bands
+
+        real dot                        !< dot product between K and r
+        real gutr, cmunu                !< density matrix elements for mdet
 
         real, pointer :: cl_value (:)
 
         real, dimension (3) :: r1, r2, rna, r31, r32
+
+        real, dimension (3) :: sks       !< k point value
+        real, dimension (3) :: vec
+
+        complex phase, phasex            !< phase between K and r
+        complex step1, step2
 
         interface
           function cl(itype)
@@ -150,9 +164,15 @@
         type(T_forces), pointer :: pfi
         type(T_forces), pointer :: pfj
 
+        ! NAC Stuff
+        type(T_kpoint), pointer :: pkpoint
+        type(T_transition), pointer :: piband
+        type(T_transition), pointer :: pjband
+
 ! Allocate Arrays
 ! ===========================================================================
 ! None
+
 
 ! Procedure
 ! ===========================================================================
@@ -247,6 +267,55 @@
       &             - pRho_neighbors%block(imu,inu)*f3nlXc(:,imu,inu)
                 end do
               end do
+
+!============================================================================
+! NAC derivative of vnl - 3c case
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
+              do ikpoint = 1, s%nkpoints
+
+                ! Cut some lengthy notation
+                nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+                ! phase for non-gamma kpoints
+                vec = r2 - r1
+                sks = s%kpoints(ikpoint)%k
+                dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+                phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
+   
+                do iband = 1, pkpoint%nbands
+
+                  ! Cut some lengthy notation
+                  nullify (piband); piband=>pkpoint%transition(iband)
+
+                  do jband = iband + 1, pkpoint%nbands
+
+                    ! Cut some lengthy notation
+                    nullify (pjband); pjband=>pkpoint%transition(jband)
+
+                    do jnu = 1, norb_nu
+                      phase = phasex
+                      nnu = jnu + s%iblock_slot(jatom)
+                      step1 = phase*pjband%c_mdet(nnu)
+                      do imu = 1, norb_mu
+                        mmu = imu + s%iblock_slot(iatom)
+                        step2 = step1*conjg(piband%c_mdet(mmu))
+                        gutr = real(step2)
+                        cmunu = gutr
+
+                        piband%dij(:,ialpha,jband) =                         &
+     &                    piband%dij(:,ialpha,jband) - cmunu*f3nlXa(:,imu,jnu)
+                        piband%dij(:,iatom,jband) =                          &
+     &                    piband%dij(:,iatom,jband) - cmunu*f3nlXb(:,imu,jnu)
+                        piband%dij(:,jatom,jband) =                          &
+     &                    piband%dij(:,jatom,jband) - cmunu*f3nlXc(:,imu,jnu)
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
+! ====================================================================
 
 ! Deallocate Arrays
               deallocate (f3nlXa, f3nlXb, f3nlXc)
