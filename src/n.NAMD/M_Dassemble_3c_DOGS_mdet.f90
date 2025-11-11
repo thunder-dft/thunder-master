@@ -1,6 +1,6 @@
 ! copyright info:
 !
-!                             @Copyright 2022
+!                             @Copyright 2025
 !                           Fireball Committee
 ! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
 ! Universidad de Madrid - Jose Ortega
@@ -149,14 +149,18 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer ialpha, iatom, jatom     !< the three parties involved
+        integer ialpha, iatom, jatom, katom     !< the three parties involved
         integer ibeta, jbeta             !< cells for three atoms
         integer ineigh, mneigh           !< counter over neighbors
         integer in1, in2, indna          !< species numbers
         integer interaction, isorp       !< which interaction and subtype
-        integer imu, inu, iindex         !< indexing counters
+        integer imu, inu, jnu, iindex    !< indexing counters
         integer issh
         integer norb_mu, norb_nu         !< size of the block for the pair
+        integer mmu, nnu                 !< counter over coefficients of wavefunctions
+        integer iband, jband             !< counter over transitions
+        integer ikpoint                  !< counter over kpoints
+        integer nbands                   !< number of bands
 
         real distance_13, distance_23    !< distance from 3rd atom
 
@@ -165,6 +169,9 @@
         real rend1, rend2                !< smoothing end points
         real stinky, stinky13, stinky23  !< smoothing values
         real xsmooth                     !< for smoothing function
+
+        real dot                        !< dot product between K and r
+        real gutr, cmunu                !< density matrix elements for mdet
 
         ! smoothing derivative variables
         real dstinky13, dstinky23
@@ -188,6 +195,12 @@
         real, dimension (3) :: rhatA2    !< unit vector along rna - r2
 
         real, dimension (3) :: amt, bmt
+
+        real, dimension (3) :: sks       !< k point value
+        real, dimension (3) :: vec
+
+        complex phase, phasex            !< phase between K and r
+        complex step1, step2
 
         real, dimension (:, :), allocatable :: dterm
         real, dimension (:, :, :), allocatable :: dpterm
@@ -236,6 +249,11 @@
         type(T_assemble_neighbors), pointer :: pdenmat
         type(T_assemble_block), pointer :: pRho_neighbors
 
+        ! NAC Stuff
+        type(T_kpoint), pointer :: pkpoint
+        type(T_transition), pointer :: piband
+        type(T_transition), pointer :: pjband
+
         interface
           function distance (a, b)
             real distance
@@ -260,7 +278,7 @@
 
 ! Allocate Arrays
 ! ===========================================================================
-! None
+!None
 
 ! Procedure
 ! ===========================================================================
@@ -283,7 +301,6 @@
           ! cut some lengthy notation
           nullify (pfalpha)
           pfalpha=>s%forces(ialpha)
-
           ! loop over the common neighbor pairs of ialp
           do ineigh = 1, s%neighbors(ialpha)%ncommon
             mneigh = s%neighbors(ialpha)%neigh_common(ineigh)
@@ -442,6 +459,55 @@
       &             - pRho_neighbors%block(imu,inu)*f3naXc(:,imu,inu)*P_eq2
                 end do
               end do
+              
+!============================================================================
+! NAC derivative of vna - 3c case
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
+              do ikpoint = 1, s%nkpoints
+
+                ! Cut some lengthy notation
+                nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+                ! phase for non-gamma kpoints
+                vec = r2 - r1
+                sks = s%kpoints(ikpoint)%k
+                dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+                phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
+   
+                do iband = 1, pkpoint%nbands
+
+                  ! Cut some lengthy notation
+                  nullify (piband); piband=>pkpoint%transition(iband)
+
+                  do jband = iband + 1, pkpoint%nbands
+
+                    ! Cut some lengthy notation
+                    nullify (pjband); pjband=>pkpoint%transition(jband)
+
+                    do jnu = 1, norb_nu
+                      phase = phasex
+                      nnu = jnu + s%iblock_slot(jatom)
+                      step1 = phase*pjband%c_mdet(nnu)
+                      do imu = 1, norb_mu
+                        mmu = imu + s%iblock_slot(iatom)
+                        step2 = step1*conjg(piband%c_mdet(mmu))
+                        gutr = real(step2)
+                        cmunu = gutr
+
+                        piband%dij(:,ialpha,jband) =                         &
+     &                    piband%dij(:,ialpha,jband) - cmunu*f3naXa(:,imu,jnu)*P_eq2
+                        piband%dij(:,iatom,jband) =                          &
+     &                    piband%dij(:,iatom,jband) - cmunu*f3naXb(:,imu,jnu)*P_eq2
+                        piband%dij(:,jatom,jband) =                          &
+     &                    piband%dij(:,jatom,jband) - cmunu*f3naXc(:,imu,jnu)*P_eq2
+                      end do ! end loop over imu
+                    end do ! end loop over jnu
+                  end do ! end loop over jband
+                end do ! end loop over iband
+              end do ! end loop over kpoints
+! ======================================================================================
 
               deallocate (bcnam, dpbcnam, dxbcnam, dybcnam)
               deallocate (f3naMa, f3naMb)
@@ -471,8 +537,7 @@
           rna = s%atom(ialpha)%ratom
 
           ! cut some lengthy notation
-          nullify (pfalpha)
-          pfalpha=>s%forces(ialpha)
+          nullify (pfalpha); pfalpha=>s%forces(ialpha)
 
           ! loop over the common neighbor pairs of ialp
           do ineigh = 1, s%neighbors(ialpha)%ncommon
@@ -760,10 +825,72 @@
       &                  - dstnB(:)*emnpl(imu,inu) + (1.0d0 - stinky)*demnplB(:,imu,inu))
                     pfj%f3nac = pfj%f3nac                                     &
       &               - P_eq2*dQ*pRho_neighbors%block(imu,inu)                &
-      &                *(stinky*f3naXc(:,imu,inu) + dstnB(:)*bcnax(imu,inu)   &
+      &                *(stinky*f3naXc(:,imu,inu) + dstnC(:)*bcnax(imu,inu)   &
       &                  - dstnC(:)*emnpl(imu,inu) + (1.0d0 - stinky)*demnplC(:,imu,inu))
                   end do
                 end do
+
+!============================================================================
+! NAC derivative of vna - 3c case for charged atoms
+! NAC Zhaofa Li have changed inu to jnu to match the formula in
+! J. Chem. Phys. 138, 154106 (2013)
+! ===========================================================================
+                do ikpoint = 1, s%nkpoints
+
+                  ! Cut some lengthy notation
+                  nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
+                  ! phase for non-gamma kpoints
+                  vec = r2 - r1
+                  sks = s%kpoints(ikpoint)%k
+                  dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
+                  phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
+    
+                  do iband = 1, pkpoint%nbands
+
+                    ! Cut some lengthy notation
+                    nullify (piband); piband=>pkpoint%transition(iband)
+
+                    do jband = iband + 1, pkpoint%nbands
+
+                      ! Cut some lengthy notation
+                      nullify (pjband); pjband=>pkpoint%transition(jband)
+
+                      do jnu = 1, norb_nu
+                        phase = phasex
+                        nnu = jnu + s%iblock_slot(jatom)
+                        step1 = phase*pjband%c_mdet(nnu)
+                        do imu = 1, norb_mu
+                          mmu = imu + s%iblock_slot(iatom)
+                          step2 = step1*conjg(piband%c_mdet(mmu))
+                          gutr = real(step2)
+                          cmunu = gutr
+
+                          piband%dij(:,ialpha,jband) =                       &
+     &                      piband%dij(:,ialpha,jband)                       &
+     &                       - P_eq2*dQ*cmunu*(stinky*f3naXa(:,imu,jnu)      &
+     &                                         + dstnA(:)*bcnax(imu,jnu)     &
+     &                                         - dstnA(:)*emnpl(imu,jnu)     &
+     &                                         + (1.0d0 - stinky)*demnplA(:,imu,jnu))
+                          piband%dij(:,iatom,jband) =                        &
+     &                      piband%dij(:,iatom,jband)                        &
+     &                       - P_eq2*dQ*cmunu*(stinky*f3naXb(:,imu,jnu)      &
+     &                                         + dstnB(:)*bcnax(imu,jnu)     &
+     &                                         - dstnB(:)*emnpl(imu,jnu)     &
+     &                                         + (1.0d0 - stinky)*demnplB(:,imu,jnu))
+                          piband%dij(:,jatom,jband) =                        &
+     &                      piband%dij(:,jatom,jband)                        &
+     &                       - P_eq2*dQ*cmunu*(stinky*f3naXc(:,imu,jnu)      &
+     &                                         + dstnC(:)*bcnax(imu,jnu)     &
+     &                                         - dstnC(:)*emnpl(imu,jnu)     &
+     &                                         + (1.0d0 - stinky)*demnplC(:,imu,jnu))
+                        end do ! end loop over imu
+                      end do ! end loop over jnu
+                    end do ! end loop over jband
+                  end do ! end loop over iband
+                end do ! end loop over kpoints
+! ===========================================================================================
+
                 deallocate (bcnam, bcnax, dpbcnam, dxbcnam, dybcnam)
                 deallocate (f3naMa, f3naMb)
                 deallocate (f3naXa, f3naXb, f3naXc)
@@ -778,6 +905,7 @@
           end do ! end loop over neighbors
           nullify (pfalpha)
         end do ! end loop over atoms
+
 
 ! Deallocate Arrays
 ! ===========================================================================
