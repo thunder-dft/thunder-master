@@ -159,6 +159,7 @@
           read (inpfile,*) pkpoint%nbands
           allocate (pkpoint%transition(pkpoint%nbands))
           do iband = 1, pkpoint%nbands
+          
             ! cut some more lengthy notation
             nullify (piband); piband => pkpoint%transition(iband)
 
@@ -169,14 +170,22 @@
 
             ! initialize imap
             piband%imap = iband_in
-            pkpoint%foccupy(iband) = foccupy
+            ! initialize mdet occupations
+            pkpoint%foccupy(piband%imap) = foccupy
 
-            ! NAC Zhaofa Li initialize the dij and c_mdet
+            ! NAC initialize the dij, dij_old, and c_mdet
             allocate (piband%c_mdet(s%norbitals)); piband%c_mdet = 0.0d0
             allocate (piband%dij(3, s%natoms, pkpoint%nbands))
             piband%dij = 0.0d0
+            allocate (piband%dij_old(3, s%natoms, pkpoint%nbands))
+            piband%dij = 0.0d0
+
+            ! MDET initialize the c_na
+            allocate (piband%c_na(pkpoint%nbands))
+            piband%c_na = cmplx(0.0d0, 0.0d0)
+            piband%c_na(iband) = cmplx(1.0d0, 0.0d0)  
   
-            if (foccupy .ge. 0.5d0) pkpoint%ioccupy(iband) = 1
+            if (foccupy .ge. 0.5d0) pkpoint%ioccupy(piband%imap) = 1
             write (logfile,*) ' testing imaps reach '
             write (logfile,*) piband%imap
           end do   ! end loop over bands
@@ -339,8 +348,7 @@
           write (22,"('Kpoint=',i10)") ikpoint
 
           ! cut some lengthy notation
-          nullify (pkpoint)
-          pkpoint => s%kpoints(ikpoint)
+          nullify (pkpoint); pkpoint => s%kpoints(ikpoint)
 
           do iband = 1, pkpoint%nbands
             ! cut some lengthy notation
@@ -408,7 +416,7 @@
 
 ! Parameters and Data Declaration
 ! ===========================================================================
-! None
+        real, parameter :: tolnac = 0.0001d0
 
 ! Variable Declaration and Description
 ! ===========================================================================
@@ -417,7 +425,9 @@
         integer iband, jband                     !< counter of transitions
 
         real eigen_i, eigen_j             !< eigen values in band i and j
-        real diff, tolnac
+        real diff
+
+        real, dimension (:, :), allocatable :: temp
 
         type(T_kpoint), pointer :: pkpoint
         type(T_transition), pointer :: piband
@@ -425,7 +435,6 @@
 
 ! Procedure
 ! ===========================================================================
-        tolnac = 0.0001d0
         do ikpoint = 1, s%nkpoints
 
           ! Cut some lengthy notation

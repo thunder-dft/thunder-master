@@ -34,11 +34,7 @@ include include/OPTIONS
 include MACHINES/GENERIC
 include MACHINES/HKQAI
 include MACHINES/ICC
-<<<<<<< Updated upstream
 include MACHINES/WINDOWS
-=======
-include MACHINE/WINDOWS
->>>>>>> Stashed changes
 
 ##############################################################################
 ###

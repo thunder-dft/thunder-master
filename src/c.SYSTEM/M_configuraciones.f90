@@ -77,6 +77,7 @@
           real, dimension (3) :: ximage    ! central cell position
 
           real, dimension (3) :: vatom     ! atom velocities
+          real, dimension (3) :: vatom_old ! atom velocities
           real, dimension (:, :), allocatable :: xdot ! atom accelerations
 
           type(T_species), pointer :: species  ! species specific information
