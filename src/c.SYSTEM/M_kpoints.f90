@@ -72,9 +72,12 @@
           ! NAC Coeffiecients used in nonadiabatic couplings
           complex, allocatable :: c_mdet (:)
 
+          ! MDET Coefficients used in MDET
+          complex, allocatable :: c_na (:)
+
           ! this is the non-adiabatic coupling belonging to the transition state
           complex, allocatable :: dij (:, :, :)
-!         complex, allocatable :: dij_old (:, :)
+          complex, allocatable :: dij_old (:, :, :)
 !         complex, allocatable :: ddij (:, :)
         end type
 
@@ -85,7 +88,6 @@
 
           real, pointer :: eigen (:)          ! eigenvalues for k
           real, pointer :: eigen_old (:)      ! previous eigenvlues for k
-          real, pointer :: deigen (:)         ! interpolted eigen values
           real, pointer :: foccupy (:)        ! occupation real value for k
 
           real, dimension (3) :: k            ! kpoint vector
@@ -103,7 +105,7 @@
 ! coefficients in order to calculate non-adiabatic couplings or for calculating
 ! absorption. We consider only a range of states near the valence and conduction
 ! band edges. The number of states that we consider is defined by ntransitions.
-          integer nbands                ! number of bands
+          integer nbands                      ! number of bands
           integer ntransitions                ! number of transitions
 
           type (T_transition), pointer :: transition (:)
