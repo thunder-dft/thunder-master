@@ -644,7 +644,7 @@
         integer ikpoint            !< counter of band and kpoint
         integer iband, jband       !< counter of transitions
         integer kband              !< counter of transitions
-        integer it                 !< counter of electron step
+        integer iteration          !< counter of electron step
         integer ix                 !< counter of spatial dimension
 
         real ddt                   !< length of electron step    
@@ -681,22 +681,26 @@
 
 ! step 1      
 ! Interpolation       
-              c_tmp = piband%c_na; step = (it - 1.0d0) / nddt
+              c_tmp = piband%c_na
+              step = float((iteration - 1.0d0)/nddt)
               call couplings  (s, ikpoint, pkpoint%nbands, step, c_tmp, dc_tmp)
               dc_na = dc_tmp/6.0d0
 ! step 2      
 ! Interpolation 
-              c_tmp = piband%c_na + dc_tmp*ddt*0.5d0; step = (it - 0.5d0) / nddt  
+              c_tmp = piband%c_na + dc_tmp*ddt*0.5d0
+              step = float((iteration - 0.5d0)/nddt)
               call couplings (s, ikpoint, pkpoint%nbands, step, c_tmp, dc_tmp)
               dc_na = dc_na + dc_tmp/3.0d0     
 ! step 3      
 ! Interpolation 
-              c_tmp = piband%c_na + dc_tmp*ddt*0.5d0; step = (it - 0.5d0) / nddt 
+              c_tmp = piband%c_na + dc_tmp*ddt*0.5d0
+              step = float((iteration - 0.5d0)/nddt) 
               call couplings (s, ikpoint, pkpoint%nbands, step, c_tmp, dc_tmp)
               dc_na = dc_na + dc_tmp/3.0d0       
 ! step 4      
 ! Interpolation 
-              c_tmp = piband%c_na + dc_tmp*ddt; step = it / nddt  
+              c_tmp = piband%c_na + dc_tmp*ddt
+              step = float(iteration/nddt)
               call couplings (s, ikpoint, pkpoint%nbands, step, c_tmp, dc_tmp)
               dc_na = dc_na + dc_tmp/6.0d0 
 
@@ -960,7 +964,7 @@
         integer ikpoint                         !< counter of band and kpoint
         integer iband, jband, nbands            !< counter of transitions
         integer ix                              !< counter of spatial dimension
-        integer switch                          !< switch band
+        integer iswitch                         !< switch band
 
         real djiov                              !< inner product of NAC and velocity
         real xrand                              !< random number
@@ -982,7 +986,7 @@
 
 ! Calculate by fewest switches algorithm gives hopping probabilities from
 ! the current state we follow the possible transitions associated with states
-        if (s%nkpoints .gt. 1) stop "Cannot execute FSSH for non-gamma"
+        if (s%nkpoints .gt. 1) stop ' Cannot execute FSSH for non-gamma '
 
         ! Cut some lengthy notation
         nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
@@ -1013,8 +1017,7 @@
    
               bji = -2.0d0*real(conjg(aji)*djiov)
 ! JOM-warning: may be later we can "improve" this by using eq(29) in JCP 101 4657 (1994)
-   
-!JOM-info : probability of the iband ---> jband transition
+! JOM-info : probability of the iband ---> jband transition
               probability(jband) = bji*dt/aii
               write (s%logfile,*) ' probability = ', piband%imap, pjband%imap, probability(jband)
               if (probability(jband) .lt. 0.0d0) probability(jband) = 0.0d0
@@ -1025,12 +1028,12 @@
 ! (ioccupy_na = 0, 1) [from states that are occupied ioccupy_na = 1, 2 ].
 ! Use iocc for this (fix later)
 ! iocc (jband) = ioccupy_na (jband, ikpoint)
-            call mc_switch (s, ikpoint, iband, pkpoint%nbands, xrand, probability, switch)
-            if (switch .ne. 0) then
-              nullify(pjband); pjband => pkpoint%transition(switch)
+            call mc_switch (s, iband, pkpoint%nbands, xrand, probability, iswitch)
+            if (iswitch .ne. 0) then
+              nullify(pjband); pjband => pkpoint%transition(iswitch)
               write(s%logfile, *) 'SWITCH!!' , piband%imap, '--->', pjband%imap
 ! Perform transition current band ---> switch band
-              call transition (s, ikpoint, iband, switch, itime_step)
+              call transition (s, iband, iswitch, itime_step)
               return  ! we can only have one switch
             end if
 
@@ -1058,9 +1061,8 @@
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
-!>       This routine determines the hoppings switches between
-!>       Kohn-Sham states based on a Monte-Carlo approach (see J.C.
-!>       Tully, JCP 93, 1061 (1990).
+!> This routine determines the hoppings switches between Kohn-Sham states
+!> based on a Monte-Carlo approach (see J.C. Tully, JCP 93, 1061 (1990).
 !
 ! ===========================================================================
 ! Code written by:
@@ -1076,23 +1078,25 @@
 !
 ! Subroutine Declaration
 ! ===========================================================================
-        subroutine mc_switch (s, ikpoint, band_cur, nbands, xrand, prob, band_swi)
+        subroutine mc_switch (s, iband, nbands, xrand, probability, iswitch)
         implicit none
 
         include '../include/constants.h'        
 
 ! Argument Declaration and Description
 ! ===========================================================================
+! Input
         type(T_structure), target :: s           !< the structure to be used.
 
-! Input
-        integer, intent(in) :: ikpoint
-        integer, intent(in) :: band_cur
+        integer, intent(in) :: iband
         integer, intent(in) :: nbands
+
         real, intent(in) ::  xrand
-        real, dimension (nbands), intent(in) :: prob
+
+        real, dimension (nbands), intent(in) :: probability
+
 ! Output
-        integer, intent(out) :: band_swi
+        integer, intent(out) :: iswitch
 
 ! Parameters and Data Declaration
 ! ===========================================================================
@@ -1106,65 +1110,67 @@
         type(T_kpoint), pointer :: pkpoint
         type(T_transition), pointer :: piband
         type(T_transition), pointer :: pjband
+
 ! Procedure
 ! ===========================================================================
 ! Check that sum of probabilities is smaller than 1
+! This only works for gamma kpoint
+        if (s%nkpoints .gt. 1) stop ' Cannot execute FSSH for non-gamma '
+        ikpoint = 1
 
         ! Cut some lengthy notion
         nullify (pkpoint); pkpoint => s%kpoints(ikpoint)
-        nullify (piband); piband => pkpoint%transition(band_cur)
+        nullify (piband); piband => pkpoint%transition(iband)
 
         aux = 0.0d0
         do jband = 1, nbands
-          nullify (pjband)
-          pjband => pkpoint%transition(jband)
+
+          ! cut some lenghty notation
+          nullify (pjband); pjband => pkpoint%transition(jband)
+
           ! Consider only allowed transitions
           if (pkpoint%ioccupy(piband%imap) .gt. 0) then     
             if (pkpoint%ioccupy(pjband%imap) .lt. 2) then     
               aux = aux + prob(jband)
             end if
           end if
-          nullify (pjband)
         end do ! end loop over jband
+
         if (aux .gt. 1.0d0) then
-          write(s%logfile, *)'sum of probabilities greater than 1'
-          write(s%logfile, *)'in mc_switches.f90'
-          write(s%logfile, *)'total probabilty', aux
-          write(s%logfile, *)'for state', piband%imap
+          write (s%logfile, *) ' Sum of probabilities greater than 1 in mc_switches.f90 '
+          write (s%logfile, *) ' total probabilty', aux, ' for state', piband%imap
           do jband = 1, nbands
-            nullify (pjband)
-            pjband => pkpoint%transition(jband)
-            write(s%logfile, *)'prob', pjband%imap, prob(jband)
+            write (s%logfile, *) ' probability: ',                           &
+     &                             pkpoint%transition(jband)%imap, prob(jband)
           end do
         end if
 
-        band_swi = 0
+        switch = 0
         aux = 0.0d0
         do jband = 1, nbands
-          nullify (pjband)
-          pjband => pkpoint%transition(jband)        
+
+          ! cut some lengthy notation
+          nullify (pjband); pjband => pkpoint%transition(jband)
+
           ! Consider only allowed transitions
           if (pkpoint%ioccupy(piband%imap) .gt. 0) then     
             if (pkpoint%ioccupy(pjband%imap) .lt. 2) then    
               aux = aux + prob(jband)
               if (aux .gt. xrand) then
-                band_swi = jband
+                iswitch = jband
                 do iband = 1, nbands
-                  nullify (piband)
-                  piband => pkpoint%transition(iband)
-                  write(s%logfile, *) 'prob', piband%imap, prob(iband)
+                  write (s%logfile, *) ' probability ',                      &
+     &                                   pkpoint%transition(iband)%imap, probability(iband)
                 end do
                 exit
               end if
             end if
           end if
-          nullify (pjband)
         end do
-        nullify (pkpoint, piband)
 !----------------------------------------------------------
-! If band_swi = 0, no switch (hopping) between states
-! Otherwise, switch from current state ( piband%imap in
-! fewest_switches subroutine) to state "band_swi"
+! If iswitch = 0, no switch (hopping) between states
+! Otherwise, switch from current state (piband%imap in
+! fewest_switches subroutine) to state "iswitch"
 !----------------------------------------------------------
 
 ! Deallocate Arrays
@@ -1179,7 +1185,6 @@
 ! ===========================================================================
         return
         end subroutine mc_switch
-! ===========================================================================
 
 
 ! ===========================================================================
@@ -1209,19 +1214,18 @@
 !
 ! Subroutine Declaration
 ! ===========================================================================
-        subroutine transition (s, ikpoint, band_cur, band_swi, itime_step)
+        subroutine transition (s, iband, iswitch, itime_step)
         implicit none
 
         include '../include/constants.h'        
 
 ! Argument Declaration and Description
 ! ===========================================================================
+! Input
         type(T_structure), target :: s           !< the structure to be used.
 
-! Input
-        integer, intent(in) :: ikpoint           !< counter of kpoint
-        integer, intent(in) :: band_cur          !< current band
-        integer, intent(in) :: band_swi          !< switch band
+        integer, intent(in) :: iband             !< current band
+        integer, intent(in) :: iswitch           !< switch band
         integer, intent(in) :: itime_step        !< counter of nuclear step
 
 ! Parameters and Data Declaration
@@ -1235,7 +1239,7 @@
 
         real aa, bb, cc, alfa                    !< coefficients of quadratic equation
         real ejump                               !< energy difference in eV
-        real ener, tkinetic                      !< potential and kinetics energy                     
+        real energy, tkinetic                    !< potential and kinetics energy
         real etot, etot_before, etot_after       !< For other theories
 
 !       NAC stuff
@@ -1248,20 +1252,22 @@
 ! Procedure
 ! ===========================================================================
 ! Switch from current band ---> switch band
+! This only works for gamma kpoint
+        if (s%nkpoints .gt. 1) stop ' Cannot execute FSSH for non-gamma '
+        ikpoint = 1
 
-         nullify (pkpoint, piband, pjband)
-         pkpoint => s%kpoints(ikpoint)
-         piband => pkpoint%transition(band_cur)
-         pjband => pkpoint%transition(band_swi)
+        ! cut some lengthy notation
+        nullify (pkpoint); pkpoint => s%kpoints(ikpoint)
+        nullify (piband); piband => pkpoint%transition(iband)
+        nullify (pjband); pjband => pkpoint%transition(iswitch)
 
-         pkpoint%ioccupy(piband%imap) = pkpoint%ioccupy(piband%imap) - 1
-         pkpoint%foccupy(piband%imap) = pkpoint%foccupy(piband%imap) - 0.50d0
-         pkpoint%ioccupy(pjband%imap) = pkpoint%ioccupy(pjband%imap) + 1
-         pkpoint%foccupy(pjband%imap) = pkpoint%foccupy(pjband%imap) + 0.50d0
+        pkpoint%ioccupy(piband%imap) = pkpoint%ioccupy(piband%imap) - 1
+        pkpoint%foccupy(piband%imap) = pkpoint%foccupy(piband%imap) - 0.50d0
+        pkpoint%ioccupy(pjband%imap) = pkpoint%ioccupy(pjband%imap) + 1
+        pkpoint%foccupy(pjband%imap) = pkpoint%foccupy(pjband%imap) + 0.50d0
 
 ! Calculate energy jump
         itheory = 0
-
         if (itheory .eq. 0) then
           ejump = pkpoint%eigen(pjband%imap) - pkpoint%eigen(piband%imap)
         else
@@ -1270,46 +1276,46 @@
           call getenergy(itime_step)
           etot_after = etot
           ejump = etot_after - etot_before
-          write(s%logfile,*)'ETOT-BEFORE=',etot_before
-          write(s%logfile,*)'ETOT-AFTER=',etot_after
+          write (s%logfile,*) 'ETOT-BEFORE = ', etot_before
+          write (s%logfile,*) 'ETOT-AFTER  = ', etot_after
         end if
 
 ! Transform energy shift from eV to atomic units ( amu*(angs/fs)**2 )
-        write(s%logfile,*)'ejump (eV)=', ejump
-        ener = ejump*P_fovermp
-        write(s%logfile,*)'ener (dynamical units)=', ener
+        write (s%logfile,*) 'ejump (eV) = ', ejump
+        energy = ejump*P_fovermp
+
+        write (s%logfile,*) 'energy (dynamical units) = ', energy
 
 ! ===========================================================================
 ! Find out if transition current band --> switch band is accesible 
 ! (i.e. if there is enough kinetic energy) 
-
         aa = 0.0d0
         bb = 0.0d0
         do iatom = 1, s%natoms
           do ix = 1, 3
-            aa = aa + 0.50d0*piband%dij(ix,iatom,band_swi)         &
-        &       *piband%dij(ix,iatom,band_swi)/s%atom(iatom)%imass
-            bb = bb + s%atom(iatom)%vatom(ix)   &
-        &       *piband%dij(ix,iatom,band_swi)
+            aa = aa + 0.50d0*piband%dij(ix,iatom,iswitch)                    &
+        &                   *piband%dij(ix,iatom,iswtich)/s%atom(iatom)%imass
+            bb = bb + s%atom(iatom)%vatom(ix)*piband%dij(ix,iatom,iswitch)
           end do
         end do
-        write(s%logfile,*) 'aa, 4*ener*aa =', aa, 4.0d0*aa*ener
-        write(s%logfile,*) 'bb, bb**2=', bb, bb**2
-        cc = bb**2 - 4.0d0*aa*ener
+        write (s%logfile,*) ' aa, 4*energy*aa =', aa, 4.0d0*aa*energy
+        write (s%logfile,*) ' bb, bb**2 = ', bb, bb**2
+        cc = bb**2 - 4.0d0*aa*energy
+        write (s%logfile,*) ' cc = ', cc
 
-        write(s%logfile,*) 'cc=', cc
         if (aa .gt. tolaa) then
 ! The transition is accepted
           if (cc .ge. 0.0d0) then
-            write(s%logfile,*)'transition accepted'
+            write (s%logfile,*) ' transition accepted '
             if (bb .ge. 0.0d0) then
               alfa = (bb - sqrt(cc))/(2.0d0*aa)
             else
               alfa = (bb + sqrt(cc))/(2.0d0*aa)
             end if
           else !(cc .ge. 0.0d0)
+
 ! The transition is NOT accepted
-            write(s%logfile,*)'transition NOT accepted'
+            write (s%logfile,*) 'transition NOT accepted '
  
 ! Revert transition written by vlada
             pkpoint%ioccupy(piband%imap) = pkpoint%ioccupy(piband%imap) + 1
@@ -1328,43 +1334,43 @@
         else  !(aa .gt. tolaa)
           alfa = 0.0d0
         end if  !(aa .gt. tolaa)
-        write(s%logfile, *) 'alfa=', alfa
+        write (s%logfile, *) ' alfa = ', alfa
           
-        write(s%logfile, *) 'Velocity before Rescaling'
+        write (s%logfile, *) ' Velocity before Rescaling'
         do iatom = 1, s%natoms
-          write(s%logfile, *) (s%atom(iatom)%vatom(ix), ix = 1,3)
+          write (s%logfile, *) (s%atom(iatom)%vatom(ix), ix = 1,3)
         end do
  
         tkinetic = 0.0d0
         do iatom = 1, s%natoms
-          tkinetic = tkinetic                                            &
-     &             + (0.5d0/P_fovermp)*s%atom(iatom)%imass                             &
-     &             *( s%atom(iatom)%vatom(1)**2 +  s%atom(iatom)%vatom(2)**2 +  s%atom(iatom)%vatom(3)**2)
+          tkinetic = tkinetic                                                 &
+     &              + (0.5d0/P_fovermp)*s%atom(iatom)%imass                   &
+     &               *(s%atom(iatom)%vatom(1)**2 +  s%atom(iatom)%vatom(2)**2 &
+     &                                           +  s%atom(iatom)%vatom(3)**2)
         end do
-        write(s%logfile, *) 'KINETIC=', tkinetic
+        write (s%logfile, *) 'KINETIC = ', tkinetic
  
 ! RESCALING VELOCITIES
         do iatom = 1, s%natoms
           do ix = 1, 3
-            s%atom(iatom)%vatom(ix) = s%atom(iatom)%vatom(ix)     &
-     &      - alfa*piband%dij(ix,iatom,band_swi)/s%atom(iatom)%imass
+            s%atom(iatom)%vatom(ix) = s%atom(iatom)%vatom(ix)                 &
+     &                               - alfa*piband%dij(ix,iatom,iswitch)/s%atom(iatom)%imass
           end do
         end do
 
-        write(s%logfile, *) 'Velocity After Rescaling'
+        write (s%logfile, *) ' Velocity After Rescaling'
         do iatom = 1, s%natoms
-          write(s%logfile, *)  (s%atom(iatom)%vatom(ix), ix = 1,3)
+          write (s%logfile, *) (s%atom(iatom)%vatom(ix), ix = 1, 3)
         end do
  
         tkinetic = 0.0d0
         do iatom = 1, s%natoms
-         tkinetic = tkinetic                                            &
-     &              + (0.5d0/P_fovermp)*s%atom(iatom)%imass                             &
-     &            *( s%atom(iatom)%vatom(1)**2 +  s%atom(iatom)%vatom(2)**2 +  s%atom(iatom)%vatom(3)**2)
+         tkinetic = tkinetic                                                  &
+     &              + (0.5d0/P_fovermp)*s%atom(iatom)%imass                   &
+     &               *(s%atom(iatom)%vatom(1)**2 +  s%atom(iatom)%vatom(2)**2 &
+     &                                           +  s%atom(iatom)%vatom(3)**2)
         end do
-        write(s%logfile, *) 'KINETIC=', tkinetic
-
-        nullify (pkpoint, piband, pjband)        
+        write(s%logfile, *) ' KINETIC = ', tkinetic
  
 ! Deallocate Arrays
 ! ===========================================================================
@@ -1378,7 +1384,6 @@
 ! ===========================================================================
         return
         end subroutine transition
-! ===========================================================================
 
 
 ! destroy_denmat_mdet
