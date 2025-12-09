@@ -76,8 +76,8 @@
           complex, allocatable :: c_na (:)
 
           ! this is the non-adiabatic coupling belonging to the transition state
-          complex, allocatable :: dij (:, :, :)
-          complex, allocatable :: dij_old (:, :, :)
+          real, allocatable :: dij (:, :, :)
+          real, allocatable :: dij_old (:, :, :)
 !         complex, allocatable :: ddij (:, :)
         end type
 

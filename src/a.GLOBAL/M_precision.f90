@@ -41,6 +41,7 @@
         integer, parameter :: ilogfile = 121             ! output.log unit number
 
 ! Mathematical constants
+        double precision, parameter :: hbar = 0.6582119569d0  ! units of eV*fs
         double precision, parameter :: pi = 3.141592653589793238462643d0  ! pi = 4.0d0*atan(1.0d0)
         double precision, parameter :: pisq3 = 29.6088132032680740d0
         double precision, parameter :: epsilon = 1.0d-15
