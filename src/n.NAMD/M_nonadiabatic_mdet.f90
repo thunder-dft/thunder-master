@@ -655,30 +655,33 @@
         type(T_kpoint), pointer :: pkpoint
         type(T_transition), pointer :: piband
 
+! Allocate Arrays
+! ===========================================================================
+! None
+
 ! Procedure
 ! ===========================================================================
         if (itime_step .eq. 1) call save_stuff_mdet (s)
 
-        ddt = dt/nddt
-        do iteration = 1, nddt
-          do ikpoint = 1, s%nkpoints   
+        do ikpoint = 1, s%nkpoints
 
-            ! Cut some lengthy notation
-            nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+          ! Cut some lengthy notation
+          nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
 
+          allocate (dc_na (pkpoint%nbands))
+          allocate (dc_tmp (pkpoint%nbands))
+          allocate (c_tmp (pkpoint%nbands))
+
+          ddt = dt/nddt
+          do iteration = 1, nddt
             do iband = 1, pkpoint%nbands
 
-              ! Cut off length
+              ! Cut some lengthy notation
               nullify (piband); piband => pkpoint%transition(iband)
-               
-              ! Interpolation stuff
-              allocate (dc_na (pkpoint%nbands)); dc_na = cmplx(0.0d0, 0.0d0)
-              allocate (dc_tmp (pkpoint%nbands)); dc_tmp = cmplx(0.0d0, 0.0d0)
-              allocate (c_tmp (pkpoint%nbands)); c_tmp = cmplx(0.0d0, 0.0d0)
 
 ! step 1      
 ! Interpolation       
-              c_tmp = piband%c_na; step = (it - 1.0) / nddt   
+              c_tmp = piband%c_na; step = (it - 1.0d0) / nddt
               call couplings  (s, ikpoint, pkpoint%nbands, step, c_tmp, dc_tmp)
               dc_na = dc_tmp/6.0d0
 ! step 2      
@@ -700,10 +703,10 @@
 ! Integrate coefficients c_na
               piband%c_na = piband%c_na + dc_na*ddt    
 
-              deallocate (c_tmp, dc_tmp, dc_na)
             end do ! end loop over iband
-          end do ! end loop over kpoints
-        end do ! end Time loop
+          end do ! end time loop
+          deallocate (c_tmp, dc_tmp, dc_na)
+        end do ! end loop over kpoints
   
         call save_stuff_mdet (s)
 
@@ -727,7 +730,7 @@
 ! Subroutine Description
 ! ===========================================================================
 !>       This routine saves some variables needed for the time
-!>       integration of the TD-wfs
+!> integration of the TD-wfs
 !
 ! ===========================================================================
 ! Code written by:
@@ -768,20 +771,26 @@
 
 ! Procedure
 ! ===========================================================================
+! Save all the velocities
         do iatom = 1, s%natoms
           s%atom(iatom)%vatom_old = s%atom(iatom)%vatom
         end do
 
         do ikpoint = 1, s%nkpoints
+
+          ! Cut some lengthy notation
           nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+
           pkpoint%eigen_old = pkpoint%eigen
+
           do iband = 1, pkpoint%nbands
+
+            ! Cut some lengthy notation
             nullify (piband); piband => pkpoint%transition(iband)
+
             piband%dij_old = piband%dij
-            nullify (piband)
-          end do
-          nullify (pkpoint)
-        end do  
+          end do ! end loop over iband
+        end do ! end loop over kpoints
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -789,12 +798,7 @@
 
 ! Format Statements
 ! ===========================================================================
-100     format (4x, 70('='))
-101     format (4x, 'dij ', 'Atom # ', 2x, ' Type ', 5x,   &
-     &              ' x ', 9x, ' y ', 9x, ' z ')
-102     format (4x, A,  i5, 7x, a2, 3(2x,ES10.3))
-103     format (4x, A)
-
+! None
 
 ! End Subroutine
 ! ===========================================================================
@@ -836,15 +840,15 @@
 
         real, intent(in) :: step                 !< step of rk4
 
-        complex, intent(in), dimension(nbands) :: c_tmp      !< coefficients of wavefunctions
+        !< coefficients of wavefunctions
+        complex, intent(in), dimension(nbands) :: c_tmp
 
 ! Output
         complex, intent(out), dimension (nbands) :: dc_tmp   !< derivative of coefficients
 
 ! Parameters and Data Declaration
 ! ===========================================================================
-
-        real, parameter :: hbar = 0.6582119d0
+! None
 
 ! Variable Declaration and Description
 ! ===========================================================================
@@ -864,29 +868,28 @@
 ! Procedure
 ! ===========================================================================
         nullify (pkpoint); pkpoint => s%kpoints(ikpoint)
+
         ! Initialize dc_tmp
         dc_tmp = cmplx(0.0d0, 0.0d0)
+
         do jband = 1, pkpoint%nbands
+
           ! Cut off length
           nullify (pjband); pjband => pkpoint%transition(jband)
 
-          deigen = 0.0d0; eigen_tmp = 0.0d0
           deigen = pkpoint%eigen(pjband%imap) -  pkpoint%eigen_old(pjband%imap)
           eigen_tmp = pkpoint%eigen_old(pjband%imap) + deigen*step
 
           do kband = 1, pkpoint%nbands
+
             djkov = 0.0d0
             do iatom = 1, s%natoms
               do ix = 1, 3
-
-                dv = 0.0d0; v_tmp = 0.0d0
-                ddij = 0.0d0; dij_tmp =0.0d0
-
                 dv = s%atom(iatom)%vatom(ix) - s%atom(iatom)%vatom_old(ix)
                 v_tmp = s%atom(iatom)%vatom_old(ix) + dv*step
 
-                ddij = pjband%dij(ix, iatom, kband) - pjband%dij_old(ix, iatom, kband)
-                dij_tmp = pjband%dij_old(ix, iatom, kband) + ddij*step
+                ddij = pjband%dij(ix,iatom,kband) - pjband%dij_old(ix,iatom,kband)
+                dij_tmp = pjband%dij_old(ix,iatom,kband) + ddij*step
 
                 ! dij_tmp index (jband, kband)
                 djkov = djkov + v_tmp*dij_tmp
@@ -899,11 +902,9 @@
 
           ! eigen_tmp index (pjband%imap), c_tmp index (iband, jband)
           ! and dc_tmp index (iband, jband)
-          dc_tmp(jband) = dc_tmp(jband) - cmplx(0.0d0, 1.0d0)/hbar    &
-  &       *eigen_tmp*c_tmp(jband)
-          nullify (pjband)
+          dc_tmp(jband) =                                                    &
+     &      dc_tmp(jband) - (cmplx(0.0d0, 1.0d0)/hbar)*eigen_tmp*c_tmp(jband)
         end do
-        nullify (pkpoint)
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -919,88 +920,12 @@
         end subroutine couplings
 
 
-
-
-! ===========================================================================
-! writeout_c_na_mdet
-! ===========================================================================
-! Subroutine Description
-! ===========================================================================
-!>       This routine writes out nonadiabatic wavefunction coefficient c_na
-!
-! ===========================================================================
-! Code written by:
-!> @author James P. Lewis
-! Box 6315, 209 Hodges Hall
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
-!
-! (304) 293-3422 x1409 (office)
-! (304) 293-5732 (FAX)
-! ===========================================================================
-!
-! Subroutine Declaration
-! ===========================================================================
-        subroutine writeout_c_na_mdet (s)
-        implicit none
-
-! Argument Declaration and Description
-! ===========================================================================
-        type(T_structure), target :: s           !< the structure to be used.
-
-! Parameters and Data Declaration
-! ===========================================================================
-! None
-
-! Variable Declaration and Description
-! ===========================================================================
-        integer ikpoint                    !< counter of band and kpoint
-        integer iband, jband                     !< counter of transitions
-
-        type(T_kpoint), pointer :: pkpoint
-        type(T_transition), pointer :: piband
-
-! Procedure
-! ===========================================================================
-        do ikpoint = 1, s%nkpoints
-          nullify (pkpoint); pkpoint => s%kpoints(ikpoint)
-          write (s%logfile,*) "Coeffients c_na of nonadiabatic wavefunctions"
-          do iband = 1, pkpoint%nbands
-            nullify (piband)
-            piband => pkpoint%transition(iband)
-            write (s%logfile,"(6(1PE16.8))") (piband%c_na(jband), jband = 1, pkpoint%nbands)
-            nullify (piband)
-          end do    
-          write (s%logfile,*)   
-          nullify (pkpoint)
-        end do
-! Deallocate Arrays
-! ===========================================================================
-! None
-
-! Format Statements
-! ===========================================================================
-100     format (4x, 70('='))
-101     format (4x, 'dij ', 'Atom # ', 2x, ' Type ', 5x,   &
-     &              ' x ', 9x, ' y ', 9x, ' z ')
-102     format (4x, A,  i5, 7x, a2, 3(2x,ES10.3))
-103     format (4x, A)
-
-! End Subroutine
-! ===========================================================================
-        return
-        end subroutine writeout_c_na_mdet
-
-
 ! ===========================================================================
 ! fewest_switches_mdet
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
-!>       This routine determines the hoppings between
-!>       Kohn-Sham state
-!
+!> This routine determines the hoppings between Kohn-Sham state.
 !
 ! ===========================================================================
 ! Code written by:
@@ -1035,12 +960,13 @@
         integer ikpoint                         !< counter of band and kpoint
         integer iband, jband, nbands            !< counter of transitions
         integer ix                              !< counter of spatial dimension
-        integer band_swi                        !< switch band
+        integer switch                          !< switch band
 
         real djiov                              !< inner product of NAC and velocity
         real xrand                              !< random number
 
-        real, dimension(:), allocatable :: prob !< probability of switches
+        !< probability of switches
+        real, dimension(:), allocatable :: probability
 
         complex aii, aji, bji                   !< coefficients of FSSH algorithm
 
@@ -1054,24 +980,22 @@
 ! Initialize seed for random_number
         call random_seed
 
-! Calculate by fewest switches algorithm
-! gives hopping probabilities from the current state
-! we follow the possible transitions associated with states
+! Calculate by fewest switches algorithm gives hopping probabilities from
+! the current state we follow the possible transitions associated with states
+        if (s%nkpoints .gt. 1) stop "Cannot execute FSSH for non-gamma"
 
-        do ikpoint = 1, s%nkpoints
+        ! Cut some lengthy notation
+        nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
+        allocate (probability (pkpoint%nbands))
 
-          ! Cut some lengthy notation
-          nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
-          allocate (prob (pkpoint%nbands))
-
-          do iband = 1, pkpoint%nbands
+        do iband = 1, pkpoint%nbands
  
             ! Cut some lengthy notation
             nullify (piband); piband=>pkpoint%transition(iband)
 
             ! Random numbers for Monte-Carlo
             call random_number(xrand)
-            write(s%logfile, *) 'random', xrand
+            write (s%logfile, *) 'random', xrand
 
             aii = real(conjg(piband%c_na(iband))*piband%c_na(iband))
 
@@ -1088,38 +1012,31 @@
               end do
    
               bji = -2.0d0*real(conjg(aji)*djiov)
-! JOM-warning: may be later we can "imporve" this by using eq(29) in JCP
-! 101 4657 (1994)
+! JOM-warning: may be later we can "improve" this by using eq(29) in JCP 101 4657 (1994)
    
 !JOM-info : probability of the iband ---> jband transition
-              prob(jband) = bji*dt/aii
-              write(s%logfile,*) 'prob', piband%imap, pjband%imap, prob(jband)
-              if (prob(jband) .lt. 0.0d0) then
-                prob(jband) = 0.0d0
-              end if
-              nullify (pjband)
+              probability(jband) = bji*dt/aii
+              write (s%logfile,*) ' probability = ', piband%imap, pjband%imap, probability(jband)
+              if (probability(jband) .lt. 0.0d0) probability(jband) = 0.0d0
             end do ! do jband = 1, nbands
 
 ! Monte-Carlo calculation for possible transitions      
-! JOM-warning : we should also allow transitions to states that are not
-! fully occupied (ioccupy_na = 0, 1) [from states that are occupied
-! ioccupy_na = 1, 2 ]. Use iocc for this (fix later)
-!         iocc (jband) = ioccupy_na (jband, ikpoint)
-
-            call mc_switch (s, ikpoint, iband, pkpoint%nbands, xrand, prob, band_swi)
-            if (band_swi .ne. 0) then
-              nullify(pjband); pjband => pkpoint%transition(band_swi)
-              write(s%logfile, *) 'SWITCH!!' ,piband%imap, '--->', pjband%imap
+! JOM-warning : we should also allow transitions to states that are not fully occupied
+! (ioccupy_na = 0, 1) [from states that are occupied ioccupy_na = 1, 2 ].
+! Use iocc for this (fix later)
+! iocc (jband) = ioccupy_na (jband, ikpoint)
+            call mc_switch (s, ikpoint, iband, pkpoint%nbands, xrand, probability, switch)
+            if (switch .ne. 0) then
+              nullify(pjband); pjband => pkpoint%transition(switch)
+              write(s%logfile, *) 'SWITCH!!' , piband%imap, '--->', pjband%imap
 ! Perform transition current band ---> switch band
-              call transition (s, ikpoint, iband, band_swi, itime_step)
+              call transition (s, ikpoint, iband, switch, itime_step)
               return  ! we can only have one switch
-              nullify (pjband)
             end if
-            nullify (piband)   
-          end do !nobands
-          deallocate (prob)
-          nullify (pkpoint)
-        end do !kpoints
+
+          end do ! end loop over ibands
+          deallocate (probability)
+
 ! Deallocate Arrays
 ! ===========================================================================
 ! None
