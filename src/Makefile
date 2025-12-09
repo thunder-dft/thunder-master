@@ -153,7 +153,7 @@ ifneq (,$(findstring DOGS, ${SCF}))
 ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_ewald_DOGS.o M_assemble_usr_Horsfield_DOGS.o M_assemble_vxc_Horsfield_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o
 DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_ewald_DOGS.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o 
 ifneq (,$(findstring TRUE, ${NAMD}))
-DASSEMBLERS = M_Dassemble_2c_DOGS_mdet.o M_Dassemble_3c_DOGS_mdet.o M_Dassemble_ewald_DOGS_mdet.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS_mdet.o M_Dassemble_PP_2c_mdet.o M_Dassemble_PP_3c_mdet.o 
+DASSEMBLERS = M_Dassemble_2c_DOGS_mdet.o M_Dassemble_3c_DOGS_mdet.o M_Dassemble_ewald_DOGS_mdet.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS_mdet.o M_Dassemble_PP_2c_mdet.o M_Dassemble_PP_3c_mdet.o M_nonadiabatic_mdet.o
 MDET = 
 endif
 FDATA = M_Fdata_1c_Horsfield_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
@@ -176,16 +176,10 @@ endif
 # ****************************************************************************
 # **************************** GAMMA - DEFAULT PACKAGES **********************
 SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix.o
-ifneq (,$(findstring TRUE, ${NAMD}))
-SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix.o M_density_matrix_mdet.o
-endif
 
 # ************************* GAMMA, KPOINTS, MDET, or KS **********************
 ifneq (,$(findstring GAMMAD, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix.o
-ifneq (,$(findstring TRUE, ${NAMD}))
-SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix.o M_density_matrix_mdet.o
-endif
 endif
 ifneq (,$(findstring KPOINTS, ${DIAGONALIZATION}))
 SOLVESH = M_diagonalization_Lowdin_kpoints.o M_kspace_Lowdin.o M_density_matrix.o
@@ -442,8 +436,6 @@ M_density_matrix.o : h.SOLVESH/M_density_matrix.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_density_matrix_grid.o : h.SOLVESH/M_density_matrix_grid.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_density_matrix_MDET.o : h.SOLVESH/M_density_matrix_MDET.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_kspace_grid.o : h.SOLVESH/M_kspace_grid.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_kspace_Lowdin.o : h.SOLVESH/M_kspace_Lowdin.f90
@@ -613,11 +605,7 @@ M_Dassemble_vxc_Horsfield_DOGS_mdet.o : n.NAMD/M_Dassemble_vxc_Horsfield_DOGS_md
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Dassemble_ewald_DOGS_mdet.o : n.NAMD/M_Dassemble_ewald_DOGS_mdet.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_density_matrix_mdet.o : n.NAMD/M_density_matrix_mdet.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_non_adiabatic_gamma.o : n.NAMD/M_non_adiabatic_gamma.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_non_adiabatic_coupling.o : n.NAMD/M_non_adiabatic_coupling.f90
+M_nonadiabatic_mdet.o : n.NAMD/M_nonadiabatic_mdet.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 
 # *****************************************************************************
