@@ -1354,7 +1354,7 @@
         do iatom = 1, s%natoms
           do ix = 1, 3
             s%atom(iatom)%vatom(ix) = s%atom(iatom)%vatom(ix)                 &
-     &                               - alfa*piband%dij(ix,iatom,iswitch)/s%atom(iatom)%imass
+     &        - alfa*piband%dij(ix,iatom,iswitch)/s%atom(iatom)%imass
           end do
         end do
 
