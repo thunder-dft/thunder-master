@@ -151,10 +151,11 @@ endif
 # **************************i******** DOGS ***********************************
 ifneq (,$(findstring DOGS, ${SCF}))
 ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_ewald_DOGS.o M_assemble_usr_Horsfield_DOGS.o M_assemble_vxc_Horsfield_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o
-DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_ewald_DOGS.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o 
+DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_ewald_DOGS.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o
+MDET = M_adiabatic_mdet.o
 ifneq (,$(findstring TRUE, ${NAMD}))
-DASSEMBLERS = M_Dassemble_2c_DOGS_mdet.o M_Dassemble_3c_DOGS_mdet.o M_Dassemble_ewald_DOGS_mdet.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS_mdet.o M_Dassemble_PP_2c_mdet.o M_Dassemble_PP_3c_mdet.o M_nonadiabatic_mdet.o
-MDET = 
+DASSEMBLERS = M_Dassemble_2c_DOGS_mdet.o M_Dassemble_3c_DOGS_mdet.o M_Dassemble_ewald_DOGS_mdet.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS_mdet.o M_Dassemble_PP_2c_mdet.o M_Dassemble_PP_3c_mdet.o 
+MDET = M_nonadiabatic_mdet.o
 endif
 FDATA = M_Fdata_1c_Horsfield_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
 SCF = M_charges_Lowdin.o Qmixer_Anderson_DOGS.o
@@ -216,8 +217,7 @@ OBJECTS_LOOPRC = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIO
 OBJECTS_BEGIN = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN)
 OBJECTS_CREATE = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_CREATE) $(XC_FUNCTIONALS) $(CREATE)
 OBJECTS_LIGHTNING = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
-OBJECTS_FIREBALL = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(OUTPUT) $(SOCKETS) $(UTIL)
-OBJECTS_MDET = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(MDET) $(OUTPUT)
+OBJECTS_FIREBALL = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(MDET) $(OUTPUT) $(SOCKETS) $(UTIL)
 OBJECTS_LIGHTNING_GRID = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(GRID) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
 ##############################################################################
 ###
@@ -251,15 +251,13 @@ fireball.x: $(OBJECTS_FIREBALL) $(LIB_scalapack) fireball.o
 	$(F90) -o fireball.x $(FFLAGS) $(OMP) $(OBJECTS_FIREBALL) fireball.o $(LFLAGS) 
 fireball-ase.x: $(OBJECTS_FIREBALL) $(LIB_scalapack) fireball-ase.o
 	$(F90) -o fireball-ase.x $(FFLAGS) $(OMP) $(OBJECTS_FIREBALL) fireball-ase.o $(LFLAGS) 
-fireball-mdet.x: $(OBJECTS_FIREBALL) fireball-mdet.o
-	$(F90) -o fireball-mdet.x $(FFLAGS) $(OBJECTS_FIREBALL) fireball-mdet.o $(LFLAGS)
 
 .PHONY: clean veryclean
 
 clean:
 	rm -f -r *.o *.mod *.mod.*
 	rm -f -r core .nfs* rii_files begin-looprc.x.ip* begin.x.ip* \
-			create.x.ip* fireball.x.ip* fireball-ase.x.ip* fireball-MDET.x.ip* \
+			create.x.ip* fireball.x.ip* fireball-ase.x.ip* \
 			lightning.x.ip* *genmod.f90 .#* ldtmp* *.vo *~ *.il
 	rm -f -r include/*.o include/*.mod include/*.mod.*
 	rm -f -r a.GLOBAL/*.o a.GLOBAL/*.mod a.GLOBAL/*.mod.*
@@ -280,15 +278,14 @@ clean:
 
 veryclean: clean
 	rm -f begin-looprc.x begin.x create.x lightning.x lightning-grid.x \
-			fireball.x fireball-ase.x fireball-mdet.x 
-
+			fireball.x fireball-ase.x 
+			
 all:
 	make begin-looprc.x
 	make begin.x
 	make create.x
 	make fireball.x
 	make fireball-ase.x
-	make fireball-mdet.x
 	make lightning.x
 	make lightning-grid.x
 	
@@ -369,8 +366,6 @@ M_integrals_2c.o : c.SYSTEM/M_integrals_2c.f90
 M_integrals_3c.o : c.SYSTEM/M_integrals_3c.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_kpoints.o : c.SYSTEM/M_kpoints.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-M_kpoints_MDET.o : c.SYSTEM/M_kpoints_MDET.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_neighbors.o : c.SYSTEM/M_neighbors.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
@@ -593,6 +588,8 @@ M_gear_quench.o : m.MD/M_gear_quench.f90
 # *****************************************************************************
 # n.NAMD
 # *****************************************************************************
+M_adiabatic_mdet.o : n.NAMD/M_adiabatic_mdet.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Dassemble_2c_DOGS_mdet.o : n.NAMD/M_Dassemble_2c_DOGS_mdet.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Dassemble_PP_2c_mdet.o : n.NAMD/M_Dassemble_PP_2c_mdet.f90
@@ -712,8 +709,6 @@ create_McWEDA.o : x.DRIVERS/create_McWEDA.f90
 fireball.o : x.DRIVERS/fireball.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 fireball-ase.o : x.DRIVERS/fireball-ase.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-fireball-mdet.o : x.DRIVERS/fireball-mdet.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 lightning.o : x.DRIVERS/lightning.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
