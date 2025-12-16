@@ -361,8 +361,8 @@
 
 ! Argument Declaration and Description
 ! ===========================================================================
-       type(T_structure), target :: s           !< the structure to be used.
-       integer :: itime_step                    !< the current time step.
+        type(T_structure), target :: s           !< the structure to be used.
+        integer :: itime_step                    !< the current time step.
 
 ! Parameters and Data Declaration
 ! ===========================================================================
