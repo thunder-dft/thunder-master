@@ -556,7 +556,7 @@
         end function rint_goverlap_answer1_L
 
 ! ===========================================================================
-! rint_overlap_answer1_L
+! rint_overlap_answer2_L
 ! ===========================================================================
 ! Program Description
 ! ===========================================================================
@@ -661,7 +661,7 @@
         psi1val = psiofr (r1, rmax, ispecies, n1)
         vofr = 2.0d0
 
-!        rint_goverlap_L = rint_goverlap_L + psi1val*vofr*psi2val/(pi)
+!       int_goverlap_L = rint_goverlap_L + psi1val*vofr*psi2val/(pi)
         rint_goverlap_answer2_L = psi1val*vofr*psi2val/(pi)
 
 ! Format Statements
@@ -672,6 +672,8 @@
 ! =============================================================================
         return
         end function rint_goverlap_answer2_L
+
+
 ! ===========================================================================
 ! ===========================================================================
 ! rint_overlap_answer1_R
@@ -785,8 +787,9 @@
         return
         end function rint_goverlap_answer1_R
 
+
 ! ===========================================================================
-! rint_overlap_answer1_L
+! rint_overlap_answer2_R
 ! ===========================================================================
 ! Program Description
 ! ===========================================================================
@@ -891,7 +894,7 @@
         psi1val = psiofr (r1, rmax, ispecies, n1)
         vofr = 2.0d0
 
-!        rint_goverlap_L = rint_goverlap_L + psi1val*vofr*psi2val/(pi)
+!       rint_goverlap_L = rint_goverlap_L + psi1val*vofr*psi2val/(pi)
         rint_goverlap_answer2_R = psi1val*vofr*psi2val/(pi)
 
 ! Format Statements
@@ -902,6 +905,8 @@
 ! =============================================================================
         return
         end function rint_goverlap_answer2_R
+
+
 ! ===========================================================================
 ! dpsiofr
 ! ===========================================================================
