@@ -289,7 +289,7 @@
               dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
               phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
 
-              do iband = 1, pkpoint%nbands
+              do iband = 1, pkpoint%nbands - 1
 
                 ! Cut some lengthy notation
                 nullify (piband); piband=>pkpoint%transition(iband)
@@ -431,7 +431,7 @@
         end interface
 
         type(T_assemble_block), pointer :: pK_neighbors
-        type(T_assemble_neighbors), pointer :: pkinetic\
+        type(T_assemble_neighbors), pointer :: pkinetic
 
 ! NAC Zhaofa Li        
         type(T_kpoint), pointer :: pkpoint
@@ -558,7 +558,7 @@
                 dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                 phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
 
-                do iband = 1, pkpoint%nbands
+                do iband = 1, pkpoint%nbands - 1
 
                   ! Cut some lengthy notation
                   nullify (piband); piband=>pkpoint%transition(iband)
@@ -1061,7 +1061,7 @@
                 dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                 phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
 
-                do iband = 1, pkpoint%nbands
+                do iband = 1, pkpoint%nbands - 1
 
                   ! Cut some lengthy notation
                   nullify (piband); piband=>pkpoint%transition(iband)
@@ -1139,7 +1139,7 @@
                   dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                   phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
  
-                  do iband = 1, pkpoint%nbands
+                  do iband = 1, pkpoint%nbands - 1
 
                     ! Cut off lengthy notation
                     nullify (piband); piband=>pkpoint%transition(iband)
@@ -1228,7 +1228,7 @@
                 dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                 phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
    
-                do iband = 1, pkpoint%nbands
+                do iband = 1, pkpoint%nbands - 1
 
                   ! Cut off lengthy notation
                   nullify (piband)
@@ -1309,7 +1309,7 @@
                   dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                   phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
   
-                  do iband = 1, pkpoint%nbands
+                  do iband = 1, pkpoint%nbands - 1
 
                     ! Cut off lengthy notation                 
                     nullify (piband); piband=>pkpoint%transition(iband)
@@ -1572,7 +1572,7 @@
                 ! Cut off lenthy notation                                                                    
                 nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
   
-                do iband = 1, pkpoint%nbands
+                do iband = 1, pkpoint%nbands - 1
 
                   ! Cut off lengthy notation                
                   nullify (piband); piband=>pkpoint%transition(iband)

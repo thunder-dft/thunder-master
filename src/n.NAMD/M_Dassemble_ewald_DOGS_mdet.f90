@@ -105,7 +105,7 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer ialpha, iatom, jatom, katom   !< the three parties involved
+        integer ialpha, iatom, jatom   !< the three parties involved
         integer ibeta, jbeta           !< cells for three atoms
         integer ineigh, mneigh         !< counter over neighbors
         integer in1, in2, indna        !< species numbers
@@ -121,7 +121,6 @@
         integer mmu, nnu               !< counter over coefficients of wavefunctions
         integer iband, jband           !< counter over transitions
         integer ikpoint                !< counter over kpoints
-        integer nbands                 !< number of bands        
 
         real distance_13, distance_23  !< distance from 3rd atom
         real z                         !< distance between r1 and r2
@@ -294,7 +293,7 @@
                 ! Cut some lengthy notation
                 nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
 
-                do iband = 1, pkpoint%nbands
+                do iband = 1, pkpoint%nbands - 1
                 
                   ! Cut some lengthy notation
                   nullify (piband); piband=>pkpoint%transition(iband)
@@ -437,7 +436,7 @@
                   dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                   phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
     
-                  do iband = 1, pkpoint%nbands
+                  do iband = 1, pkpoint%nbands - 1
                   
                     ! Cut some lengthy notation
                     nullify (piband); piband=>pkpoint%transition(iband)
@@ -643,7 +642,7 @@
                 dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                 phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
    
-                do iband = 1, pkpoint%nbands
+                do iband = 1, pkpoint%nbands - 1
 
                   ! Cut some lengthy notation
                   nullify (piband); piband=>pkpoint%transition(iband)
@@ -750,10 +749,9 @@
 
         integer imu, inu, jnu           !< counter over MEs
         integer norb_mu, norb_nu        !< size of the block for the pair
-        integer mmu, nnu                 !< counter over coefficients of wavefunctions
-        integer iband, jband             !< counter over transitions
-        integer ikpoint                  !< counter over kpoints
-        integer nbands                   !< number of bands
+        integer mmu, nnu                !< counter over coefficients of wavefunctions
+        integer iband, jband            !< counter over transitions
+        integer ikpoint                 !< counter over kpoints
 
         integer logfile                 !< which unit to write output
 
@@ -959,7 +957,7 @@
                 dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                 phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
    
-                do iband = 1, pkpoint%nbands
+                do iband = 1, pkpoint%nbands - 1
 
                   ! Cut some lengthy notation
                   nullify (piband); piband=>pkpoint%transition(iband)
@@ -1047,7 +1045,7 @@
                 dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                 phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
    
-                do iband = 1, pkpoint%nbands
+                do iband = 1, pkpoint%nbands - 1
 
                   ! Cut some lengthy notation
                   nullify (piband); piband=>pkpoint%transition(iband)
@@ -1130,7 +1128,7 @@
                   dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                   phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
 
-                  do iband = 1, pkpoint%nbands
+                  do iband = 1, pkpoint%nbands - 1
 
                     ! Cut some lengthy notation
                     nullify (piband); piband=>pkpoint%transition(iband)

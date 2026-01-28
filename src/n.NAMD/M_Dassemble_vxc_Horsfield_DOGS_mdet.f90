@@ -431,7 +431,7 @@
                 dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                 phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
     
-                do iband = 1, pkpoint%nbands
+                do iband = 1, pkpoint%nbands - 1
 
                   ! Cut off lengthy notation
                   nullify (piband); piband=>pkpoint%transition(iband)
@@ -506,7 +506,7 @@
                   dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                   phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
    
-                  do iband = 1, pkpoint%nbands
+                  do iband = 1, pkpoint%nbands - 1
 
                     ! Cut off lengthy notation                 
                     nullify (piband); piband=>pkpoint%transition(iband)
@@ -643,7 +643,7 @@
               ! Cut off lenthy notation                                   
               nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
 
-              do iband = 1, pkpoint%nbands
+              do iband = 1, pkpoint%nbands - 1
 
                 ! Cut off lengthy notation
                 nullify (piband); piband=>pkpoint%transition(iband)
@@ -711,7 +711,7 @@
                 ! Cut off lenthy notation
                 nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
 
-                do iband = 1, pkpoint%nbands
+                do iband = 1, pkpoint%nbands - 1
 
                   ! Cut off lengthy notation
                   nullify (piband); piband=>pkpoint%transition(iband)
@@ -797,7 +797,7 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer ialpha, iatom, jatom, katom        !< the three parties involved
+        integer ialpha, iatom, jatom        !< the three parties involved
         integer ibeta, jbeta                !< cells for three atoms
         integer ineigh, mneigh              !< counter over neighbors
         integer ispecies, in1, in2, indna   !< species numbers
@@ -813,7 +813,6 @@
         integer mmu, nnu                 !< counter over coefficients of wavefunctions
         integer iband, jband             !< counter over transitions
         integer ikpoint                  !< counter over kpoints
-        integer nbands                   !< number of bands
 
         real z                              !< distance between r1 and r2
         real x, cost                        !< dnabc and angle
@@ -1129,7 +1128,7 @@
                 dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                 phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
    
-                do iband = 1, pkpoint%nbands
+                do iband = 1, pkpoint%nbands - 1
 
                   ! Cut some lengthy notation
                   nullify (piband); piband=>pkpoint%transition(iband)
