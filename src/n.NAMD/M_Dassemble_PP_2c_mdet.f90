@@ -253,12 +253,12 @@
         integer num_neigh                !< number of neighbors
         integer mbeta                    !< cell containing neighbor of iatom
 
-        integer imu, inu, jnu            !< counters over orbitals
+        integer imu, inu                 !< counters over orbitals
         integer norb_mu, norb_nu         !< size of the block for the pair
 
-        real z                          !< distance between r1 and r2
+        real z                           !< distance between r1 and r2
 
-        real, dimension (3) :: eta        !< vector part of epsilon eps(:,3)
+        real, dimension (3) :: eta       !< vector part of epsilon eps(:,3)
         real, dimension (3, 3) :: eps    !< the epsilon matrix
         real, dimension (3, 3, 3) :: deps !< derivative of epsilon matrix
         real, dimension (3) :: r1, r2    !< positions of iatom and jatom
@@ -583,7 +583,7 @@
               ! Cut some lengthy notation
               nullify (pkpoint); pkpoint=>s%kpoints(ikpoint)
     
-              do iband = 1, pkpoint%nbands 
+              do iband = 1, pkpoint%nbands - 1
 
                 ! Cut some lengthy notation
                 nullify (piband); piband=>pkpoint%transition(iband)
@@ -720,7 +720,7 @@
                 dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                 phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
     
-                do iband = 1, pkpoint%nbands  
+                do iband = 1, pkpoint%nbands - 1
 
                   ! Cut some lengthy notation
                   nullify (piband); piband=>pkpoint%transition(iband)
@@ -859,7 +859,7 @@
                 dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                 phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
 
-                do iband = 1, pkpoint%nbands      
+                do iband = 1, pkpoint%nbands - 1     
 
                   ! Cut some lengthy notation
                   nullify (piband); piband=>pkpoint%transition(iband)

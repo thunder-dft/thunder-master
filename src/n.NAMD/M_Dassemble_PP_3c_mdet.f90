@@ -109,7 +109,7 @@
 
 ! Variable Declaration and Description
 ! ===========================================================================
-        integer ialpha, iatom, jatom, katom         !< counter over atoms and neighbors
+        integer ialpha, iatom, jatom         !< counter over atoms and neighbors
         integer in1, in2, indna              !< species numbers
         integer num_neigh                    !< number of neighbors
         integer ibeta, jbeta
@@ -122,7 +122,6 @@
         integer mmu, nnu                 !< counter over coefficients of wavefunctions
         integer iband, jband             !< counter over transitions
         integer ikpoint                  !< counter over kpoints
-        integer nbands                   !< number of bands
 
         real dot                        !< dot product between K and r
         real gutr, cmunu                !< density matrix elements for mdet
@@ -284,7 +283,7 @@
                 dot = sks(1)*vec(1) + sks(2)*vec(2) + sks(3)*vec(3)
                 phasex = cmplx(cos(dot),sin(dot))*s%kpoints(ikpoint)%weight
    
-                do iband = 1, pkpoint%nbands
+                do iband = 1, pkpoint%nbands - 1
 
                   ! Cut some lengthy notation
                   nullify (piband); piband=>pkpoint%transition(iband)
