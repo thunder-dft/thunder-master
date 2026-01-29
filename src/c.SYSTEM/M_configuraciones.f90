@@ -1,6 +1,6 @@
 ! copyright info:
 !
-!                             @Copyright 2022
+!                             @Copyright 2025
 !                           Fireball Committee
 ! Hong Kong Quantum AI Laboratory, Ltd. - James P. Lewis, Chair
 ! Universidad de Madrid - Jose Ortega
@@ -305,7 +305,7 @@
         end type T_structure
 
         ! options namelist
-        integer ipi, inet, port, iquench, iensemble, imd
+        integer ipi, inet, port, iquench, iensemble
         integer iconstraint_rcm, iconstraint_vcm, iconstraint_L, iconstraint_KE
         integer ifix_neighbors, ifix_CHARGES
         integer nstepi, nstepf
@@ -328,7 +328,7 @@
         character (len = 1024) :: host
 
         namelist /options/ nstepi, nstepf, ipi, inet, port, host, iquench,   &
-     &                     iensemble, imd, T_initial, T_final, T_want,       &
+     &                     iensemble, T_initial, T_final, T_want,            &
      &                     taurelax, iconstraint_rcm, iconstraint_vcm,       &
      &                     iconstraint_L, iconstraint_KE, ifix_neighbors,    &
      &                     ifix_CHARGES, efermi_T, dt,                       &
@@ -465,7 +465,6 @@
         beta_set = beta
         qstate = 0.0d0
         Ecut_set = Ecut
-        imd = 0
 
 ! Open structures.inp file and read global &OUTPUT options
         filename = 'structures.inp'
@@ -554,7 +553,6 @@
         write (222, '(a26, f13.1)') ' efermi_T               = ', efermi_T
         write (222, '(a26, f13.2)') ' dt                     = ', dt
         write (222, '(a26, i13)') ' iensemble              = ', iensemble
-        write (222, '(a26, i13)') ' imd                    = ', imd
         write (222, '(a26, i13)') ' iconstraint_rcm        = ', iconstraint_rcm
         write (222, '(a26, i13)') ' iconstraint_vcm        = ', iconstraint_vcm
         write (222, '(a26, i13)') ' iconstraint_L          = ', iconstraint_L

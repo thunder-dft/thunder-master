@@ -49,3 +49,7 @@ endif
 #XC = LDA
 XC = PBE
 #XC = BLYP
+
+# Choose the molecular dynamics algorithm
+#MDA = GEAR
+MDA = VERLET
