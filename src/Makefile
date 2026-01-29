@@ -200,7 +200,7 @@ endif
 # ****************************** SCALAPACK *********************************** 
 ifneq (,$(findstring SCALAPACK, ${DIAGONALIZATION}))
 PARALLEL = M_mpi.o
-SOLVESH = M_diagonalization_Lowdin_scalapack_slave.o M_diagonalization_Lowdin_scalapack.o M_kspace_Lowdin_scalapack.o M_density_matrix.o
+SOLVESH = M_diagonalization_Lowdin_scalapack_slave.o M_diagonalization_Lowdin_scalapack.o M_kspace_Lowdin_scalapack.o
 endif
 
 # Pack blacsaba.o pclagetter.o pclaputter.o  to a library
