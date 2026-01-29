@@ -125,7 +125,8 @@
         do iatom = 1, s%natoms
           allocate (s%atom(iatom)%xdot(0:ngear,3)); s%atom(iatom)%xdot = 0.0d0
         end do
-
+! FIX ME - why do we need to allocate this TYPE?
+        allocate (s%md)
      
 ! Procedure
 ! ===========================================================================
@@ -247,7 +248,7 @@
      &         *(s%atom(iatom)%vatom(1)**2 + s%atom(iatom)%vatom(2)**2       &
      &                                     + s%atom(iatom)%vatom(3)**2)
           end do
-          T_instantaneous = (2.0d0/3.0d0)*(s%md%tkinetic/s%natoms)*P_kconvert
+          s%md%T_instantaneous = (2.0d0/3.0d0)*(s%md%tkinetic/s%natoms)*P_kconvert
 
 ! The temperature we now have (3/2 kb * T_instantaneous = tkinetic )
           write (logfile,*) ' T_initial = ', T_initial
@@ -728,101 +729,68 @@
         write (logfile,*) ' Nuclear Evolution '
         
 ! Corrector
-        if (imd .eq. 0) then
-          write (logfile,*)
-          write (logfile,*) ' Predictor-Corrector: correct the positions. '
+        write (logfile,*)
+        write (logfile,*) ' Predictor-Corrector: correct the positions. '
   
-          call corrector (s, itime_step)
-          do iatom = 1, s%natoms
-            s%atom(iatom)%ratom = s%atom(iatom)%xdot(0,:)
-            s%atom(iatom)%vatom = s%atom(iatom)%xdot(1,:)
-          end do
+        call corrector (s, itime_step)
+        do iatom = 1, s%natoms
+          s%atom(iatom)%ratom = s%atom(iatom)%xdot(0,:)
+          s%atom(iatom)%vatom = s%atom(iatom)%xdot(1,:)
+        end do
 
 ! Calculate the kinetic energy and the instantaneous temperature
+        s%md%tkinetic = 0.0d0
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          s%md%tkinetic = s%md%tkinetic                                                 &
+     &      + (0.5d0/P_fovermp)*species(in1)%xmass                            &
+     &       *(s%atom(iatom)%vatom(1)**2 + s%atom(iatom)%vatom(2)**2          &
+                                         + s%atom(iatom)%vatom(3)**2)
+        end do
+        s%md%T_instantaneous = (2.0d0/3.0d0)*(s%md%tkinetic/s%natoms)*P_kconvert
+
+! Rescale the temperature if iensemble = 1 (constant temperature MD)
+        if (iensemble .eq. 1 .and. .not. s%md%T_instantaneous .le. 0) then
+          vscale = sqrt(T_want/s%md%T_instantaneous)
+          write (logfile,*) ' Constant temperature ensemble (iensemble = 1): scaling velocities. '
+          write (logfile,*) ' Scaling = ', vscale, ' It should be near 1.0!'
+          do iatom = 1, s%natoms
+            s%atom(iatom)%vatom = s%atom(iatom)%vatom*vscale
+            s%atom(iatom)%xdot(1,:) = s%atom(iatom)%xdot(1,:)*vscale
+          end do
+        end if
+        s%md%T_average = ((itime_step - 1)*s%md%T_average + s%md%T_instantaneous)/itime_step
+        write (logfile,*) ' Average Temperature = ', s%md%T_average
+
+! Predictor
+        write (logfile,*)
+        write (logfile,*) ' Predictor-Corrector: predict the positions. '
+        call predictor (s, itime_step)
+
+! Scale velocities again after predictor step
+        if (iensemble .eq. 1) then
           s%md%tkinetic = 0.0d0
           do iatom = 1, s%natoms
             in1 = s%atom(iatom)%imass
-            s%md%tkinetic = s%md%tkinetic                                                 &
-     &        + (0.5d0/P_fovermp)*species(in1)%xmass                            &
-     &         *(s%atom(iatom)%vatom(1)**2 + s%atom(iatom)%vatom(2)**2          &
-     &                                     + s%atom(iatom)%vatom(3)**2)
+            s%md%tkinetic = s%md%tkinetic                                              &
+     &        + (0.5d0/P_fovermp)*species(in1)%xmass                         &
+     &         *(s%atom(iatom)%vatom(1)**2 + s%atom(iatom)%vatom(2)**2       &
+     &                                       + s%atom(iatom)%vatom(3)**2)
           end do
           s%md%T_instantaneous = (2.0d0/3.0d0)*(s%md%tkinetic/s%natoms)*P_kconvert
-
-! Rescale the temperature if iensemble = 1 (constant temperature MD)
-          if (iensemble .eq. 1 .and. .not. s%md%T_instantaneous .le. 0) then
-            vscale = sqrt(T_want/s%md%T_instantaneous)
-            write (logfile,*) ' Constant temperature ensemble (iensemble = 1): scaling velocities. '
-            write (logfile,*) ' Scaling = ', vscale, ' It should be near 1.0!'
-            do iatom = 1, s%natoms
-              s%atom(iatom)%vatom = s%atom(iatom)%vatom*vscale
-               s%atom(iatom)%xdot(1,:) = s%atom(iatom)%xdot(1,:)*vscale
-           end do
+          vscale = sqrt(T_want/s%md%T_instantaneous)
+          do iatom = 1, s%natoms
+            s%atom(iatom)%vatom = s%atom(iatom)%vatom*vscale
+            s%atom(iatom)%xdot(1,:) = s%atom(iatom)%xdot(1,:)*vscale
+          end do
+          if (vscale .gt. 1.3d0 .or. vscale .lt. 0.7d0) then
+            write (logfile,*)
+            write (logfile,*) ' Warning: significant velocity scaling needed after '
+            write (logfile,*) ' predictor. Scaling factor = ', vscale
+            write (logfile,*)
           end if
-          s%md%T_average = ((itime_step - 1)*s%md%T_average + s%md%T_instantaneous)/itime_step
-          write (logfile,*) ' Average Temperature = ', s%md%T_average
+        end if
 
-! Predictor
-          write (logfile,*)
-          write (logfile,*) ' Predictor-Corrector: predict the positions. '
-          call predictor (s, itime_step)
-
-! Scale velocities again after predictor step
-          if (iensemble .eq. 1) then
-            s%md%tkinetic = 0.0d0
-            do iatom = 1, s%natoms
-              in1 = s%atom(iatom)%imass
-              s%md%tkinetic = s%md%tkinetic                                              &
-     &          + (0.5d0/P_fovermp)*species(in1)%xmass                         &
-     &           *(s%atom(iatom)%vatom(1)**2 + s%atom(iatom)%vatom(2)**2       &
-     &                                       + s%atom(iatom)%vatom(3)**2)
-            end do
-            s%md%T_instantaneous = (2.0d0/3.0d0)*(s%md%tkinetic/s%natoms)*P_kconvert
-            vscale = sqrt(T_want/s%md%T_instantaneous)
-            do iatom = 1, s%natoms
-              s%atom(iatom)%vatom = s%atom(iatom)%vatom*vscale
-              s%atom(iatom)%xdot(1,:) = s%atom(iatom)%xdot(1,:)*vscale
-            end do
-            if (vscale .gt. 1.3d0 .or. vscale .lt. 0.7d0) then
-              write (logfile,*)
-              write (logfile,*) ' Warning: significant velocity scaling needed after '
-              write (logfile,*) ' predictor. Scaling factor = ', vscale
-              write (logfile,*)
-            end if
-          end if
-
-! velocity - Verlet
-        else if (imd .eq. 1) then
-          if (itime_step .gt. 1) then
-            write (s%logfile,*) ' Second half velocity update '
-            if ( iensemble .eq. 0 ) then
-              call vverlet_velocity (s)   
-            else if ( iensemble .eq. 1 ) then  
-              call langevin_velocity (s)
-            end if
-            call writeout_momentum (s)
-            write(s%logfile, *) ' T_instantaneous", s%md%T_instantaneous
-          end if
-
-          write (s%logfile,*) ' First half velocity update '
-          write (s%logfile,*) ' And coordinate update '   
-           
-! Rescaling temperature for Berendson NVT
-          if ( iensemble .eq. 0 ) then
-            write (s%logfile, *) ' NVE NOW '
-            call vverlet_velocity (s)
-            call vverlet_coordinate (s)              
-          else if ( iensemble .eq. 1 ) then
-            write (s%logfile, *) ' Langevin NOW '
-             do iatom = 1, s%natoms
-              allocate (s%atom(iatom)%langevin)
-            end do
-
-            call langevin (s)
-            call langevin_velocity (s)
-            call langevin_coordinate (s)             
-          end if    
-        end if ! end imd if
 ! Write out coodinates and velocity
         call writeout_coodinate_velocity (s)
 
@@ -1169,451 +1137,6 @@
         end subroutine predictor
 
 ! ===========================================================================
-! vverlet_coordinate
-! ===========================================================================
-! Subroutine Description
-! ===========================================================================
-! This is the velocity verlet to update coordinate
-! ===========================================================================
-! Code written by:
-!> @author James P. Lewis
-! Box 6315, 135 Willey St.
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
-!
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
-! ===========================================================================
-        subroutine vverlet_coordinate(s)
-
-        implicit none
-  
-        include '../include/constants.h'
-
-! Argument Declaration and Description
-! ===========================================================================
-! Input  
-        type(T_structure), target :: s           !< the structure to be used
-
-! Parameters and Data Declaration
-! ===========================================================================
-! None
-
-! Variable Declaration and Description
-! ===========================================================================
-        integer :: iatom	        ! counter of atoms
-
-! Allocate Arrays
-! ===========================================================================
-! None
-
-! Procedure
-! ===========================================================================  
-        do iatom = 1, s%natoms     
-          s%atom(iatom)%ratom = s%atom(iatom)%ratom                          &
-    &                          + s%atom(iatom)%vatom*dt
-        end do
-
-! Format Statements
-! ===========================================================================
-! None
-
-! End Subroutine
-! ===========================================================================
-        return     
-        end subroutine vverlet_coordinate
-
-
-! ===========================================================================
-! vverlet_velocity
-! ===========================================================================
-! Subroutine Description
-! ===========================================================================
-! This is the velocity verlet to update velocity
-! ===========================================================================
-! Code written by:
-!> @author James P. Lewis
-! Box 6315, 135 Willey St.
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
-!
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
-! ===========================================================================
-        subroutine vverlet_velocity(s)
-
-        implicit none
-  
-        include '../include/constants.h'
-
-! Argument Declaration and Description
-! ===========================================================================
-! Input  
-        type(T_structure), target :: s           !< the structure to be used
-
-
-! Parameters and Data Declaration
-! ===========================================================================
-! None
-
-! Variable Declaration and Description
-! ===========================================================================
-        integer :: iatom	        ! counter of atoms
-        integer :: in1	                ! counter of species
-
-        real :: xmass	                ! mass of atom
-
-! Allocate Arrays
-! ===========================================================================
-! None
-
-! Procedure
-! ===========================================================================  
-        do iatom = 1, s%natoms
-          in1 = s%atom(iatom)%imass
-          xmass = species(in1)%xmass          
-
-          s%atom(iatom)%vatom = s%atom(iatom)%vatom                          &
-    &                          + 0.5d0*(P_fovermp*s%forces(iatom)%ftot/xmass)*dt
-        end do
-
-        ! Update kinetic energy and temperature after updating velocity              
-        s%md%tkinetic = 0.0d0
-        do iatom = 1, s%natoms
-          in1 = s%atom(iatom)%imass            
-          s%md%tkinetic = s%md%tkinetic                                      &
-   &                     + (0.5d0/P_fovermp)*species(in1)%xmass              &
-   &                      *(s%atom(iatom)%vatom(1)**2                        &
-   &                        +  s%atom(iatom)%vatom(2)**2                     &
-   &                        +  s%atom(iatom)%vatom(3)**2)
-        end do
-        s%md%T_instantaneous = (2.0d0/3.0d0)*(s%md%tkinetic/s%natoms)*P_kconvert   
-        s%md%T_previous = s%md%T_instantaneous
-
-! Format Statements
-! ===========================================================================
-! None
-
-! End Subroutine
-! ===========================================================================
-        return     
-        end subroutine vverlet_velocity
-
-! ===========================================================================
-! langevin
-! ===========================================================================
-! Subroutine Description
-! ===========================================================================
-! This is the velocity Verlet to update velocity
-! ===========================================================================
-! Code written by:
-!> @author James P. Lewis
-! Box 6315, 135 Willey St.
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
-!
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
-! ===========================================================================
-        subroutine langevin (s)
-
-        implicit none
-  
-        include '../include/constants.h'
-
-! Argument Declaration and Description
-! ===========================================================================
-! Input  
-        type(T_structure), target :: s           !< the structure to be used
-
-! Parameters and Data Declaration
-! ===========================================================================
-        real, parameter :: friction = 0.01d0 / 0.009822694788464065d0
-
-! Variable Declaration and Description
-! ===========================================================================
-        integer :: iatom	            ! counter of atoms
-        integer :: in1	                ! counter of species
-        integer :: ix	                ! counter of spatial dimension
-
-        real :: xmass	                ! mass of atom
-        real :: c1, c2, c3, c4, c5	    ! parameters for Langevin
-        real :: sigma
-        real :: u1, u2
-
-        real, dimension (3) :: xi, eta
-        real, dimension (3) :: ratom_random, vatom_random
-
-        type(T_md), pointer :: pmd
-
-! Allocate Arrays
-! ===========================================================================
-! None
-
-! Procedure
-! ===========================================================================  
-        do iatom = 1, s%natoms
-
-          ! Gaussian random numbers
-          do ix = 1, 3
-            call random_number(u1)
-            call random_number(u2)
-            if (u1 .lt. 1.0d-12) u1 = 1.0d-12   ! avoid log(0)
-            xi(ix) = sqrt(-2.0d0 * log(u1)) * cos(2.0d0 * acos(-1.0d0) * u2)
-            call random_number(u1)              
-            call random_number(u2)
-            if (u1 .lt. 1.0d-12) u1 = 1.0d-12   ! avoid log(0)
-            eta(ix) = sqrt(-2.0d0 * log(u1)) * cos(2.0d0 * acos(-1.0d0) * u2)     
-          end do
-
-          ! Temperature in energy units      
-          in1 = s%atom(iatom)%imass
-          xmass = species(in1)%xmass                    
-          sigma = sqrt(2.0d0*friction * P_fovermp*T_want/(P_kconvert*xmass))
-
-          ! Coefficients (ASE Langevin)
-          c1 = dt / 2.0d0 - dt * dt * friction / 8.0d0
-          c2 = dt * friction / 2.0d0 - dt * dt * friction * friction / 8.0d0
-          c3 = sqrt(dt) * sigma / 2.0d0 - dt**1.5d0 * friction * sigma / 8.0d0
-          c5 = dt**1.5d0 * sigma / (2.0d0 * sqrt(3.0d0))
-          c4 = friction / 2.0d0 * c5
-
-          ! Random displacement & velocity
-          ratom_random = c5 * eta
-          vatom_random = c3 * xi - c4 * eta
-
-          ! Cut off length
-          nullify (pmd); pmd => s%atom(iatom)%langevin
-
-          ! store variables
-          pmd%c1 = c1; pmd%c2 = c2
-          pmd%ratom_random = ratom_random
-          pmd%vatom_random = vatom_random
-        end do
-
-! Format Statements
-! ===========================================================================
-! None
-
-! End Subroutine
-! ===========================================================================
-        return     
-        end subroutine langevin
-
-! ===========================================================================
-! langevin_coordinate
-! ===========================================================================
-! Subroutine Description
-! ===========================================================================
-! This is the velocity verlet to update coordinate
-! ===========================================================================
-! Code written by:
-!> @author James P. Lewis
-! Box 6315, 135 Willey St.
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
-!
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
-! ===========================================================================
-        subroutine langevin_coordinate(s)
-
-        implicit none
-  
-        include '../include/constants.h'
-
-! Argument Declaration and Description
-! ===========================================================================
-! Input  
-        type(T_structure), target :: s           !< the structure to be used
-
-! Parameters and Data Declaration
-! ===========================================================================
-! None
-
-! Variable Declaration and Description
-! ===========================================================================
-        integer :: iatom	        ! counter of atoms
-
-        type(T_md), pointer :: pmd
-
-! Allocate Arrays
-! ===========================================================================
-! None
-
-! Procedure
-! ===========================================================================  
-        do iatom = 1, s%natoms  
-
-          ! Cut off length
-          nullify (pmd); pmd => s%atom(iatom)%langevin   
-          s%atom(iatom)%ratom = s%atom(iatom)%ratom                          &
-&                              + dt*s%atom(iatom)%vatom                      &
-&                              + pmd%ratom_random
-        end do
-
-! Format Statements
-! ===========================================================================
-! None
-
-
-! End Subroutine
-! ===========================================================================
-        return     
-        end subroutine langevin_coordinate
-
-! ===========================================================================
-! langevin_velocity
-! ===========================================================================
-! Subroutine Description
-! ===========================================================================
-! This is the velocity verlet to update velocity for langevin
-! ===========================================================================
-! Code written by:
-!> @author James P. Lewis
-! Box 6315, 135 Willey St.
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
-!
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
-! ===========================================================================
-        subroutine langevin_velocity (s)
-
-        implicit none
-  
-        include '../include/constants.h'
-
-! Argument Declaration and Description
-! ===========================================================================
-! Input  
-        type(T_structure), target :: s           !< the structure to be used
-
-! Parameters and Data Declaration
-! ===========================================================================
-! None
-
-! Variable Declaration and Description
-! ===========================================================================
-        integer :: iatom	        ! counter of atoms
-        integer :: in1	                ! counter of species
-
-        real :: xmass	                ! mass of atom
-
-        type(T_md), pointer :: pmd
-! Allocate Arrays
-! ===========================================================================
-! None
-
-! Procedure
-! ===========================================================================  
-        do iatom = 1, s%natoms
-          in1 = s%atom(iatom)%imass
-          xmass = species(in1)%xmass
-
-          ! Cut off length
-          nullify (pmd); pmd => s%atom(iatom)%langevin
-          s%atom(iatom)%vatom = s%atom(iatom)%vatom  &
-&                              + pmd%c1*P_fovermp*s%forces(iatom)%ftot/xmass &
-&                              - pmd%c2*s%atom(iatom)%vatom                  &
-&                              + pmd%vatom_random
-        end do
-
-        ! Update kinetic energy and temperature after updating velocity              
-        s%md%tkinetic = 0.0d0
-        do iatom = 1, s%natoms
-          in1 = s%atom(iatom)%imass            
-          s%md%tkinetic = s%md%tkinetic                                      &
-   &                 + (0.5d0/P_fovermp)*species(in1)%xmass                  &
-   &                  *(s%atom(iatom)%vatom(1)**2 +  s%atom(iatom)%vatom(2)**2 &
-   &                                              +  s%atom(iatom)%vatom(3)**2)
-        end do
-        s%md%T_instantaneous = (2.0d0/3.0d0)*(s%md%tkinetic/s%natoms)*P_kconvert   
-        s%md%T_previous = s%md%T_instantaneous
-
-! Format Statements
-! ===========================================================================
-! None
-
-! End Subroutine
-! ===========================================================================
-        return     
-        end subroutine langevin_velocity
-
-! ===========================================================================
-! berendson
-! ===========================================================================
-! Subroutine Description
-! ===========================================================================
-! This is the berendson
-! ===========================================================================
-! Code written by:
-!> @author James P. Lewis
-! Box 6315, 135 Willey St.
-! Department of Physics
-! West Virginia University
-! Morgantown, WV 26506-6315
-!
-! (304) 293-5141 (office)
-! (304) 293-5732 (FAX)
-! ===========================================================================
-        subroutine berendson (s)
-
-        implicit none
-  
-        include '../include/constants.h'
-
-! Argument Declaration and Description
-! ===========================================================================
-! Input  
-        type(T_structure), target :: s           !< the structure to be used
-
-
-! Parameters and Data Declaration
-! ===========================================================================
-        real, parameter :: tau = 100.0d0 * 0.009822694788464065
-
-! Variable Declaration and Description
-! ===========================================================================
-        integer :: iatom	              ! counter of atoms
-
-        real :: T_scale
-
-! Allocate Arrays
-! ===========================================================================
-! None
-
-! Procedure
-! ===========================================================================  
-        s%md%T_instantaneous = (2.0d0/3.0d0)*(s%md%tkinetic/s%natoms)*P_kconvert
-        
-        ! sqrt(1 + (T0/T - 1) * dt/tau)
-        T_scale = sqrt(1.0d0 + (s%md%T_instantaneous/s%md%T_previous - 1.0d0) &
-                              * dt/tau)
-        
-        ! limit scaling factor
-        if (T_scale .gt. 1.1d0) T_scale = 1.1d0
-        if (T_scale .lt. 0.9d0) T_scale = 0.9d0
-        do iatom = 1, s%natoms
-          s%atom(iatom)%vatom = s%atom(iatom)%vatom * T_scale
-        end do
-
-! Format Statements
-! ===========================================================================
-! None
-
-! End Subroutine
-! ===========================================================================
-        return     
-        end subroutine berendson
-
-
-! ===========================================================================
 ! writeout_coodinate_velocity
 ! ===========================================================================
 ! Subroutine Description
@@ -1702,7 +1225,7 @@
 
 
 ! ===========================================================================
-! writeout_ang_lin_mon
+! writeout_momentum
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
