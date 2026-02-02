@@ -894,6 +894,7 @@
 
 ! Argument Declaration and Description
 ! ===========================================================================
+! Input
         type(T_structure), target :: s           !< the structure to be used
 
 ! Parameters and Data Declaration
@@ -1009,6 +1010,7 @@
 
 ! Argument Declaration and Description
 ! ===========================================================================
+! Input
         type(T_structure), target :: s           !< the structure to be used.
 
 ! Parameters and Data Declaration
@@ -1179,7 +1181,6 @@
 ! ===========================================================================
         end subroutine dij_phase
 
-
 ! ===========================================================================
 ! couplings
 ! ===========================================================================
@@ -1292,7 +1293,6 @@
 ! ===========================================================================
         return
         end subroutine couplings
-
 
 ! ===========================================================================
 ! fewest_switches_mdet
@@ -1548,7 +1548,6 @@
 ! ===========================================================================
         return
         end subroutine mc_switch
-
 
 ! ===========================================================================
 ! transition
@@ -1829,6 +1828,7 @@
         return
         end subroutine transition
 
+! ===========================================================================
 ! recalculation
 ! ===========================================================================
 ! Subroutine Description
@@ -1963,38 +1963,38 @@
 ! Note that self-consistency is preformed regardless of method used.
 ! But, in Harris, we just do a single scf cycle.
 ! ===========================================================================
-            call destroy_denmat (s)
-            call destroy_assemble_ewald (s)
-            call destroy_assemble_vxc (s)
-            call destroy_assemble_vna (s)
+        call destroy_denmat (s)
+        call destroy_assemble_ewald (s)
+        call destroy_assemble_vxc (s)
+        call destroy_assemble_vna (s)
 
-            sigma = 999.0d0
-            iscf_iteration = 1
-            do while (sigma .gt. scf_tolerance_set .and.                     &
-      &               iscf_iteration .le. max_scf_iterations_set - 1)
-!             call cpu_time (time_scf_begin)
-!             write (s%logfile, *)
-!             write (s%logfile, '(A, I5, A7, I5, A1)') 'Self-Consistent Field step: ', &
-!                  & iscf_iteration, ' (max: ', max_scf_iterations_set, ')'
-!             write (s%logfile, '(A)') '----------------------------------------------------'
-!             write (s%logfile, *)
+        sigma = 999.0d0
+        iscf_iteration = 1
+        do while (sigma .gt. scf_tolerance_set .and.                         &
+      &           iscf_iteration .le. max_scf_iterations_set - 1)
+!         call cpu_time (time_scf_begin)
+!         write (s%logfile, *)
+!         write (s%logfile, '(A, I5, A7, I5, A1)')                           &
+!           'Self-Consistent Field step: ', iscf_iteration, ' (max: ', max_scf_iterations_set, ')'
+!         write (s%logfile, '(A)') '----------------------------------------------------'
+!         write (s%logfile, *)
 
-!             write (s%logfile, *) ' Two-center charge dependent assemblers. '
-              call assemble_vna_2c (s)
-              call assemble_ewaldsr (s)
-              call assemble_ewaldlr (s)
+!         write (s%logfile, *) ' Two-center charge dependent assemblers. '
+          call assemble_vna_2c (s)
+          call assemble_ewaldsr (s)
+          call assemble_ewaldlr (s)
 
-!             call cpu_time (time_initial)
-!             write (s%logfile, *)
-!              write (s%logfile, *) ' Three-center charge dependent assemblers. '
-              call assemble_vna_3c (s)
+!         call cpu_time (time_initial)
+!         write (s%logfile, *)
+!         write (s%logfile, *) ' Three-center charge dependent assemblers. '
+          call assemble_vna_3c (s)
 
-!             write (s%logfile, *)
-!             write (s%logfile, *) ' Exchange-correlation assemblers. '
-              call assemble_vxc (s)
+!         write (s%logfile, *)
+!         write (s%logfile, *) ' Exchange-correlation assemblers. '
+          call assemble_vxc (s)
 
-!             call cpu_time (time_final)
-!             write (s%logfile, *) ' vna_3c, vxc time: ', time_final - time_initial
+!         call cpu_time (time_final)
+!         write (s%logfile, *) ' vna_3c, vxc time: ', time_final - time_initial
 
 ! ===========================================================================
 ! ---------------------------------------------------------------------------
@@ -2002,20 +2002,20 @@
 ! ---------------------------------------------------------------------------
 ! ===========================================================================
 ! Calculating the overlap matrix in K space
-!             write (s%logfile, *)
-!             write (s%logfile, *) ' Kspace '
-!             call cpu_time (time_initial)
-              call driver_kspace (s, iscf_iteration)
-              call density_matrix (s, efermi)            
-!             if (iwriteout_density .eq. 1) call writeout_density (s)
+!         write (s%logfile, *)
+!         write (s%logfile, *) ' Kspace '
+!         call cpu_time (time_initial)
+          call driver_kspace (s, iscf_iteration)
+          call density_matrix (s, efermi)
+!         if (iwriteout_density .eq. 1) call writeout_density (s)
 
-!             call cpu_time (time_final)
-!             write (s%logfile, *) ' kspace time: ', time_final - time_initial
-              if (ifix_CHARGES .ne. 1) then
-                call calculate_charges (s)
-                call Qmixer (s, iscf_iteration, sigma)
-              end if
-              if (iwriteout_charges .eq. 1) call writeout_charges (s)
+!         call cpu_time (time_final)
+!         write (s%logfile, *) ' kspace time: ', time_final - time_initial
+          if (ifix_CHARGES .ne. 1) then
+            call calculate_charges (s)
+            call Qmixer (s, iscf_iteration, sigma)
+          end if
+          if (iwriteout_charges .eq. 1) call writeout_charges (s)
 
 ! ===========================================================================
 ! ---------------------------------------------------------------------------
@@ -2023,136 +2023,136 @@
 ! ---------------------------------------------------------------------------
 ! ===========================================================================
 ! short-range interactions (double-counting interactions)
-              call calculate_ebs (s, ebs)
-              uii_uee = 0.0d0; uxcdcc = 0.0d0
-              call assemble_uee (s, uii_uee)
-              call assemble_uxc (s, uxcdcc)
-              ! Evaluate total energy
-              etot = ebs + uii_uee + uxcdcc
+          call calculate_ebs (s, ebs)
+          uii_uee = 0.0d0; uxcdcc = 0.0d0
+          call assemble_uee (s, uii_uee)
+          call assemble_uxc (s, uxcdcc)
+          ! Evaluate total energy
+          etot = ebs + uii_uee + uxcdcc
 
-              if (sigma .gt. scf_tolerance_set .and.                      &
-      &           iscf_iteration .le. max_scf_iterations_set - 1 .and.    &
-      &           ifix_CHARGES .ne. 1) then
-!               write (s%logfile, *) ' Destroy some SCF arrays... '
-                call destroy_denmat (s)
-                call destroy_assemble_ewald (s)
-                call destroy_assemble_vxc (s)
-                call destroy_assemble_vna (s)
-              end if
-!             call cpu_time (time_scf_end)
-!             write (s%logfile, *)
-!             write (s%logfile, *) ' SCF ENERGY time: ', time_scf_end - time_scf_begin
+          if (sigma .gt. scf_tolerance_set .and.                             &
+      &       iscf_iteration .le. max_scf_iterations_set - 1 .and.           &
+      &       ifix_CHARGES .ne. 1) then
+!           write (s%logfile, *) ' Destroy some SCF arrays... '
+            call destroy_denmat (s)
+            call destroy_assemble_ewald (s)
+            call destroy_assemble_vxc (s)
+            call destroy_assemble_vna (s)
+          end if
+!         call cpu_time (time_scf_end)
+!         write (s%logfile, *)
+!         write (s%logfile, *) ' SCF ENERGY time: ', time_scf_end - time_scf_begin
 
 ! After building the density matrix, then we can free up ewald and denmat arrays
 ! - we reallocate these during the next SCF cycle anyways.
 ! We also free up the vna and vxc arrays if this is not converged.
-              if (sigma .gt. 0.0d0) then
-                iscf_iteration = iscf_iteration + 1
-              else
-                exit
-              end if
-              if (ifix_CHARGES .eq. 1) exit
-            end do
+          if (sigma .gt. 0.0d0) then
+            iscf_iteration = iscf_iteration + 1
+          else
+            exit
+          end if
+          if (ifix_CHARGES .eq. 1) exit
+        end do
 
-!           call writeout_energies (s, ebs, uii_uee, uxcdcc)
+!       call writeout_energies (s, ebs, uii_uee, uxcdcc)
 
 ! ===========================================================================
 ! ---------------------------------------------------------------------------
 !                               F O R C E S
 ! ---------------------------------------------------------------------------
 ! ===========================================================================
-!           call cpu_time (time_forces_begin)
-            call initialize_forces (s)
+!       call cpu_time (time_forces_begin)
+        call initialize_forces (s)
 
 ! NAC Initialize NAC dij and NAC density            
-            call initialize_nac (s)
-            call density_matrix_nac (s)
+        call initialize_nac (s)
+        call density_matrix_nac (s)
 
-            call writeout_density_nac (s)            
-            call densityPP_matrix (s)
-            call cape_matrix (s)
+        call writeout_density_nac (s)
+        call densityPP_matrix (s)
+        call cape_matrix (s)
 
 ! After building the density matrix, then we can free up the kspace memory
-            call destroy_kspace (s)
+        call destroy_kspace (s)
 
-!           write (s%logfile, *)
-!           write (s%logfile,'(A)') 'Forces '
-!           write (s%logfile,'(A)') '------ '
+!       write (s%logfile, *)
+!       write (s%logfile,'(A)') 'Forces '
+!       write (s%logfile,'(A)') '------ '
 
 ! Assemble the derivative blocks needed for forces
-!           write (s%logfile, *) ' Two-center non-charge dependent Dassemblers.'
-            call Dassemble_S (s)
-            call Dassemble_T (s)
-            call Dassemble_dipole_z (s)
-            call Dassemble_svnl (s)
-            call Dassemble_vnl_2c (s)
+!       write (s%logfile, *) ' Two-center non-charge dependent Dassemblers.'
+        call Dassemble_S (s)
+        call Dassemble_T (s)
+        call Dassemble_dipole_z (s)
+        call Dassemble_svnl (s)
+        call Dassemble_vnl_2c (s)
 
-!           write (s%logfile, *) ' Two-center charge dependent Dassemblers.'
-            call Dassemble_vna_2c (s)
-            call Dassemble_ewaldsr (s)
-            call Dassemble_ewaldlr (s)
+!       write (s%logfile, *) ' Two-center charge dependent Dassemblers.'
+        call Dassemble_vna_2c (s)
+        call Dassemble_ewaldsr (s)
+        call Dassemble_ewaldlr (s)
 
-!           write (s%logfile, *)
-!           write (s%logfile,*) ' Three-center non-charge dependent assemblers.'
-            call Dassemble_vnl_3c (s)
+!       write (s%logfile, *)
+!       write (s%logfile,*) ' Three-center non-charge dependent assemblers.'
+        call Dassemble_vnl_3c (s)
 
-!           call cpu_time (time_initial)
-!           write (s%logfile,*) ' Three-center charge dependent Dassemblers.'
-            call Dassemble_vna_3c (s)
+!       call cpu_time (time_initial)
+!       write (s%logfile,*) ' Three-center charge dependent Dassemblers.'
+        call Dassemble_vna_3c (s)
 
-!           write (s%logfile, *)
-!           write (s%logfile, *) ' Exchange-correlation Dassemblers. '
-            call Dassemble_vxc (s)
-!           write (s%logfile, *) ' Three-center charge dependent Exchange-correlation Dassemblers. '
+!       write (s%logfile, *)
+!       write (s%logfile, *) ' Exchange-correlation Dassemblers. '
+        call Dassemble_vxc (s)
+!       write (s%logfile, *) ' Three-center charge dependent Exchange-correlation Dassemblers. '
 
 ! NAC For three center part of vxc for dij
-            call Dassemble_vxc_3c (s)
-!           call cpu_time (time_final)
-!           write (s%logfile, *) ' vxc, vna_3c forces time: ', time_final - time_initial
+        call Dassemble_vxc_3c (s)
+!       call cpu_time (time_final)
+!       write (s%logfile, *) ' vxc, vna_3c forces time: ', time_final - time_initial
 
 ! short-range interactions (double-counting interactions)
-            call Dassemble_uee (s)
-            call Dassemble_uxc (s)
+        call Dassemble_uee (s)
+        call Dassemble_uxc (s)
 
-            call build_forces (s, rms)
+        call build_forces (s, rms)
 
-            if (iwriteout_forces .eq. 1) call writeout_forces (s)
-            
-            write (s%logfile,*)
-            write (s%logfile,*) ' Total Forces:'
-            do iatom = 1, s%natoms
-              write (s%logfile, 512)  iatom, s%forces(iatom)%ftot
-            end do
+        if (iwriteout_forces .eq. 1) call writeout_forces (s)
+        write (s%logfile,*)
+        write (s%logfile,*) ' Total Forces:'
+        do iatom = 1, s%natoms
+          write (s%logfile, 512)  iatom, s%forces(iatom)%ftot
+        end do
 
-!           call cpu_time (time_forces_end)
-!           write (s%logfile, *)
-!           write (s%logfile, *) ' FORCES time: ', time_forces_end - time_forces_begin
+!       call cpu_time (time_forces_end)
+!       write (s%logfile, *)
+!       write (s%logfile, *) ' FORCES time: ', time_forces_end - time_forces_begin
 
-            write (s%logfile, *)
-            write (s%logfile, '(A)') ' Grand Total Energy '
-            write (s%logfile, '(A)') ' ------------------ '
+        write (s%logfile, *)
+        write (s%logfile, '(A)') ' Grand Total Energy '
+        write (s%logfile, '(A)') ' ------------------ '
  
-            s%md%tkinetic = 0.0d0
-            do iatom = 1, s%natoms
-              in1 = s%atom(iatom)%imass            
-              s%md%tkinetic = s%md%tkinetic                                                  &
-         &               + (0.5d0/P_fovermp)*species(in1)%xmass                   &
-         &                *(s%atom(iatom)%vatom(1)**2 +  s%atom(iatom)%vatom(2)**2 &
-         &                                            +  s%atom(iatom)%vatom(3)**2)
-            end do
-            s%md%T_instantaneous = (2.0d0/3.0d0)*(s%md%tkinetic/s%natoms)*P_kconvert
+        s%md%tkinetic = 0.0d0
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          s%md%tkinetic = s%md%tkinetic                                      &
+     &      + (0.5d0/P_fovermp)*species(in1)%xmass                           &
+     &                         *(s%atom(iatom)%vatom(1)**2                   &
+     &                           + s%atom(iatom)%vatom(2)**2                 &
+     &                           +  s%atom(iatom)%vatom(3)**2)
+        end do
+        s%md%T_instantaneous = (2.0d0/3.0d0)*(s%md%tkinetic/s%natoms)*P_kconvert
 
-            write (s%logfile,600) etot
-            write (s%logfile,601) s%md%tkinetic
-            write (s%logfile,602) vdW
-            getot = etot + s%md%tkinetic + vdW
-            write (s%logfile,603) getot
-            write (s%logfile,604) getot/s%natoms
-            write (s%logfile, *)
+        write (s%logfile,600) etot
+        write (s%logfile,601) s%md%tkinetic
+        write (s%logfile,602) vdW
+        getot = etot + s%md%tkinetic + vdW
+        write (s%logfile,603) getot
+        write (s%logfile,604) getot/s%natoms
+        write (s%logfile, *)
 
-            write (s%logfile, '(A)') ' ---------------------------------------------------- '
-            write (s%logfile, *) ' End energy and force recalculation for MDET"
-            write (s%logfile, '(A)') ' ---------------------------------------------------- '
+        write (s%logfile, '(A)') ' ---------------------------------------------------- '
+        write (s%logfile, *) ' End energy and force recalculation for MDET"
+        write (s%logfile, '(A)') ' ---------------------------------------------------- '
 
 ! Deallocate Arrays
 ! ===========================================================================
