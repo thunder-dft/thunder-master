@@ -70,10 +70,10 @@ endif
 ifneq (,$(findstring VERLET, ${MDA}))
 MD = M_verlet.o
 endif
-MDET = M_adiabatic_mdet.o M_density_matrix.o
+MDET = M_adiabatic_mdet.o 
 OUTPUT = writeout_energies.o writeout_xyz.o writeout_xsf.o
 UTIL = absorption_gamma.o dos_gamma.o
-SOLVESH = M_diagonalization_Lowdin.o M_kspace_Lowdin.o
+SOLVESH = M_diagonalization_Lowdin.o M_kspace_Lowdin.o M_density_matrix.o
 SOCKETS = M_sockets.o sockets.o
 
 # Parallelization
@@ -160,7 +160,7 @@ ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_ewald_DOGS.o M
 DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_ewald_DOGS.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o
 ifneq (,$(findstring TRUE, ${NAMD}))
 DASSEMBLERS = M_Dassemble_2c_DOGS_mdet.o M_Dassemble_3c_DOGS_mdet.o M_Dassemble_ewald_DOGS_mdet.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS_mdet.o M_Dassemble_PP_2c_mdet.o M_Dassemble_PP_3c_mdet.o 
-MDET = M_nonadiabatic_mdet.o M_density_matrix_mdet.o
+MDET = M_nonadiabatic_mdet.o
 endif
 FDATA = M_Fdata_1c_Horsfield_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
 SCF = M_charges_Lowdin.o Qmixer_Anderson_DOGS.o
@@ -181,26 +181,36 @@ endif
 # BEGIN                   DIAGONALIZATION COMPILED ROUTINES
 # ****************************************************************************
 # **************************** GAMMA - DEFAULT PACKAGES **********************
-SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o
+SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix.o
+ifneq (,$(findstring TRUE, ${NAMD}))
+SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix_mdet.o
+endif
 
 # ************************* GAMMA, KPOINTS, MDET, or KS **********************
 ifneq (,$(findstring GAMMAD, ${DIAGONALIZATION}))
-SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o
+SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix.o
+	ifneq (,$(findstring TRUE, ${NAMD}))
+	SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix_mdet.o
+	endif
 endif
+
 ifneq (,$(findstring KPOINTS, ${DIAGONALIZATION}))
-SOLVESH = M_diagonalization_Lowdin_kpoints.o M_kspace_Lowdin.o
+SOLVESH = M_diagonalization_Lowdin_kpoints.o M_kspace_Lowdin.o M_density_matrix.o
 UTIL = absorption_gamma.o dos_kpoints.o
 endif
 ifneq (,$(findstring KS, ${DIAGONALIZATION}))
 GRID = M_project_grid.o M_fft_grid.o writeout_xsf.o
-SOLVESH = M_diagonalization_kpoints.o M_kspace_grid.o M_project_grid.o M_fft_grid.o
-MDET = M_adiabatic_mdet.o M_density_matrix_grid.o 
+SOLVESH = M_diagonalization_kpoints.o M_kspace_grid.o M_project_grid.o M_fft_grid.o M_density_matrix_grid.o 
+MDET = M_adiabatic_mdet.o 
 endif
 
 # ****************************** SCALAPACK *********************************** 
 ifneq (,$(findstring SCALAPACK, ${DIAGONALIZATION}))
 PARALLEL = M_mpi.o
-SOLVESH = M_diagonalization_Lowdin_scalapack_slave.o M_diagonalization_Lowdin_scalapack.o M_kspace_Lowdin_scalapack.o
+SOLVESH = M_diagonalization_Lowdin_scalapack_slave.o M_diagonalization_Lowdin_scalapack.o M_kspace_Lowdin_scalapack.o M_density_matrix.o 
+	ifneq (,$(findstring TRUE, ${NAMD}))
+	SOLVESH = M_diagonalization_Lowdin_scalapack_slave.o M_diagonalization_Lowdin_scalapack.o M_kspace_Lowdin_scalapack.o M_density_matrix_mdet.o
+	endif
 endif
 
 # Pack blacsaba.o pclagetter.o pclaputter.o  to a library

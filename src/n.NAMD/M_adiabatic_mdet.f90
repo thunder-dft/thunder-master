@@ -47,7 +47,7 @@
 ! ============================================================================
 ! Module declaration
 ! ============================================================================
-        module M_adiabatic_mdet
+        module M_nonadiabatic_mdet
 
 ! /SYSTEM
         use M_configuraciones
@@ -87,10 +87,94 @@
         subroutine initialize_mdet (s)
         implicit none
 
-        include '../include/constants.h'
+! Argument Declaration and Description
+! ===========================================================================
+! Input
+        type(T_structure), target :: s           !< the structure to be used.
+
+! Local Parameters
+! ===========================================================================
+! None
+
+! Local Variable Declaration and Description
+! ===========================================================================
+        integer iatom                      !< counter over atoms
+        integer iband, ikpoint             !< counter of band and kpoint
+        integer in1                        !< species number
+        integer issh
+        integer nfermi                     !< Fermi level state
+
+        real qztot                         !< total number of electrons
+
+! Procedure
+! ===========================================================================
+! Initialize logfile
+        write(s%logfile, *) "initialize_mdet.f"
+
+! Loop over the atoms.
+! Total charge - ztot
+        s%ztot = 0.0d0
+        do iatom = 1, s%natoms
+          in1 = s%atom(iatom)%imass
+          do issh = 1, species(in1)%nssh
+            s%ztot = s%ztot + species(in1)%shell(issh)%Qneutral
+          end do
+        end do
+
+! Initialize the fermi occupations
+        qztot = s%ztot
+        nfermi = int(qztot)/2
+        do ikpoint = 1, s%nkpoints      
+          do iband = 1, nfermi
+            s%kpoints(ikpoint)%foccupy(iband) = 1.0d0
+            s%kpoints(ikpoint)%ioccupy(iband) = 1
+          end do
+          do iband = nfermi + 1, s%norbitals
+            s%kpoints(ikpoint)%foccupy(iband) = 0.0d0
+            s%kpoints(ikpoint)%ioccupy(iband) = 0         
+          end do           
+        end do
+
+! Deallocate Arrays
+! ===========================================================================
+! None
+
+! Format Statements
+! ===========================================================================
+! None
+
+! End Subroutine
+! ===========================================================================
+        return
+        end subroutine initialize_mdet
+
+! ===========================================================================
+! initialize_nac.f90
+! ===========================================================================
+! Subroutine Description
+! ===========================================================================
+!>      This routine gives the initial state for the
+!>      nonadiabatic coupling vectors dij
+! ===========================================================================
+! Code written by:
+!> @author James P. Lewis (with Zhaofa Li at Synfuels China Technology)
+! Box 6315, 209 Hodges Hall
+! Department of Physics
+! West Virginia University
+! Morgantown, WV 26506-6315
+!
+! (304) 293-3422 x1409 (office)
+! (304) 293-5732 (FAX)
+! ===========================================================================
+!
+! Program Declaration
+! ===========================================================================
+        subroutine initialize_nac (s)
+        implicit none
 
 ! Argument Declaration and Description
 ! ===========================================================================
+! Input
         type(T_structure), target :: s           !< the structure to be used.
 
 ! Local Parameters
@@ -116,27 +200,24 @@
 ! End Subroutine
 ! ===========================================================================
         return
-        end subroutine initialize_mdet
-
+        end subroutine initialize_nac
 
 ! ===========================================================================
-! density_matrix_mdet
+! density_matrix_nac
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
-!       This subroutine calculates the density matix rho and stores it in the
-! structure given in M_assemble_block.f90 for molecular dynamics with electronic
-! transition (MDET)
+!>       This subroutine store the density matix rho
+!>       for molecular dynamics with electronic transition (MDET)
 !
 ! ===========================================================================
-        subroutine density_matrix_mdet (s)
+        subroutine density_matrix_nac (s)
         implicit none
-
-        include '../include/constants.h'
 
 ! Argument Declaration and Description
 ! ===========================================================================
-       type(T_structure), target :: s           !< the structure to be used.
+! Input
+        type(T_structure), target :: s           !< the structure to be used.
 
 ! Local Parameters and Data Declaration
 ! ===========================================================================
@@ -165,10 +246,10 @@
 ! End Subroutine
 ! ===========================================================================
         return
-        end subroutine density_matrix_mdet
+        end subroutine density_matrix_nac
 
 ! ===========================================================================
-! writeout_density_mdet.f90
+! writeout_density_nac.f90
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
@@ -187,14 +268,13 @@
 !
 ! Program Declaration
 ! ===========================================================================
-        subroutine writeout_density_mdet (s)
+        subroutine writeout_density_nac (s)
         implicit none
-        
-        include '../include/constants.h'
 
 ! Argument Declaration and Description
 ! ===========================================================================
-       type(T_structure), target :: s           !< the structure to be used.
+! Input
+        type(T_structure), target :: s           !< the structure to be used.
 
 ! Local Parameters and Data Declaration
 ! ===========================================================================
@@ -223,11 +303,10 @@
 ! End Subroutine
 ! ===========================================================================
         return
-        end subroutine writeout_density_mdet
-
+        end subroutine writeout_density_nac
 
 ! ===========================================================================
-! build_dij_mdet
+! build_dij_nac
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
@@ -247,12 +326,13 @@
 !
 ! Subroutine Declaration
 ! ===========================================================================
-        subroutine build_dij_mdet (s)
+        subroutine build_dij_nac (s)
         implicit none
 
 ! Argument Declaration and Description
 ! ===========================================================================
-       type(T_structure), target :: s           !< the structure to be used.
+! Input
+        type(T_structure), target :: s           !< the structure to be used.
 
 ! Parameters and Data Declaration
 ! ===========================================================================
@@ -278,11 +358,10 @@
 ! End Subroutine
 ! ===========================================================================
         return
-        end subroutine build_dij_mdet
-
+        end subroutine build_dij_nac
 
 ! ===========================================================================
-! writeout_dij_mdet
+! writeout_dij_nac
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
@@ -302,12 +381,13 @@
 !
 ! Subroutine Declaration
 ! ===========================================================================
-        subroutine writeout_dij_mdet (s)
+        subroutine writeout_dij_nac (s)
         implicit none
 
 ! Argument Declaration and Description
 ! ===========================================================================
-       type(T_structure), target :: s           !< the structure to be used.
+! Input
+        type(T_structure), target :: s           !< the structure to be used.
 
 ! Parameters and Data Declaration
 ! ===========================================================================
@@ -331,11 +411,10 @@
 ! End Subroutine
 ! ===========================================================================
         return
-        end subroutine writeout_dij_mdet
-
+        end subroutine writeout_dij_nac
 
 ! ===========================================================================
-! adiabaitc_mdet
+! nonadiabatic_mdet
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
@@ -360,7 +439,9 @@
 
 ! Argument Declaration and Description
 ! ===========================================================================
+! Input
         type(T_structure), target :: s           !< the structure to be used.
+
         integer :: itime_step                    !< the current time step.
 
 ! Parameters and Data Declaration
@@ -388,12 +469,12 @@
         return
         end subroutine nonadiabatic_mdet
 
-! destroy_denmat_mdet
+! destroy_mdet
 ! ===========================================================================
 ! Subroutine Description
 ! ===========================================================================
 !>       This routine deallocates the arrays containing denmat_mdet
-!! information.
+!>       information.
 !
 ! ===========================================================================
 ! Code written by:
@@ -409,7 +490,7 @@
 !
 ! Subroutine Declaration
 ! ===========================================================================
-        subroutine destroy_denmat_mdet (s)
+        subroutine destroy_mdet (s)
         implicit none
 
 ! Argument Declaration and Description
@@ -426,7 +507,7 @@
 
 ! Procedure
 ! ===========================================================================
-
+! None
 
 ! Deallocate Arrays
 ! ===========================================================================
@@ -439,8 +520,8 @@
 ! End Subroutine
 ! ===========================================================================
         return
-        end subroutine destroy_denmat_mdet
+        end subroutine destroy_mdet
 
 ! End Module
 ! ===========================================================================
-        end module M_adiabatic_mdet
+        end module M_nonadiabatic_mdet
