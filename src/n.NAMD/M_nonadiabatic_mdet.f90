@@ -2151,7 +2151,7 @@
         write (s%logfile, *)
 
         write (s%logfile, '(A)') ' ---------------------------------------------------- '
-        write (s%logfile, *) ' End energy and force recalculation for MDET"
+        write (s%logfile, *) ' End energy and force recalculation for MDET '
         write (s%logfile, '(A)') ' ---------------------------------------------------- '
 
 ! Deallocate Arrays
