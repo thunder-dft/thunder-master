@@ -65,13 +65,18 @@ BEGIN_LOOPRC = M_psi.o M_rcatms_Coulomb.o M_rcatms.o M_looprc.o
 FUNCTIONS_LIGHTNING = make_cells.o cl.o epsilon.o
 
 ifneq (,$(findstring GEAR, ${MDA}))
-MD = M_gear_quench.o
+  MD = M_dynamics_settings.o M_gear_quench.o
 endif
 ifneq (,$(findstring VERLET, ${MDA}))
-MD = M_verlet.o
+  MD = M_dynamics_settings.o M_verlet.o
 endif
 MDET = M_adiabatic_mdet.o 
-OUTPUT = writeout_energies.o writeout_xyz.o writeout_xsf.o
+ifneq (,$(findstring JSON, ${FORMAT}))
+  OUTPUT = writeout_energies.o writeout_xyz.o writeout_xsf.o M_writeout_json.o
+endif
+ifneq (,$(findstring HDF5, ${FORMAT}))
+  OUTPUT = writeout_energies.o writeout_xyz.o writeout_xsf.o M_writeout_hdf5.o 
+endif
 UTIL = absorption_gamma.o dos_gamma.o
 SOLVESH = M_diagonalization_Lowdin.o M_kspace_Lowdin.o M_density_matrix.o
 SOCKETS = M_sockets.o sockets.o
@@ -84,9 +89,15 @@ XC_FUNCTIONALS = M_xc_option3_1c.o M_xc_option3_2c.o
 
 # McWEDA is default - we change later if we want to do Horsfield
 CREATE = M_overlap.o M_Goverlap.o M_kinetic.o M_Coulomb.o M_dipole_z.o M_vna_Harris.o M_vna_DOGS.o M_vnl_KB.o M_rho_2c_McWEDA_Harris.o M_rhoS_2c_McWEDA_Harris.o M_rho_3c_McWEDA_Harris.o M_rhoS_3c_McWEDA_Harris.o M_vxc_McWEDA_Harris.o M_vxc_McWEDA_DOGS.o M_bcna_Harris.o M_bcna_DOGS.o
-ifneq (,$(findstring TRUE, ${MPI}))
-PARALLEL = M_mpi.o
+ifneq (,$(findstring HDF5, ${FORMAT}))
+  CREATE = M_overlap_hdf5.o M_Goverlap_hdf5.o M_kinetic_hdf5.o M_Coulomb_hdf5.o M_dipole_z_hdf5.o M_vna_Harris_hdf5.o M_vna_DOGS_hdf5.o M_vnl_KB_hdf5.o M_rho_2c_McWEDA_Harris_hdf5.o M_rhoS_2c_McWEDA_Harris_hdf5.o M_rho_3c_McWEDA_Harris_hdf5.o M_rhoS_3c_McWEDA_Harris_hdf5.o M_vxc_McWEDA_Harris_hdf5.o M_vxc_McWEDA_DOGS_hdf5.o M_bcna_Harris_hdf5.o M_bcna_DOGS_hdf5.o
 endif
+ifneq (,$(findstring TRUE, ${MPI}))
+  PARALLEL = M_mpi.o
+endif
+FFLAGS_NOIPO = $(filter-out -ipo,$(FFLAGS))
+FFLAGS := $(FFLAGS_NOIPO)
+
 # ****************************************************************************
 # END                     GENERICALLY COMPILED ROUTINES
 # ****************************************************************************
@@ -106,25 +117,34 @@ ifneq (,$(findstring McWEDA, ${THEORY}))
 # ****************************************************************************
 # ********************************* HARRIS ***********************************
 ifneq (,$(findstring HARRIS, ${SCF}))
-ASSEMBLERS = M_assemble_2c_Harris.o M_assemble_3c_Harris.o M_assemble_ewald_Harris.o M_assemble_rho_McWEDA_Harris.o M_assemble_usr_McWEDA_Harris.o M_assemble_vxc_McWEDA_Harris.o M_assemble_PP_2c.o M_assemble_PP_3c.o
-DASSEMBLERS = M_Dassemble_rho_McWEDA_Harris.o M_Dassemble_2c_Harris.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o M_Dassemble_ewald_Harris.o M_Dassemble_usr_McWEDA_Harris.o M_Dassemble_3c_Harris.o M_Dassemble_vxc_3c_McWEDA_Harris.o M_Dassemble_vxc_McWEDA_Harris.o 
-FDATA = M_Fdata_1c_McWEDA_Harris.o M_Fdata_2c.o M_Fdata_3c.o
-SCF = M_charges_Lowdin.o Qmixer_Anderson_Harris.o
+  ASSEMBLERS = M_assemble_2c_Harris.o M_assemble_3c_Harris.o M_assemble_ewald_Harris.o M_assemble_rho_McWEDA_Harris.o M_assemble_usr_McWEDA_Harris.o M_assemble_vxc_McWEDA_Harris.o M_assemble_PP_2c.o M_assemble_PP_3c.o
+  DASSEMBLERS = M_Dassemble_rho_McWEDA_Harris.o M_Dassemble_2c_Harris.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o M_Dassemble_ewald_Harris.o M_Dassemble_usr_McWEDA_Harris.o M_Dassemble_3c_Harris.o M_Dassemble_vxc_3c_McWEDA_Harris.o M_Dassemble_vxc_McWEDA_Harris.o 
+  FDATA = M_Fdata_1c_McWEDA_Harris.o M_Fdata_2c.o M_Fdata_3c.o
+  ifneq (,$(findstring HDF5, ${FORMAT}))
+    FDATA = M_Fdata_1c_McWEDA_Harris_hdf5.o M_Fdata_2c_hdf5.o M_Fdata_3c_hdf5.o
+  endif
+  SCF = M_charges_Lowdin.o Qmixer_Anderson_Harris.o
 endif
 
 # **************************i******** DOGS ***********************************
 ifneq (,$(findstring DOGS, ${SCF}))
-ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_DOGS.o M_assemble_usr_McWEDA_DOGS.o M_assemble_ewald_DOGS.o
-DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o M_Dassemble_rho_McWEDA_DOGS.o M_Dassemble_vxc_3c_McWEDA_DOGS.o M_Dassemble_vxc_McWEDA_DOGS.o M_Dassemble_usr_McWEDA_DOGS.o M_Dassemble_ewald_DOGS.o
-FDATA = M_Fdata_1c_McWEDA_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
-SCF = M_charges_Lowdin.o Qmixer_Anderson_DOGS.o
+  ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_DOGS.o M_assemble_usr_McWEDA_DOGS.o M_assemble_ewald_DOGS.o
+  DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o M_Dassemble_rho_McWEDA_DOGS.o M_Dassemble_vxc_3c_McWEDA_DOGS.o M_Dassemble_vxc_McWEDA_DOGS.o M_Dassemble_usr_McWEDA_DOGS.o M_Dassemble_ewald_DOGS.o
+  FDATA = M_Fdata_1c_McWEDA_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
+  ifneq (,$(findstring HDF5, ${FORMAT}))
+    FDATA = M_Fdata_1c_McWEDA_DOGS_hdf5.o M_Fdata_2c_hdf5.o M_Fdata_3c_hdf5.o
+  endif
+  SCF = M_charges_Lowdin.o Qmixer_Anderson_DOGS.o
 endif
 
 # ************************************ KS ************************************
 ifneq (,$(findstring KS, ${SCF}))
-ASSEMBLERS = M_assemble_2c_grid.o M_assemble_3c_Harris.o M_assemble_ewald_DOGS.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_grid.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_usr_grid.o
-FDATA = M_Fdata_1c_McWEDA_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
-SCF = M_charges_Mulliken.o Qmixer_Anderson_grid.o
+  ASSEMBLERS = M_assemble_2c_grid.o M_assemble_3c_Harris.o M_assemble_ewald_DOGS.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_grid.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_usr_grid.o
+  FDATA = M_Fdata_1c_McWEDA_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
+  ifneq (,$(findstring HDF5, ${FORMAT}))
+    FDATA = M_Fdata_1c_McWEDA_DOGS_hdf5.o M_Fdata_2c_hdf5.o M_Fdata_3c_hdf5.o
+  endif
+  SCF = M_charges_Mulliken.o Qmixer_Anderson_grid.o
 endif
 # ****************************************************************************
 # END                         MCWEDA COMPILED ROUTINES
@@ -140,6 +160,9 @@ ifneq (,$(findstring HORSFIELD, ${THEORY}))
 # Set THEORY = HORSFIELD if you want to compile the Horsfield subroutines. 
 # ****************************************************************************
 CREATE = M_overlap.o M_Goverlap.o M_kinetic.o M_Coulomb.o M_dipole_z.o M_vna_Harris.o M_vna_DOGS.o M_vnl_KB.o M_vxc_Horsfield_Harris.o M_vxc_Horsfield_DOGS.o M_bcna_Harris.o M_bcna_DOGS.o lda_ceperley_alder.o M_xc3c_Horsfield_Harris.o M_xc3c_Horsfield_DOGS.o
+ifneq (,$(findstring HDF5, ${FORMAT}))
+  CREATE = M_overlap_hdf5.o M_Goverlap_hdf5.o M_kinetic_hdf5.o M_Coulomb_hdf5.o M_dipole_z_hdf5.o M_vna_Harris_hdf5.o M_vna_DOGS_hdf5.o M_vnl_KB_hdf5.o M_vxc_Horsfield_Harris_hdf5.o M_vxc_Horsfield_DOGS_hdf5.o M_bcna_Harris_hdf5.o M_bcna_DOGS_hdf5.o lda_ceperley_alder.o M_xc3c_Horsfield_Harris_hdf5.o M_xc3c_Horsfield_DOGS_hdf5.o
+endif
 # ****************************************************************************
 # Here we choose how to do the SCF
 # No SCF - choose HARRIS in include/OPTIONS
@@ -148,29 +171,42 @@ CREATE = M_overlap.o M_Goverlap.o M_kinetic.o M_Coulomb.o M_dipole_z.o M_vna_Har
 # ****************************************************************************
 # ********************************* HARRIS ***********************************
 ifneq (,$(findstring HARRIS, ${SCF}))
-ASSEMBLERS = M_assemble_2c_Harris.o M_assemble_3c_Harris.o M_assemble_ewald_Harris.o M_assemble_usr_Horsfield_Harris.o M_assemble_vxc_Horsfield_Harris.o M_assemble_PP_2c.o M_assemble_PP_3c.o
-DASSEMBLERS = M_Dassemble_2c_Harris.o M_Dassemble_3c_Harris.o M_Dassemble_ewald_Harris.o M_Dassemble_usr_Horsfield_Harris.o M_Dassemble_vxc_Horsfield_Harris.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o 
-FDATA = M_Fdata_1c_Horsfield_Harris.o M_Fdata_2c.o M_Fdata_3c.o
-SCF = M_charges_Lowdin.o Qmixer_Anderson_Harris.o
+  ASSEMBLERS = M_assemble_2c_Harris.o M_assemble_3c_Harris.o M_assemble_ewald_Harris.o M_assemble_usr_Horsfield_Harris.o M_assemble_vxc_Horsfield_Harris.o M_assemble_PP_2c.o M_assemble_PP_3c.o
+  DASSEMBLERS = M_Dassemble_2c_Harris.o M_Dassemble_3c_Harris.o M_Dassemble_ewald_Harris.o M_Dassemble_usr_Horsfield_Harris.o M_Dassemble_vxc_Horsfield_Harris.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o 
+  FDATA = M_Fdata_1c_Horsfield_Harris.o M_Fdata_2c.o M_Fdata_3c.o
+  ifneq (,$(findstring HDF5, ${FORMAT}))
+    FDATA = M_Fdata_1c_Horsfield_Harris_hdf5.o M_Fdata_2c_hdf5.o M_Fdata_3c_hdf5.o
+  endif
+  SCF = M_charges_Lowdin.o Qmixer_Anderson_Harris.o
 endif
 
 # **************************i******** DOGS ***********************************
 ifneq (,$(findstring DOGS, ${SCF}))
-ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_ewald_DOGS.o M_assemble_usr_Horsfield_DOGS.o M_assemble_vxc_Horsfield_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o
-DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_ewald_DOGS.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o
-ifneq (,$(findstring TRUE, ${NAMD}))
-DASSEMBLERS = M_Dassemble_2c_DOGS_mdet.o M_Dassemble_3c_DOGS_mdet.o M_Dassemble_ewald_DOGS_mdet.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS_mdet.o M_Dassemble_PP_2c_mdet.o M_Dassemble_PP_3c_mdet.o 
-MDET = M_nonadiabatic_mdet.o
-endif
-FDATA = M_Fdata_1c_Horsfield_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
-SCF = M_charges_Lowdin.o Qmixer_Anderson_DOGS.o
+  ASSEMBLERS = M_assemble_2c_DOGS.o M_assemble_3c_DOGS.o M_assemble_ewald_DOGS.o M_assemble_usr_Horsfield_DOGS.o M_assemble_vxc_Horsfield_DOGS.o M_assemble_PP_2c.o M_assemble_PP_3c.o
+  DASSEMBLERS = M_Dassemble_2c_DOGS.o M_Dassemble_3c_DOGS.o M_Dassemble_ewald_DOGS.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS.o M_Dassemble_PP_2c.o M_Dassemble_PP_3c.o
+  FDATA = M_Fdata_1c_Horsfield_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
+  ifneq (,$(findstring HDF5, ${FORMAT}))
+    FDATA = M_Fdata_1c_Horsfield_DOGS_hdf5.o M_Fdata_2c_hdf5.o M_Fdata_3c_hdf5.o
+  endif
+  ifneq (,$(findstring TRUE, ${NAMD}))
+    DASSEMBLERS = M_Dassemble_2c_DOGS_mdet.o M_Dassemble_3c_DOGS_mdet.o M_Dassemble_ewald_DOGS_mdet.o M_Dassemble_usr_Horsfield_DOGS.o M_Dassemble_vxc_Horsfield_DOGS_mdet.o M_Dassemble_PP_2c_mdet.o M_Dassemble_PP_3c_mdet.o 
+    MDET = M_nonadiabatic_mdet.o
+    FDATA = M_Fdata_1c_Horsfield_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
+    ifneq (,$(findstring HDF5, ${FORMAT}))
+      FDATA = M_Fdata_1c_Horsfield_DOGS_hdf5.o M_Fdata_2c_hdf5.o M_Fdata_3c_hdf5.o
+    endif
+  endif
+  SCF = M_charges_Lowdin.o Qmixer_Anderson_DOGS.o
 endif
 
 # ************************************ KS ************************************
 ifneq (,$(findstring KS, ${SCF}))
-ASSEMBLERS = M_assemble_2c_grid.o M_assemble_3c_Harris.o M_assemble_ewald_DOGS.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_grid.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_usr_grid.o
-FDATA = M_Fdata_1c_McWEDA_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
-SCF = M_charges_Mulliken.o Qmixer_Anderson_grid.o
+  ASSEMBLERS = M_assemble_2c_grid.o M_assemble_3c_Harris.o M_assemble_ewald_DOGS.o M_assemble_rho_McWEDA_DOGS.o M_assemble_vxc_McWEDA_grid.o M_assemble_PP_2c.o M_assemble_PP_3c.o M_assemble_usr_grid.o
+  FDATA = M_Fdata_1c_McWEDA_DOGS.o M_Fdata_2c.o M_Fdata_3c.o
+  ifneq (,$(findstring HDF5, ${FORMAT}))
+    FDATA = M_Fdata_1c_McWEDA_DOGS_hdf5.o M_Fdata_2c_hdf5.o M_Fdata_3c_hdf5.o
+  endif
+  SCF = M_charges_Mulliken.o Qmixer_Anderson_grid.o
 endif
 # ****************************************************************************
 # END                         HORSFIELD COMPILED ROUTINES
@@ -183,58 +219,62 @@ endif
 # **************************** GAMMA - DEFAULT PACKAGES **********************
 SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix.o
 ifneq (,$(findstring TRUE, ${NAMD}))
-SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix_mdet.o
+  SOLVESH = M_diagonalization_Lowdin_gamma.o M_kspace_Lowdin.o M_density_matrix_mdet.o
 endif
 
 # ************************* GAMMA, KPOINTS, MDET, or KS **********************
 ifneq (,$(findstring GAMMAD, ${DIAGONALIZATION}))
-SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix.o
-	ifneq (,$(findstring TRUE, ${NAMD}))
-	SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix_mdet.o
-	endif
+  SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix.o
+  ifneq (,$(findstring TRUE, ${NAMD}))
+    SOLVESH = M_diagonalization_Lowdin_gammad.o M_kspace_Lowdin.o M_density_matrix_mdet.o
+  endif
 endif
 
 ifneq (,$(findstring KPOINTS, ${DIAGONALIZATION}))
-SOLVESH = M_diagonalization_Lowdin_kpoints.o M_kspace_Lowdin.o M_density_matrix.o
-UTIL = absorption_gamma.o dos_kpoints.o
+  SOLVESH = M_diagonalization_Lowdin_kpoints.o M_kspace_Lowdin.o M_density_matrix.o
+  UTIL = absorption_gamma.o dos_kpoints.o
 endif
 ifneq (,$(findstring KS, ${DIAGONALIZATION}))
-GRID = M_project_grid.o M_fft_grid.o writeout_xsf.o
-SOLVESH = M_diagonalization_kpoints.o M_kspace_grid.o M_project_grid.o M_fft_grid.o M_density_matrix_grid.o 
-MDET = M_adiabatic_mdet.o 
+  GRID = M_project_grid.o M_fft_grid.o writeout_xsf.o
+  SOLVESH = M_diagonalization_kpoints.o M_kspace_grid.o M_project_grid.o M_fft_grid.o M_density_matrix_grid.o 
+  MDET = M_adiabatic_mdet.o 
 endif
 
 # ****************************** SCALAPACK *********************************** 
 ifneq (,$(findstring SCALAPACK, ${DIAGONALIZATION}))
-PARALLEL = M_mpi.o
-SOLVESH = M_diagonalization_Lowdin_scalapack_slave.o M_diagonalization_Lowdin_scalapack.o M_kspace_Lowdin_scalapack.o M_density_matrix.o 
-	ifneq (,$(findstring TRUE, ${NAMD}))
-	SOLVESH = M_diagonalization_Lowdin_scalapack_slave.o M_diagonalization_Lowdin_scalapack.o M_kspace_Lowdin_scalapack.o M_density_matrix_mdet.o
-	endif
+  PARALLEL = M_mpi.o
+  SOLVESH = M_diagonalization_Lowdin_scalapack_slave.o M_diagonalization_Lowdin_scalapack.o M_kspace_Lowdin_scalapack.o M_density_matrix.o 
+  ifneq (,$(findstring TRUE, ${NAMD}))
+    SOLVESH = M_diagonalization_Lowdin_scalapack_slave.o M_diagonalization_Lowdin_scalapack.o M_kspace_Lowdin_scalapack.o M_density_matrix_mdet.o
+  endif
 endif
 
 # Pack blacsaba.o pclagetter.o pclaputter.o  to a library
 ifneq (,$(filter SCALAPACK, ${DIAGONALIZATION}))
-SOLVESH_LIB = blacsaba.o pclagetter.o pclaputter.o
-LIB_NAME_scalapack = scalapack_base
-LIB_scalapack = lib$(LIB_NAME_scalapack).a
-LFLAGS +=  -L./ -l$(LIB_NAME_scalapack)
+  SOLVESH_LIB = blacsaba.o pclagetter.o pclaputter.o
+  LIB_NAME_scalapack = scalapack_base
+  LIB_scalapack = lib$(LIB_NAME_scalapack).a
+  LFLAGS +=  -L./ -l$(LIB_NAME_scalapack)
 endif
 
 # ********************************** XC **************************************
 ifneq (,$(findstring BLYP, ${XC}))
-XC_FUNCTIONALS = M_xc_option9_1c.o M_xc_option9_2c.o
+  XC_FUNCTIONALS = M_xc_option9_1c.o M_xc_option9_2c.o
 endif
 ifneq (,$(findstring PBE, ${XC}))
-XC_FUNCTIONALS = M_xc_option6_1c.o M_xc_option6_2c.o
+  XC_FUNCTIONALS = M_xc_option6_1c.o M_xc_option6_2c.o
 endif
 
 OBJECTS_LOOPRC = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN_LOOPRC)
 OBJECTS_BEGIN = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_BEGIN) $(XC_FUNCTIONALS) M_vxc_McWEDA_Harris.o $(BEGIN)
-OBJECTS_CREATE = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_CREATE) $(XC_FUNCTIONALS) $(CREATE)
+OBJECTS_CREATE = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_CREATE) $(XC_FUNCTIONALS) $(CREATE) 
 OBJECTS_LIGHTNING = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
 OBJECTS_FIREBALL = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(MDET) $(OUTPUT) $(SOCKETS) $(UTIL)
 OBJECTS_LIGHTNING_GRID = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) $(FUNCTIONS_LIGHTNING) $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(GRID) $(ASSEMBLERS) $(SCF) $(OUTPUT) $(UTIL)
+ifneq (,$(findstring HDF5, ${FORMAT}))
+  OBJECTS_CREATE = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_CREATE) $(XC_FUNCTIONALS) M_hdf5.o $(CREATE) 
+  OBJECTS_FIREBALL = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM) $(FUNCTIONS_LIGHTNING) M_hdf5.o $(FDATA) lda_ceperley_alder.o $(SOLVESH) $(ASSEMBLERS) $(DASSEMBLERS) $(SCF) $(MD) $(MDET) $(OUTPUT) $(SOCKETS) $(UTIL)
+endif
 ##############################################################################
 ###
 ### END LISTING OBJECTS
@@ -242,6 +282,12 @@ OBJECTS_LIGHTNING_GRID = $(PARALLEL) $(GLOBAL) $(FUNCTIONS) $(SYSTEM_LIGHTNING) 
 ##############################################################################
 
 # ********************************* LINKING **********************************
+
+FIREBALL_HDF5_LFLAGS =
+ifneq (,$(findstring HDF5, ${FORMAT}))
+  FIREBALL_HDF5_LFLAGS = $(HDF5_LN)
+endif
+
 begin-looprc.x : $(OBJECTS_LOOPRC) begin-looprc.o
 	$(F90) -o begin-looprc.x $(FFLAGS) $(OBJECTS_LOOPRC) begin-looprc.o $(LFLAGS)
 
@@ -249,12 +295,25 @@ begin.x : $(OBJECTS_BEGIN) begin.o
 	$(F90) -o begin.x $(FFLAGS) $(OBJECTS_BEGIN) begin.o $(LFLAGS)
 
 ifneq (,$(findstring McWEDA, ${THEORY}))
-create.x : $(OBJECTS_CREATE) create_McWEDA.o
-	$(F90) -o create.x $(FFLAGS) $(OBJECTS_CREATE) create_McWEDA.o $(LFLAGS)
+  ifneq (,$(findstring HDF5, ${FORMAT}))
+  create.x : $(OBJECTS_CREATE) create_McWEDA_hdf5.o
+	$(F90) -o create.x $(FFLAGS_NOIPO) $(OMP) $(OBJECTS_CREATE) create_McWEDA_hdf5.o $(LFLAGS) $(FIREBALL_HDF5_LFLAGS)
+  endif
+  ifneq (,$(findstring JSON, ${FORMAT}))
+  create.x : $(OBJECTS_CREATE) create_McWEDA.o
+	$(F90) -o create.x $(FFLAGS_NOIPO) $(OMP) $(OBJECTS_CREATE) create_McWEDA.o $(LFLAGS)
+  endif
 endif
+
 ifneq (,$(findstring HORSFIELD, ${THEORY}))
-create.x : $(OBJECTS_CREATE) create_Horsfield.o
-	$(F90) -o create.x $(FFLAGS) $(OBJECTS_CREATE) create_Horsfield.o $(LFLAGS)
+  ifneq (,$(findstring JSON, ${FORMAT}))
+  create.x : $(OBJECTS_CREATE) create_Horsfield.o
+	$(F90) -o create.x $(FFLAGS_NOIPO) $(OMP) $(OBJECTS_CREATE) create_Horsfield.o $(LFLAGS)
+  endif
+  ifneq (,$(findstring HDF5, ${FORMAT}))
+  create.x : $(OBJECTS_CREATE) create_Horsfield_hdf5.o
+	$(F90) -o create.x $(FFLAGS_NOIPO) $(OMP) $(OBJECTS_CREATE) create_Horsfield_hdf5.o $(LFLAGS) $(FIREBALL_HDF5_LFLAGS)
+  endif
 endif
 
 lightning.x: $(OBJECTS_LIGHTNING) lightning.o
@@ -262,11 +321,12 @@ lightning.x: $(OBJECTS_LIGHTNING) lightning.o
 
 lightning-grid.x: $(OBJECTS_LIGHTNING) lightning-grid.o
 	$(F90) -o lightning-grid.x $(FFLAGS) $(OMP) $(OBJECTS_LIGHTNING) lightning-grid.o $(LFLAGS) $(LFLAGS_FFT)
-	
+
 fireball.x: $(OBJECTS_FIREBALL) $(LIB_scalapack) fireball.o
-	$(F90) -o fireball.x $(FFLAGS) $(OMP) $(OBJECTS_FIREBALL) fireball.o $(LFLAGS) 
+	$(F90) -o fireball.x $(FFLAGS) $(OMP) $(OBJECTS_FIREBALL) fireball.o $(LFLAGS) $(FIREBALL_HDF5_LFLAGS)
 fireball-ase.x: $(OBJECTS_FIREBALL) $(LIB_scalapack) fireball-ase.o
-	$(F90) -o fireball-ase.x $(FFLAGS) $(OMP) $(OBJECTS_FIREBALL) fireball-ase.o $(LFLAGS) 
+	$(F90) -o fireball-ase.x $(FFLAGS) $(OMP) $(OBJECTS_FIREBALL) fireball-ase.o $(LFLAGS) $(FIREBALL_HDF5_LFLAGS)
+
 
 .PHONY: clean veryclean
 
@@ -409,18 +469,35 @@ M_Fdata_1c_Horsfield_Harris.o : e.FDATA/M_Fdata_1c_Horsfield_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Fdata_1c_Horsfield_DOGS.o : e.FDATA/M_Fdata_1c_Horsfield_DOGS.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_Fdata_1c_Horsfield_DOGS_mdet.o : e.FDATA/M_Fdata_1c_Horsfield_DOGS_mdet.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^		
 M_Fdata_2c.o : e.FDATA/M_Fdata_2c.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_Fdata_3c.o : e.FDATA/M_Fdata_3c.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+		
+ifneq (,$(findstring HDF5, ${FORMAT}))
+  M_Fdata_1c_McWEDA_Harris_hdf5.o : e.FDATA/M_Fdata_1c_McWEDA_Harris_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+  M_Fdata_1c_McWEDA_DOGS_hdf5.o : e.FDATA/M_Fdata_1c_McWEDA_DOGS_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+  M_Fdata_1c_Horsfield_Harris_hdf5.o : e.FDATA/M_Fdata_1c_Horsfield_Harris_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+  M_Fdata_1c_Horsfield_DOGS_hdf5.o : e.FDATA/M_Fdata_1c_Horsfield_DOGS_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+  M_Fdata_2c_hdf5.o : e.FDATA/M_Fdata_2c_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+  M_Fdata_3c_hdf5.o : e.FDATA/M_Fdata_3c_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+endif
 
 # *****************************************************************************
 # f.MPI
 # *****************************************************************************
 M_mpi.o : f.MPI/M_mpi.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS_NOIPO) -c $^
 M_nompi.o : f.MPI/M_nompi.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS_NOIPO) -c $^
 
 # *****************************************************************************
 # g.XC_FUNCTIONALS
@@ -598,6 +675,8 @@ Qmixer_Anderson_grid.o : l.SCF/Qmixer_Anderson_grid.f90
 # *****************************************************************************
 # m.MD
 # *****************************************************************************
+M_MD_setting.o : m.MD/M_MD_setting.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_gear_quench.o : m.MD/M_gear_quench.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_verlet.o : m.MD/M_verlet.f90
@@ -634,6 +713,14 @@ writeout_xsf.o : o.OUTPUT/writeout_xsf.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 writeout_xyz.o : o.OUTPUT/writeout_xyz.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+M_writeout_json.o : o.OUTPUT/M_writeout_json.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+ifneq (,$(findstring HDF5, ${FORMAT})) 		
+  M_hdf5.o : o.OUTPUT/M_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(HDF5_INC) $(FFLAGS) -c $^		
+  M_writeout_hdf5.o : o.OUTPUT/M_writeout_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(HDF5_INC) $(FFLAGS) -c $^		
+endif	
 
 # *****************************************************************************
 # p.THEORY
@@ -661,9 +748,9 @@ M_rho_3c_McWEDA_Harris.o : p.THEORY/M_rho_3c_McWEDA_Harris.f90
 M_rhoS_3c_McWEDA_Harris.o : p.THEORY/M_rhoS_3c_McWEDA_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_vna_Harris.o : p.THEORY/M_vna_Harris.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS_NOIPO) -c $^
 M_vna_DOGS.o : p.THEORY/M_vna_DOGS.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS_NOIPO) -c $^
 M_vnl_KB.o : p.THEORY/M_vnl_KB.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_vxc_Horsfield_Harris.o :  p.THEORY/M_vxc_Horsfield_Harris.f90
@@ -678,6 +765,50 @@ M_xc3c_Horsfield_Harris.o : p.THEORY/M_xc3c_Horsfield_Harris.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 M_xc3c_Horsfield_DOGS.o : p.THEORY/M_xc3c_Horsfield_DOGS.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+
+ifneq (,$(findstring HDF5, ${FORMAT}))
+M_overlap_hdf5.o : p.THEORY/M_overlap_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_Goverlap_hdf5.o : p.THEORY/M_Goverlap_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_rho_2c_McWEDA_Harris_hdf5.o : p.THEORY/M_rho_2c_McWEDA_Harris_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_rhoS_2c_McWEDA_Harris_hdf5.o : p.THEORY/M_rhoS_2c_McWEDA_Harris_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_rho_3c_McWEDA_Harris_hdf5.o : p.THEORY/M_rho_3c_McWEDA_Harris_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_rhoS_3c_McWEDA_Harris_hdf5.o : p.THEORY/M_rhoS_3c_McWEDA_Harris_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_vxc_McWEDA_Harris_hdf5.o : p.THEORY/M_vxc_McWEDA_Harris_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_vxc_McWEDA_DOGS_hdf5.o : p.THEORY/M_vxc_McWEDA_DOGS_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_Coulomb_hdf5.o : p.THEORY/M_Coulomb_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_dipole_z_hdf5.o : p.THEORY/M_dipole_z_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_kinetic_hdf5.o : p.THEORY/M_kinetic_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_vna_Harris_hdf5.o : p.THEORY/M_vna_Harris_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS_NOIPO) $(HDF5_INC) -c $^
+M_vna_DOGS_hdf5.o : p.THEORY/M_vna_DOGS_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS_NOIPO) $(HDF5_INC) -c $^
+M_vnl_KB_hdf5.o : p.THEORY/M_vnl_KB_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_vxc_Horsfield_Harris_hdf5.o : p.THEORY/M_vxc_Horsfield_Harris_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_vxc_Horsfield_DOGS_hdf5.o : p.THEORY/M_vxc_Horsfield_DOGS_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_bcna_Harris_hdf5.o : p.THEORY/M_bcna_Harris_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_bcna_DOGS_hdf5.o : p.THEORY/M_bcna_DOGS_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_xc3c_Horsfield_Harris_hdf5.o : p.THEORY/M_xc3c_Horsfield_Harris_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+M_xc3c_Horsfield_DOGS_hdf5.o : p.THEORY/M_xc3c_Horsfield_DOGS_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(HDF5_INC) -c $^
+endif
+
 
 # *****************************************************************************
 # s.SOCKETS
@@ -723,14 +854,25 @@ begin-looprc.o : x.DRIVERS/begin-looprc.f90
 begin.o : x.DRIVERS/begin.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 create_Horsfield.o : x.DRIVERS/create_Horsfield.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^ 
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS_NOIPO) -c $^ 
 create_McWEDA.o : x.DRIVERS/create_McWEDA.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^ 
-fireball.o : x.DRIVERS/fireball.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
-fireball-ase.o : x.DRIVERS/fireball-ase.f90
-		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS_NOIPO) -c $^ 
 lightning.o : x.DRIVERS/lightning.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
 lightning-grid.o : x.DRIVERS/lightning-grid.f90
 		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) -c $^
+
+FIREBALL_HDF5_INC =
+ifneq (,$(findstring HDF5, ${FORMAT}))	
+create_McWEDA_hdf5.o : x.DRIVERS/create_McWEDA_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS_NOIPO) $(HDF5_INC) -c $^ 
+create_Horsfield_hdf5.o : x.DRIVERS/create_Horsfield_hdf5.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS_NOIPO) $(HDF5_INC) -c $^ 	
+FIREBALL_HDF5_INC = $(HDF5_INC)		
+endif
+
+
+fireball.o : x.DRIVERS/fireball.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(FIREBALL_HDF5_INC) -c $^
+fireball-ase.o : x.DRIVERS/fireball-ase.f90
+		$(F90) $(DEFS) -I.. -I../.. $(FFLAGS) $(FIREBALL_HDF5_INC) -c $^

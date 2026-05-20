@@ -66,6 +66,7 @@
         use M_Drotations
 
 ! /FDATA
+        use M_Fdata_1c
         use M_Fdata_2c
 
 ! /ASSEMBLERS
@@ -157,6 +158,9 @@
         real, dimension (:, :), allocatable :: dsm
         real, dimension (:, :, :), allocatable :: vdsm
         real, dimension (:, :, :), allocatable :: vdsx
+! goverlap
+        real, dimension (:, :, :), allocatable :: goverL
+        real, dimension (:, :, :), allocatable :: goverR
 
         interface
           function distance (a, b)
@@ -278,6 +282,13 @@
 ! NAC Zhaofa Li have changed inu to jnu to match the formula in
 ! J. Chem. Phys. 138, 154106 (2013)
 ! ===========================================================================
+            allocate (goverL (3, norb_mu, norb_mu)); goverL = 0.0d0
+            allocate (goverR (3, norb_mu, norb_mu)); goverR = 0.0d0    
+            interaction = P_goverlapL
+            call get_gover_1c (in1, interaction, norb_mu, goverL)
+            interaction = P_goverlapR
+            call get_gover_1c (in1, interaction, norb_mu, goverR) 
+
             do ikpoint = 1, s%nkpoints
 
               ! Cut some lengthy notation
@@ -311,8 +322,13 @@
                       cmunu = real(step2)
                       
                       if (iatom .eq. jatom .and. mbeta .eq. 0) then
-                        ! FIXME FIXME FIXME FIXME
                         ! 1c part of derivative of overlap
+                        piband%dij(:,iatom,jband) =                          &
+     &                    piband%dij(:,iatom,jband) + cmunu*eigen_j*goverL(:,imu,jnu) &
+     &                                              + cmunu*eigen_j*goverR(:,imu,jnu)
+                        piband%dij(:,jatom,jband) =                          &
+     &                    piband%dij(:,jatom,jband) - cmunu*eigen_i*goverL(:,imu,jnu) &
+     &                                              - cmunu*eigen_i*goverR(:,imu,jnu)                        
                       else      
                         ! 2c part of derivative of overlap
                         piband%dij(:,iatom,jband) =                          &
@@ -325,9 +341,9 @@
                 end do ! end loop over jband
               end do ! end loop over iband
             end do ! end loop over kpoints
-! ===========================================================================            
-
+! ===========================================================================    
             deallocate (sm, sx, dsm, vdsm, vdsx)
+            deallocate (goverL, goverR)
           end do ! end loop over neighbors
         end do ! end loop over atoms
 
